@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,6 +11,8 @@
 		1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC22E52405C003DCB88 /* ContentView.swift */; };
 		1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC42E52405D003DCB88 /* Assets.xcassets */; };
 		1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */; };
+		1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */; };
+		1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +21,8 @@
 		1DB00CC22E52405C003DCB88 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1DB00CC42E52405D003DCB88 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCalculator.swift; sourceTree = "<group>"; };
+		1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +59,8 @@
 				1DB00CC22E52405C003DCB88 /* ContentView.swift */,
 				1DB00CC42E52405D003DCB88 /* Assets.xcassets */,
 				1DB00CC62E52405D003DCB88 /* Preview Content */,
+				1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */,
+				1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */,
 			);
 			path = "Mr Sleep";
 			sourceTree = "<group>";
@@ -103,7 +109,7 @@
 				};
 			};
 			buildConfigurationList = 1DB00CB82E52405C003DCB88 /* Build configuration list for PBXProject "Mr Sleep" */;
-			compatibilityVersion = "Xcode 14.0";
+			compatibilityVersion = "Xcode 15.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -127,6 +133,7 @@
 			files = (
 				1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */,
 				1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */,
+				1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +144,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */,
 				1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */,
 				1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */,
 			);
@@ -272,24 +280,29 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
-				DEVELOPMENT_TEAM = GNQAAQVM28;
+				DEVELOPMENT_TEAM = RA3XCM4Q3M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.magdoub.Mr-Sleep";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.magdoub.Mr-Sleeper";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -301,24 +314,29 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
-				DEVELOPMENT_TEAM = GNQAAQVM28;
+				DEVELOPMENT_TEAM = RA3XCM4Q3M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.magdoub.Mr-Sleep";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.magdoub.Mr-Sleeper";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

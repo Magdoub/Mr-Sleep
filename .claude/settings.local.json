@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/magdoub/Documents/iOS projects/Mr Sleep/**)",
+      "Read(//Users/magdoub/Documents/iOS projects/Mr Sleep/**)",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
