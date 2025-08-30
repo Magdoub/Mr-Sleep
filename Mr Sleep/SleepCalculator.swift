@@ -24,10 +24,8 @@ class SleepCalculator {
         
         var wakeUpTimes: [Date] = []
         
-        // Calculate wake-up times based on sleep cycles
-        // Recommended first: 6 hours (4 cycles) and 7.5 hours (5 cycles)
-        // Then additional options: 4.5 hours (3 cycles) and 9 hours (6 cycles)
-        let sleepCycles = [4, 5, 3, 6] // Reordered: recommended first, then additional
+        // Calculate ALL wake-up times in desired order: 4,5,3,2,1,6 cycles
+        let sleepCycles = [4, 5, 3, 2, 1, 6]
         
         for cycles in sleepCycles {
             let totalMinutes = cycles * sleepCycleDuration
@@ -37,25 +35,6 @@ class SleepCalculator {
         }
         
         return wakeUpTimes
-    }
-    
-    func calculateMoreWakeUpTimes() -> [Date] {
-        let now = Date()
-        let fallAsleepDate = Calendar.current.date(byAdding: .minute, value: fallAsleepTime, to: now)!
-        
-        var moreWakeUpTimes: [Date] = []
-        
-        // Additional options: 1.5h, 3h, 10.5h, 12h (sorted by cycles)
-        let additionalCycles = [1, 2, 7, 8] // 1.5h, 3h, 10.5h, 12h
-        
-        for cycles in additionalCycles {
-            let totalMinutes = cycles * sleepCycleDuration
-            let rawWakeUpTime = Calendar.current.date(byAdding: .minute, value: totalMinutes, to: fallAsleepDate)!
-            let roundedWakeUpTime = roundToNearestQuarter(rawWakeUpTime)
-            moreWakeUpTimes.append(roundedWakeUpTime)
-        }
-        
-        return moreWakeUpTimes
     }
     
     func formatTime(_ date: Date) -> String {

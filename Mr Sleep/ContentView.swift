@@ -2,8 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var wakeUpTimes: [Date] = []
-    @State private var moreWakeUpTimes: [Date] = []
-    @State private var showMoreOptions = false
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
     @State private var timeAnimationTrigger = false
@@ -15,6 +13,11 @@ struct ContentView: View {
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [1.0, 0.8, 0.6]
     @State private var breathingScale: Double = 1.0
+    @State private var showAlarmInstructions = false
+    @State private var selectedWakeUpTime = ""
+    @State private var wakeUpTimeVisibility: [Bool] = [false, false, false, false, false, false]
+    @State private var isCalculatingWakeUpTimes = false
+    @State private var calculationProgress: Double = 0.0
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -35,7 +38,7 @@ struct ContentView: View {
                 .ignoresSafeArea(.all) // Ensure it covers the entire screen including safe areas
                 
                 if showOnboarding {
-                    OnboardingView(showOnboarding: $showOnboarding)
+                    OnboardingView(showOnboarding: $showOnboarding, onComplete: startPostOnboardingLoading)
                 } else if showSleepGuide {
                     SleepGuideView(showSleepGuide: $showSleepGuide)
                 } else {
@@ -105,7 +108,7 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            Text("Pick a wake-up time. Set your Alarm")
+                            Text("Science-based wake-up times for better sleep")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
@@ -115,70 +118,35 @@ struct ContentView: View {
                         .accessibilityAddTraits(.isHeader)
                         .opacity(contentOpacity)
                         
-                        // Wake up times grid - 2x2 layout for 4 options (recommended on top)
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 15) {
-                            ForEach(Array(wakeUpTimes.prefix(4).enumerated()), id: \.offset) { index, time in
-                                let cycles = [4, 5, 3, 6][index] // Match SleepCalculator cycles order
-                                WakeUpTimeButton(
-                                    time: SleepCalculator.shared.formatTime(time),
-                                    duration: formatSleepDuration(cycles: cycles),
-                                    isRecommended: index < 2 && index >= 0, // First two are recommended (top row)
-                                    pulseScale: 1.0,
-                                    action: {}
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .accessibilityElement(children: .contain)
-                        .accessibilityLabel("Wake-up time options")
-                        
-                        // More options toggle
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showMoreOptions.toggle()
-                            }
-                        }) {
-                            HStack(spacing: 6) {
-                                Text("More options")
-                                    .font(.system(size: 14, weight: .medium))
-                                Image(systemName: showMoreOptions ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                        }
-                        .accessibilityLabel(showMoreOptions ? "Hide more wake-up time options" : "Show more wake-up time options")
-                        .accessibilityHint("Double tap to \(showMoreOptions ? "hide" : "show") additional wake-up time options")
-                        .padding(.top, 10)
-                        
-                        // Additional wake up times (collapsible)
-                        if showMoreOptions {
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 15) {
-                                ForEach(Array(moreWakeUpTimes.prefix(4).enumerated()), id: \.offset) { index, time in
-                                    let cycles = [1, 2, 7, 8][index] // Match SleepCalculator additional cycles order
+                        // Wake up times or loading animation
+                        if isCalculatingWakeUpTimes {
+                            CalculatingWakeUpTimesView(progress: calculationProgress)
+                                .padding(.horizontal, 20)
+                        } else {
+                            // All wake up times - single column layout with staggered animations
+                            VStack(spacing: 12) {
+                                ForEach(Array(wakeUpTimes.prefix(6).enumerated()), id: \.offset) { index, time in
+                                    let cycles = [4, 5, 3, 2, 1, 6][index] // Custom order as requested
                                     WakeUpTimeButton(
                                         time: SleepCalculator.shared.formatTime(time),
                                         duration: formatSleepDuration(cycles: cycles),
-                                        isRecommended: false,
+                                        isRecommended: index < 2 && index >= 0, // First two are recommended
+                                        cycles: cycles,
                                         pulseScale: 1.0,
-                                        action: {}
+                                        action: {
+                                            selectedWakeUpTime = SleepCalculator.shared.formatTime(time)
+                                            showAlarmInstructions = true
+                                        }
                                     )
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.8).combined(with: .opacity).combined(with: .offset(y: 20)),
-                                        removal: .scale(scale: 0.8).combined(with: .opacity).combined(with: .offset(y: -20))
-                                    ))
-                                    .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.1), value: showMoreOptions)
+                                    .opacity(wakeUpTimeVisibility[index] ? 1.0 : 0.0)
+                                    .scaleEffect(wakeUpTimeVisibility[index] ? 1.0 : 0.8)
+                                    .offset(y: wakeUpTimeVisibility[index] ? 0 : 20)
+                                    .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(Double(index) * 0.15), value: wakeUpTimeVisibility[index])
                                 }
                             }
                             .padding(.horizontal, 20)
-                            .padding(.top, 15)
                             .accessibilityElement(children: .contain)
-                            .accessibilityLabel("Additional wake-up time options")
+                            .accessibilityLabel("Wake-up time options")
                         }
                         
                         Spacer()
@@ -190,6 +158,14 @@ struct ContentView: View {
                         .animation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
                         .padding()
                     }
+                }
+                
+                // Alarm Instructions Modal
+                if showAlarmInstructions {
+                    AlarmInstructionsModal(
+                        wakeUpTime: selectedWakeUpTime,
+                        showModal: $showAlarmInstructions
+                    )
                 }
             }
         }
@@ -258,7 +234,6 @@ struct ContentView: View {
     
     private func calculateWakeUpTimes() {
         wakeUpTimes = SleepCalculator.shared.calculateWakeUpTimes()
-        moreWakeUpTimes = SleepCalculator.shared.calculateMoreWakeUpTimes()
     }
     
     private func createAlarm(for wakeUpTime: Date) {
@@ -297,9 +272,77 @@ struct ContentView: View {
             timeOffset = 0
         }
         
-        // Buttons appear immediately - no animation needed
+        // Phase 3: Start calculating animation (0.6s delay)
+        startCalculatingAnimation()
+    }
+    
+    private func startCalculatingAnimation() {
+        // Start calculating state after text appears (0.6s delay)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isCalculatingWakeUpTimes = true
+            }
+            
+            // Animate progress from 0 to 1 over 1.5 seconds
+            startProgressAnimation()
+            
+            // After calculation animation completes (2.5s total), show wake-up times
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    isCalculatingWakeUpTimes = false
+                }
+                // Small delay before wake-up times start appearing
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    startWakeUpTimesAnimation()
+                }
+            }
+        }
+    }
+    
+    private func startProgressAnimation() {
+        let animationDuration = 1.8
+        let steps = 60 // 60 steps for smooth animation
+        let stepDuration = animationDuration / Double(steps)
         
-        // Animation complete - no ZZZ animation needed
+        for i in 0...steps {
+            let delay = Double(i) * stepDuration
+            let progress = Double(i) / Double(steps)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.linear(duration: stepDuration)) {
+                    calculationProgress = progress
+                }
+            }
+        }
+    }
+    
+    private func startWakeUpTimesAnimation() {
+        // Show all 6 wake-up times with staggered animation
+        for i in 0..<6 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.15) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    wakeUpTimeVisibility[i] = true
+                }
+            }
+        }
+    }
+    
+    
+    private func startPostOnboardingLoading() {
+        // IMMEDIATELY reset ALL states to prevent card flash
+        wakeUpTimeVisibility = [false, false, false, false, false, false]
+        calculationProgress = 0.0
+        isCalculatingWakeUpTimes = false
+        
+        // IMMEDIATELY reset entrance animation states to initial values
+        contentOpacity = 0.0
+        titleOffset = -50
+        timeOffset = 30
+        
+        // Start the complete entrance sequence immediately (no delay)
+        startEntranceAnimation()
+        startBreathingEffect()
+        startZzzAnimation()
     }
     
     private func startBreathingEffect() {
@@ -339,6 +382,21 @@ struct ContentView: View {
             } else {
                 return "\(wholeHours)h \(minutes)m • \(cycles) \(cycleText)"
             }
+        }
+    }
+    
+    private func getCustomTag(for cycles: Int) -> (text: String, icon: String)? {
+        switch cycles {
+        case 1:
+            return ("NAP MODE", "moon.zzz")
+        case 2:
+            return ("MINI SLEEP", "powersleep")
+        case 3:
+            return ("QUICK RECOVERY", "bolt")
+        case 6:
+            return ("DREAMLAND", "cloud.moon")
+        default:
+            return nil
         }
     }
     
@@ -481,67 +539,95 @@ struct WakeUpTimeButton: View {
     let time: String
     let duration: String
     let isRecommended: Bool
+    let cycles: Int
     let pulseScale: Double
     let action: () -> Void
     
+    private func getCustomTag(for cycles: Int) -> (text: String, icon: String)? {
+        switch cycles {
+        case 1:
+            return ("NAP MODE", "moon.zzz")
+        case 2:
+            return ("MINI SLEEP", "powersleep")
+        case 3:
+            return ("QUICK RECOVERY", "bolt")
+        case 6:
+            return ("DREAMLAND", "cloud.moon")
+        default:
+            return nil
+        }
+    }
+    
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Text(time)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(time)
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(isRecommended ? Color(red: 1.0, green: 0.85, blue: 0.3) : Color(red: 0.95, green: 0.95, blue: 0.98))
+                    
+                    Text(duration)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                }
                 
-                Text(duration)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                Spacer()
                 
-                if isRecommended {
-                    Text("RECOMMENDED")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                // Tags section - show recommended and/or custom tags
+                VStack(alignment: .trailing, spacing: 4) {
+                    if isRecommended {
+                        Text("★ RECOMMENDED")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.15))
+                            )
+                    }
+                    
+                    if let customTag = getCustomTag(for: cycles) {
+                        HStack(spacing: 4) {
+                            Image(systemName: customTag.icon)
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(Color(red: 0.4, green: 0.7, blue: 1.0))
+                            
+                            Text(customTag.text)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color(red: 0.4, green: 0.7, blue: 1.0))
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color(red: 0.4, green: 0.7, blue: 1.0).opacity(0.12))
+                        )
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(isRecommended ? 0.25 : 0.15),
-                                Color.white.opacity(isRecommended ? 0.15 : 0.08)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .fill(Color.white.opacity(0.08))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                isRecommended ?
-                                Color(red: 1.0, green: 0.85, blue: 0.3) :
-                                Color.white.opacity(0.3),
-                                lineWidth: isRecommended ? 2 : 1
-                            )
-                    )
-                    .shadow(
-                        color: Color.black.opacity(0.1),
-                        radius: isRecommended ? 6 : 3,
-                        x: 0,
-                        y: isRecommended ? 3 : 1
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .allowsHitTesting(false)
-        .accessibilityLabel("Wake up at \(time), \(duration)\(isRecommended ? ", recommended option" : "")")
-        .accessibilityHint("Wake-up time option for setting your alarm")
-        .accessibilityAddTraits(isRecommended ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityLabel("Wake up at \(time), \(duration)\(isRecommended ? ", recommended time" : "")")
+        .accessibilityHint("Tap to get instructions for setting an alarm")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
 struct OnboardingView: View {
     @Binding var showOnboarding: Bool
+    let onComplete: () -> Void
     @State private var currentStep = 0
     
     let onboardingSteps = [
@@ -581,7 +667,7 @@ struct OnboardingView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all) // Ensure it covers the entire screen including safe areas
                 
                 VStack(spacing: 0) {
                     Spacer()
@@ -656,7 +742,8 @@ struct OnboardingView: View {
                                     currentStep += 1
                                 }
                             } else {
-                                // Completed onboarding
+                                // Completed onboarding - reset states BEFORE dismissal animation
+                                onComplete()
                                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
                                 withAnimation(.easeOut(duration: 0.3)) {
                                     showOnboarding = false
@@ -685,7 +772,8 @@ struct OnboardingView: View {
                         // Skip option (only on first two steps)
                         if currentStep < onboardingSteps.count - 1 {
                             Button(action: {
-                                // Skip onboarding
+                                // Skip onboarding - reset states BEFORE dismissal animation
+                                onComplete()
                                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
                                 withAnimation(.easeOut(duration: 0.3)) {
                                     showOnboarding = false
@@ -711,6 +799,228 @@ struct OnboardingStep {
     let subtitle: String
     let description: String
     let buttonText: String
+}
+
+struct CalculatingWakeUpTimesView: View {
+    let progress: Double
+    @State private var rotationAngle: Double = 0
+    @State private var pulseScale: Double = 1.0
+    @State private var dotAnimation: [Double] = [0.3, 0.6, 1.0]
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Main loading indicator with multiple animations
+            ZStack {
+                // Outer rotating ring
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 3
+                    )
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(.degrees(rotationAngle))
+                    .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: rotationAngle)
+                
+                // Progress circle
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        Color(red: 1.0, green: 0.85, blue: 0.3),
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .frame(width: 50, height: 50)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.3), value: progress)
+                
+                // Center pulsing dot
+                Circle()
+                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    .frame(width: 12, height: 12)
+                    .scaleEffect(pulseScale)
+                    .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseScale)
+                    .opacity(0.8)
+            }
+            .scaleEffect(1.1)
+            
+            // Text with animated dots
+            HStack(spacing: 2) {
+                Text("Calculating wake-up times")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                
+                HStack(spacing: 2) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Text(".")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .opacity(dotAnimation[index])
+                            .animation(
+                                .easeInOut(duration: 0.6)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.2),
+                                value: dotAnimation[index]
+                            )
+                    }
+                }
+            }
+            
+            // Progress percentage
+            Text("\(Int(progress * 100))%")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .opacity(0.8)
+        }
+        .frame(height: 140)
+        .onAppear {
+            // Start animations
+            rotationAngle = 360
+            pulseScale = 1.3
+            
+            // Animate dots continuously
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.2) {
+                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(Double(i) * 0.2)) {
+                        dotAnimation[i] = 0.3
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+struct AlarmInstructionsModal: View {
+    let wakeUpTime: String
+    @Binding var showModal: Bool
+    
+    var body: some View {
+        ZStack {
+            // Semi-transparent overlay
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showModal = false
+                    }
+                }
+            
+            // Modal content
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("⏰")
+                        .font(.system(size: 48))
+                    
+                    Text("Set Your Alarm")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                    
+                    Text("Wake up at \(wakeUpTime)")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                }
+                
+                // Instructions
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("1.")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .frame(width: 20, alignment: .leading)
+                        
+                        Text("Open the Clock app on your iPhone")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
+                    }
+                    
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("2.")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .frame(width: 20, alignment: .leading)
+                        
+                        Text("Tap the '+' button to add a new alarm")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
+                    }
+                    
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("3.")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .frame(width: 20, alignment: .leading)
+                        
+                        Text("Set the time to \(wakeUpTime) and save")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
+                    }
+                }
+                .padding(.horizontal, 4)
+                
+                // Sleep tip
+                VStack(spacing: 8) {
+                    Text("💤 Sleep Tip")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    
+                    Text("Try to fall asleep within the next 15 minutes for the best results!")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.08))
+                )
+                
+                // Close button
+                Button(action: {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showModal = false
+                    }
+                }) {
+                    Text("Got it!")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(red: 0.1, green: 0.2, blue: 0.4))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        )
+                }
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.12, green: 0.27, blue: 0.52),
+                                Color(red: 0.08, green: 0.17, blue: 0.37)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
+            .padding(.horizontal, 20)
+            .scaleEffect(showModal ? 1.0 : 0.8)
+            .opacity(showModal ? 1.0 : 0.0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showModal)
+        }
+    }
 }
 
 #Preview {
