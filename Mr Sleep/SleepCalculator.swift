@@ -30,7 +30,7 @@ class SleepCalculator {
         for cycles in sleepCycles {
             let totalMinutes = cycles * sleepCycleDuration
             let rawWakeUpTime = Calendar.current.date(byAdding: .minute, value: totalMinutes, to: fallAsleepDate)!
-            let roundedWakeUpTime = roundToNearestQuarter(rawWakeUpTime)
+            let roundedWakeUpTime = roundToNearestFiveMinutes(rawWakeUpTime)
             wakeUpTimes.append(roundedWakeUpTime)
         }
         
@@ -51,33 +51,25 @@ class SleepCalculator {
         return Double(cycles) * 1.5 // Each cycle is 1.5 hours
     }
     
-    private func roundToNearestQuarter(_ date: Date) -> Date {
+    private func roundToNearestFiveMinutes(_ date: Date) -> Date {
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         
         guard let minute = components.minute else { return date }
         
-        // Round to nearest 15-minute interval
-        let roundedMinute: Int
-        if minute < 8 {
-            roundedMinute = 0
-        } else if minute < 23 {
-            roundedMinute = 15
-        } else if minute < 38 {
-            roundedMinute = 30
-        } else if minute < 53 {
-            roundedMinute = 45
-        } else {
-            roundedMinute = 0
-            // Need to add an hour if rounding 53+ minutes to next hour
-            var newComponents = components
-            newComponents.minute = roundedMinute
-            newComponents.hour = (components.hour ?? 0) + 1
-            return calendar.date(from: newComponents) ?? date
-        }
+        // Round to nearest 5-minute interval
+        let roundedMinute = ((minute + 2) / 5) * 5
         
         var newComponents = components
-        newComponents.minute = roundedMinute
+        
+        if roundedMinute >= 60 {
+            // Need to add an hour if rounding goes to 60+ minutes
+            newComponents.minute = 0
+            newComponents.hour = (components.hour ?? 0) + 1
+        } else {
+            newComponents.minute = roundedMinute
+        }
+        
         return calendar.date(from: newComponents) ?? date
     }
 }

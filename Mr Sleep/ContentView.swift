@@ -108,7 +108,7 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            Text("Science-based wake-up times for better sleep")
+                            Text("Optimal wake up times")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
@@ -634,92 +634,93 @@ struct OnboardingView: View {
         OnboardingStep(
             icon: "moon.zzz.fill",
             title: "Welcome to Mr Sleep",
-            subtitle: "Your sleep cycle companion",
+            subtitle: "Your sleep companion",
             description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle (instead of in the middle) helps you feel more refreshed and alert.",
             buttonText: "Tell me more"
         ),
         OnboardingStep(
             icon: "clock.fill",
-            title: "Perfect Timing",
-            subtitle: "Science-backed wake times",
+            title: "Wake Up Smarter",
+            subtitle: "Science-based wake times",
             description: "We calculate the best times for you to wake up based on when you plan to sleep. Each suggestion aligns with your natural sleep cycles.",
             buttonText: "How does it work?"
         ),
         OnboardingStep(
             icon: "alarm.fill",
             title: "Set & Sleep",
-            subtitle: "Your path to better mornings",
-            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes. Wake up refreshed instead of groggy!",
+            subtitle: "Your path to ZERO brain-fog",
+            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes. Wake up refreshed instead of tired!",
             buttonText: "Let's sleep better!"
         )
     ]
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Same background as main app
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.1, green: 0.25, blue: 0.5),
-                        Color(red: 0.06, green: 0.15, blue: 0.35),
-                        Color(red: 0.03, green: 0.08, blue: 0.2)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.all) // Ensure it covers the entire screen including safe areas
-                
-                VStack(spacing: 0) {
-                    Spacer()
+        ZStack {
+            // Same background as main app
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.1, green: 0.25, blue: 0.5),
+                    Color(red: 0.06, green: 0.15, blue: 0.35),
+                    Color(red: 0.03, green: 0.08, blue: 0.2)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea(.all)
+            
+            VStack(spacing: 0) {
+                // Fixed content area
+                VStack(spacing: 30) {
+                    // Icon
+                    Image(systemName: currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].icon : "moon.zzz.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        .scaleEffect(1.0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
                     
-                    // Step content with bounds checking
-                    if currentStep >= 0 && currentStep < onboardingSteps.count {
-                        VStack(spacing: 30) {
-                            // Icon
-                            Image(systemName: onboardingSteps[currentStep].icon)
-                                .font(.system(size: 60))
-                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                .scaleEffect(1.0)
-                                .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
-                            
-                            // Title and subtitle
-                            VStack(spacing: 8) {
-                                Text(onboardingSteps[currentStep].title)
-                                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                                    .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                                    .multilineTextAlignment(.center)
-                                
-                                Text(onboardingSteps[currentStep].subtitle)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                    .multilineTextAlignment(.center)
-                            }
-                            
-                            // Description
-                            Text(onboardingSteps[currentStep].description)
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(6)
-                                .padding(.horizontal, 20)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    } else {
-                        // Fallback content for invalid step
-                        VStack {
-                            Image(systemName: "moon.zzz.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                            Text("Loading...")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                        }
+                    // Title and subtitle
+                    VStack(spacing: 8) {
+                        Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].title : "Loading...")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                            .multilineTextAlignment(.center)
+                        
+                        Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : "")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .multilineTextAlignment(.center)
                     }
                     
-                    Spacer()
-                    
-                    // Bottom section
-                    VStack(spacing: 25) {
+                    // Description with fixed frame
+                    Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].description : "")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: 120, alignment: .top) // Fixed minimum height
+                }
+                .frame(maxHeight: .infinity) // Take available space
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = 50
+                            if value.translation.width > threshold && currentStep > 0 {
+                                // Swipe right - go to previous step
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    currentStep -= 1
+                                }
+                            } else if value.translation.width < -threshold && currentStep < onboardingSteps.count - 1 {
+                                // Swipe left - go to next step
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    currentStep += 1
+                                }
+                            }
+                        }
+                )
+                
+                // Bottom section with consistent positioning
+                VStack(spacing: 25) {
                         // Step indicators
                         HStack(spacing: 12) {
                             ForEach(0..<onboardingSteps.count, id: \.self) { index in
@@ -768,27 +769,10 @@ struct OnboardingView: View {
                                     .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 3)
                             )
                         }
-                        
-                        // Skip option (only on first two steps)
-                        if currentStep < onboardingSteps.count - 1 {
-                            Button(action: {
-                                // Skip onboarding - reset states BEFORE dismissal animation
-                                onComplete()
-                                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    showOnboarding = false
-                                }
-                            }) {
-                                Text("Skip")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                            }
-                        }
-                    }
-                    .padding(.bottom, 50)
                 }
-                .padding(.horizontal, 30)
+                .padding(.bottom, 50)
             }
+            .padding(.horizontal, 30)
         }
     }
 }
