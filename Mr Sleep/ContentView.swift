@@ -53,6 +53,7 @@ struct ContentView: View {
                                     .resizable()
                                     .frame(width: 72, height: 72)
                                     .accessibilityLabel("Moon icon")
+                                    .accessibilityHidden(true)
                                 Text("Mr Sleep")
                                     .font(.system(size: 36, weight: .medium, design: .rounded))
                                     .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
@@ -69,7 +70,8 @@ struct ContentView: View {
                             }
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Mr Sleep app title with sleeping Z Z Z")
+                        .accessibilityLabel("Mr Sleep app title")
+                        .accessibilityAddTraits(.isHeader)
                         .opacity(contentOpacity)
                         .offset(y: titleOffset)
                         
@@ -80,6 +82,7 @@ struct ContentView: View {
                             Text("Current Time")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                .accessibilityHidden(true)
                             
                             Text(getCurrentTime())
                                 .font(.system(size: 24, weight: .semibold, design: .rounded))
@@ -88,10 +91,12 @@ struct ContentView: View {
                                 .opacity(timeAnimationTrigger ? 0.7 : 1.0)
                                 .offset(y: timeAnimationTrigger ? -2 : 0)
                                 .animation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0), value: timeAnimationTrigger)
+                                .accessibilityHidden(true)
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Current time is \(getCurrentTime())")
-                        .accessibilityAddTraits(.updatesFrequently)
+                        .accessibilityAddTraits([.updatesFrequently, .playsSound])
+                        .accessibilityValue(getCurrentTime())
                         .opacity(contentOpacity)
                         .offset(y: timeOffset)
                         
@@ -101,6 +106,7 @@ struct ContentView: View {
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                                 .multilineTextAlignment(.center)
+                                .accessibilityAddTraits(.isHeader)
                             
                             Text("Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired.")
                                 .font(.system(size: 16, weight: .medium))
@@ -114,14 +120,19 @@ struct ContentView: View {
                                 .opacity(0.9)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired. Pick a wake-up time and set your alarm.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired. Optimal wake up times are calculated below.")
                         .accessibilityAddTraits(.isHeader)
+                        .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
                         
                         // Wake up times or loading animation
                         if isCalculatingWakeUpTimes {
                             CalculatingWakeUpTimesView(progress: calculationProgress)
                                 .padding(.horizontal, 20)
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Calculating wake-up times")
+                                .accessibilityValue("\(Int(calculationProgress * 100)) percent complete")
+                                .accessibilityAddTraits(.updatesFrequently)
                         } else {
                             // All wake up times - single column layout with staggered animations
                             VStack(spacing: 12) {
@@ -146,7 +157,8 @@ struct ContentView: View {
                             }
                             .padding(.horizontal, 20)
                             .accessibilityElement(children: .contain)
-                            .accessibilityLabel("Wake-up time options")
+                            .accessibilityLabel("Wake-up time options. Six sleep cycle options available.")
+                            .accessibilityHint("Swipe right on each option to activate. First two options are recommended for optimal sleep.")
                         }
                         
                         Spacer()
@@ -430,12 +442,16 @@ struct SleepGuideView: View {
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
                     }
+                    .accessibilityLabel("Close sleep guide")
+                    .accessibilityHint("Double tap to return to main screen")
+                    .accessibilityAddTraits(.isButton)
                     
                     Spacer()
                     
                     Text("Sleep Cycle Guide")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     
@@ -509,10 +525,12 @@ struct SleepGuideView: View {
                     .font(.system(size: 24))
                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                     .frame(width: 30)
+                    .accessibilityHidden(true)
                 
                 Text(title)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
             }
@@ -532,6 +550,8 @@ struct SleepGuideView: View {
                         .stroke(Color.white.opacity(0.15), lineWidth: 1)
                 )
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(content)")
     }
 }
 
@@ -620,8 +640,9 @@ struct WakeUpTimeButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel("Wake up at \(time), \(duration)\(isRecommended ? ", recommended time" : "")")
-        .accessibilityHint("Tap to get instructions for setting an alarm")
-        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Double tap to get instructions for setting an alarm")
+        .accessibilityAddTraits([.isButton])
+        .accessibility(value: Text("\(cycles) sleep cycles"))
     }
 }
 
@@ -677,6 +698,7 @@ struct OnboardingView: View {
                         .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                         .scaleEffect(1.0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
+                        .accessibilityHidden(true)
                     
                     // Title and subtitle
                     VStack(spacing: 8) {
@@ -684,6 +706,7 @@ struct OnboardingView: View {
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                             .multilineTextAlignment(.center)
+                            .accessibilityAddTraits(.isHeader)
                         
                         Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : "")
                             .font(.system(size: 16, weight: .medium))
@@ -701,6 +724,9 @@ struct OnboardingView: View {
                         .frame(minHeight: 120, alignment: .top) // Fixed minimum height
                 }
                 .frame(maxHeight: .infinity) // Take available space
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].title : "Loading"). \(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : ""). \(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].description : "")")
+                .accessibilityHint("Swipe left or right to navigate between steps")
                 .gesture(
                     DragGesture()
                         .onEnded { value in
@@ -769,6 +795,9 @@ struct OnboardingView: View {
                                     .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 3)
                             )
                         }
+                        .accessibilityLabel(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].buttonText : "Continue")
+                        .accessibilityHint(currentStep < onboardingSteps.count - 1 ? "Double tap to continue to next step" : "Double tap to complete onboarding and start using the app")
+                        .accessibilityAddTraits(.isButton)
                 }
                 .padding(.bottom, 50)
             }
@@ -857,6 +886,7 @@ struct CalculatingWakeUpTimesView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                 .opacity(0.8)
+                .accessibilityHidden(true)
         }
         .frame(height: 140)
         .onAppear {
@@ -898,15 +928,20 @@ struct AlarmInstructionsModal: View {
                 VStack(spacing: 8) {
                     Text("⏰")
                         .font(.system(size: 48))
+                        .accessibilityLabel("Alarm clock")
                     
                     Text("Set Your Alarm")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                        .accessibilityAddTraits(.isHeader)
                     
                     Text("Wake up at \(wakeUpTime)")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Set Your Alarm. Wake up at \(wakeUpTime)")
+                .accessibilityAddTraits(.isHeader)
                 
                 // Instructions
                 VStack(alignment: .leading, spacing: 16) {
@@ -944,6 +979,8 @@ struct AlarmInstructionsModal: View {
                     }
                 }
                 .padding(.horizontal, 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Instructions for setting alarm. Step 1: Open the Clock app on your iPhone. Step 2: Tap the plus button to add a new alarm. Step 3: Set the time to \(wakeUpTime) and save.")
                 
                 // Sleep tip
                 VStack(spacing: 8) {
@@ -979,6 +1016,9 @@ struct AlarmInstructionsModal: View {
                                 .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
                         )
                 }
+                .accessibilityLabel("Got it")
+                .accessibilityHint("Double tap to close this dialog and return to main screen")
+                .accessibilityAddTraits(.isButton)
             }
             .padding(24)
             .background(
