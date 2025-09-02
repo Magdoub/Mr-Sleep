@@ -125,13 +125,13 @@ struct ContentView: View {
                             }
                             .padding(.horizontal)
                             
-                            Text("All these times are optimal wake-up times")
+                            Text("Here are your optimal wake-up times")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. All these times are optimal wake-up times.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. Here are your optimal wake-up times.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
