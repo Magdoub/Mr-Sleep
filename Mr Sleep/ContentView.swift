@@ -156,19 +156,19 @@ struct ContentView: View {
                                                 Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
                                                     .font(.system(size: 16, weight: .medium))
                                                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                    .frame(width: 16) // Fixed width for icon alignment
                                                 
-                                                Text("\(categoryData.category) \(getCategoryDurationRange(categoryData.category))")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(categoryData.category)
+                                                        .font(.system(size: 16, weight: .semibold))
+                                                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                    
+                                                    Text(getCategoryTagline(categoryData.category))
+                                                        .font(.system(size: 13, weight: .medium))
+                                                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                                                        .multilineTextAlignment(.leading)
+                                                }
                                                 
-                                                Spacer()
-                                            }
-                                            
-                                            HStack {
-                                                Text(getCategoryTagline(categoryData.category))
-                                                    .font(.system(size: 13, weight: .medium))
-                                                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                                                    .multilineTextAlignment(.leading)
                                                 Spacer()
                                             }
                                         }
@@ -510,22 +510,9 @@ struct ContentView: View {
         return formattedTime.isEmpty ? "12:00 AM" : formattedTime
     }
     
-    private func getCategoryDurationRange(_ category: String) -> String {
-        switch category {
-        case "Power Nap":
-            return "(1.5h - 3h)"
-        case "Recovery":
-            return "(4.5h - 6h)"
-        case "Full Recharge":
-            return "(7.5h - 9h)"
-        default:
-            return ""
-        }
-    }
-    
     private func getCategoryTagline(_ category: String) -> String {
         switch category {
-        case "Power Nap":
+        case "Quick Boost":
             return "Recharge fast without feeling like a zombie"
         case "Recovery":
             return "Enough to reset your mind and body"

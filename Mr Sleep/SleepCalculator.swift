@@ -54,7 +54,7 @@ class SleepCalculator {
     func getCategoryForCycles(_ cycles: Int) -> String {
         switch cycles {
         case 1...2:
-            return "Power Nap"
+            return "Quick Boost"
         case 3...4:
             return "Recovery"
         case 5...:
@@ -66,7 +66,7 @@ class SleepCalculator {
     
     func getCategoryIcon(_ category: String) -> String {
         switch category {
-        case "Power Nap":
+        case "Quick Boost":
             return "powersleep"
         case "Recovery":
             return "heart.fill"
@@ -94,7 +94,7 @@ class SleepCalculator {
         }
         
         // Return in desired order with times sorted by cycles ascending within each category
-        let categoryOrder = ["Power Nap", "Recovery", "Full Recharge"]
+        let categoryOrder = ["Quick Boost", "Recovery", "Full Recharge"]
         return categoryOrder.compactMap { category in
             guard let times = categorizedTimes[category], !times.isEmpty else { return nil }
             let sortedTimes = times.sorted { $0.cycles < $1.cycles }
