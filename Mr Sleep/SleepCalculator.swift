@@ -51,6 +51,43 @@ class SleepCalculator {
         return Double(cycles) * 1.5 // Each cycle is 1.5 hours
     }
     
+    func getCategoryForCycles(_ cycles: Int) -> String {
+        switch cycles {
+        case 1...2:
+            return "Power Nap"
+        case 3...5:
+            return "Recovery"
+        case 6...:
+            return "Full Recharge"
+        default:
+            return "Recovery"
+        }
+    }
+    
+    func getCategorizedWakeUpTimes() -> [(category: String, times: [(time: Date, cycles: Int)])] {
+        let allTimes = calculateWakeUpTimes()
+        let sleepCycles = [4, 5, 3, 2, 1, 6]
+        
+        var categorizedTimes: [String: [(time: Date, cycles: Int)]] = [:]
+        
+        for (index, time) in allTimes.enumerated() {
+            let cycles = sleepCycles[index]
+            let category = getCategoryForCycles(cycles)
+            
+            if categorizedTimes[category] == nil {
+                categorizedTimes[category] = []
+            }
+            categorizedTimes[category]?.append((time: time, cycles: cycles))
+        }
+        
+        // Return in desired order
+        let categoryOrder = ["Power Nap", "Recovery", "Full Recharge"]
+        return categoryOrder.compactMap { category in
+            guard let times = categorizedTimes[category], !times.isEmpty else { return nil }
+            return (category: category, times: times)
+        }
+    }
+    
     private func roundToNearestFiveMinutes(_ date: Date) -> Date {
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)

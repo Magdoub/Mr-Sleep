@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var wakeUpTimes: [Date] = []
+    @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
     @State private var timeAnimationTrigger = false
@@ -114,13 +114,13 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            Text("Optimal wake up times")
+                            Text("All these times are good wake-up times")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired. Optimal wake up times are calculated below.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired. All these times are good wake-up times.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
@@ -134,31 +134,43 @@ struct ContentView: View {
                                 .accessibilityValue("\(Int(calculationProgress * 100)) percent complete")
                                 .accessibilityAddTraits(.updatesFrequently)
                         } else {
-                            // All wake up times - single column layout with staggered animations
-                            VStack(spacing: 12) {
-                                ForEach(Array(wakeUpTimes.prefix(6).enumerated()), id: \.offset) { index, time in
-                                    let cycles = [4, 5, 3, 2, 1, 6][index] // Custom order as requested
-                                    WakeUpTimeButton(
-                                        time: SleepCalculator.shared.formatTime(time),
-                                        duration: formatSleepDuration(cycles: cycles),
-                                        isRecommended: index < 2 && index >= 0, // First two are recommended
-                                        cycles: cycles,
-                                        pulseScale: 1.0,
-                                        action: {
-                                            selectedWakeUpTime = SleepCalculator.shared.formatTime(time)
-                                            showAlarmInstructions = true
+                            // Categorized wake up times
+                            VStack(spacing: 20) {
+                                ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
+                                    VStack(spacing: 12) {
+                                        // Category header
+                                        Text(categoryData.category)
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .accessibilityAddTraits(.isHeader)
+                                        
+                                        // Times in this category
+                                        ForEach(Array(categoryData.times.enumerated()), id: \.offset) { timeIndex, timeData in
+                                            let overallIndex = getOverallIndex(categoryIndex: categoryIndex, timeIndex: timeIndex)
+                                            WakeUpTimeButton(
+                                                time: SleepCalculator.shared.formatTime(timeData.time),
+                                                duration: formatSleepDuration(cycles: timeData.cycles),
+                                                isRecommended: false, // Remove recommended highlighting
+                                                cycles: timeData.cycles,
+                                                pulseScale: 1.0,
+                                                action: {
+                                                    selectedWakeUpTime = SleepCalculator.shared.formatTime(timeData.time)
+                                                    showAlarmInstructions = true
+                                                }
+                                            )
+                                            .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
+                                            .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
+                                            .offset(y: overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : 20)
+                                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(Double(overallIndex) * 0.15), value: overallIndex < wakeUpTimeVisibility.count ? wakeUpTimeVisibility[overallIndex] : false)
                                         }
-                                    )
-                                    .opacity(wakeUpTimeVisibility[index] ? 1.0 : 0.0)
-                                    .scaleEffect(wakeUpTimeVisibility[index] ? 1.0 : 0.8)
-                                    .offset(y: wakeUpTimeVisibility[index] ? 0 : 20)
-                                    .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(Double(index) * 0.15), value: wakeUpTimeVisibility[index])
+                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
                             .accessibilityElement(children: .contain)
-                            .accessibilityLabel("Wake-up time options. Six sleep cycle options available.")
-                            .accessibilityHint("Swipe right on each option to activate. First two options are recommended for optimal sleep.")
+                            .accessibilityLabel("Wake-up time options grouped by category.")
+                            .accessibilityHint("Swipe right on each option to activate.")
                         }
                         
                         Spacer()
@@ -245,7 +257,15 @@ struct ContentView: View {
     }
     
     private func calculateWakeUpTimes() {
-        wakeUpTimes = SleepCalculator.shared.calculateWakeUpTimes()
+        categorizedWakeUpTimes = SleepCalculator.shared.getCategorizedWakeUpTimes()
+    }
+    
+    private func getOverallIndex(categoryIndex: Int, timeIndex: Int) -> Int {
+        var totalIndex = 0
+        for i in 0..<categoryIndex {
+            totalIndex += categorizedWakeUpTimes[i].times.count
+        }
+        return totalIndex + timeIndex
     }
     
     private func createAlarm(for wakeUpTime: Date) {
@@ -584,7 +604,7 @@ struct WakeUpTimeButton: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(time)
                         .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundColor(isRecommended ? Color(red: 1.0, green: 0.85, blue: 0.3) : Color(red: 0.95, green: 0.95, blue: 0.98))
+                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                     
                     Text(duration)
                         .font(.system(size: 12, weight: .regular))
@@ -593,20 +613,8 @@ struct WakeUpTimeButton: View {
                 
                 Spacer()
                 
-                // Tags section - show recommended and/or custom tags
+                // Custom tags only (no recommended tags)
                 VStack(alignment: .trailing, spacing: 4) {
-                    if isRecommended {
-                        Text("★ RECOMMENDED")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.15))
-                            )
-                    }
-                    
                     if let customTag = getCustomTag(for: cycles) {
                         HStack(spacing: 4) {
                             Image(systemName: customTag.icon)
@@ -639,7 +647,7 @@ struct WakeUpTimeButton: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .accessibilityLabel("Wake up at \(time), \(duration)\(isRecommended ? ", recommended time" : "")")
+        .accessibilityLabel("Wake up at \(time), \(duration)")
         .accessibilityHint("Double tap to get instructions for setting an alarm")
         .accessibilityAddTraits([.isButton])
         .accessibility(value: Text("\(cycles) sleep cycles"))
