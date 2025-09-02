@@ -106,7 +106,7 @@ struct ContentView: View {
                         
                         // Sleep message
                         VStack(spacing: 12) {
-                            Text("Sleep Now . Wake up like boss")
+                            Text("Sleep Now . Wake up Like a Boss")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                                 .multilineTextAlignment(.center)
@@ -118,7 +118,7 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            Text("Set your alarm for a wake up time that suits you")
+                            Text("Set your alarm for a wake up time")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .multilineTextAlignment(.center)
