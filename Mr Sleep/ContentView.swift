@@ -575,7 +575,6 @@ struct WakeUpTimeButton: View {
     let pulseScale: Double
     let action: () -> Void
     
-    
     var body: some View {
         Button(action: action) {
             HStack {
