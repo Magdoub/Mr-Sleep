@@ -151,26 +151,24 @@ struct ContentView: View {
                                 ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
                                     VStack(spacing: 12) {
                                         // Category header with icon and tagline
-                                        VStack(spacing: 4) {
-                                            HStack(spacing: 8) {
-                                                Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
-                                                    .font(.system(size: 16, weight: .medium))
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                .frame(width: 16) // Fixed width for icon alignment
+                                            
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(categoryData.category)
+                                                    .font(.system(size: 16, weight: .semibold))
                                                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                                    .frame(width: 16) // Fixed width for icon alignment
                                                 
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(categoryData.category)
-                                                        .font(.system(size: 16, weight: .semibold))
-                                                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                                    
-                                                    Text(getCategoryTagline(categoryData.category))
-                                                        .font(.system(size: 13, weight: .medium))
-                                                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                                                        .multilineTextAlignment(.leading)
-                                                }
-                                                
-                                                Spacer()
+                                                Text(getCategoryTagline(categoryData.category))
+                                                    .font(.system(size: 13, weight: .medium))
+                                                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                                                    .multilineTextAlignment(.leading)
                                             }
+                                            
+                                            Spacer()
                                         }
                                         .accessibilityAddTraits(.isHeader)
                                         .opacity(categoryHeadersVisible ? 1.0 : 0.0)
@@ -192,6 +190,7 @@ struct ContentView: View {
                                                     showAlarmInstructions = true
                                                 }
                                             )
+                                            .padding(.leading, 24) // Align with category text (icon width 16 + spacing 8)
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
                                             .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
                                             .offset(y: overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : 20)
