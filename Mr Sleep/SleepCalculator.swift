@@ -71,7 +71,7 @@ class SleepCalculator {
         case "Recovery":
             return "heart.fill"
         case "Full Recharge":
-            return "battery.100.bolt"
+            return "battery.100"
         default:
             return "moon.fill"
         }
