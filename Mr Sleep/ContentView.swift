@@ -12,12 +12,8 @@ struct ContentView: View {
     @State private var contentOpacity: Double = 0
     @State private var titleOffset: CGFloat = -50
     @State private var timeOffset: CGFloat = 30
-    @State private var titleTextOpacity: Double = 0
-    @State private var titleTextOffset: CGFloat = 20
-    @State private var descriptionOpacity: Double = 0
-    @State private var descriptionOffset: CGFloat = 20
-    @State private var subTextOpacity: Double = 0
-    @State private var subTextOffset: CGFloat = 20
+    @State private var messageOpacity: Double = 0
+    @State private var messageOffset: CGFloat = 20
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [1.0, 0.8, 0.6]
     @State private var breathingScale: Double = 1.0
@@ -108,32 +104,36 @@ struct ContentView: View {
                         .opacity(contentOpacity)
                         .offset(y: timeOffset)
                         
-                        // Sleep message with individual animations
+                        // Sleep message
                         VStack(spacing: 12) {
                             Text("Wake Up Like A Boss")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
-                                .opacity(titleTextOpacity)
-                                .offset(y: titleTextOffset)
                             
-                            Text("Sleep now and wake up at these times.")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                                .opacity(descriptionOpacity)
-                                .offset(y: descriptionOffset)
+                            VStack(spacing: 4) {
+                                Text("Sleep now and wake up at these times.")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("You will feel refreshed and not tired")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal)
                             
                             Text("All these times are optimal wake-up times")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                .opacity(0.9 * subTextOpacity)
-                                .offset(y: subTextOffset)
+                                .opacity(0.9)
                         }
+                        .opacity(messageOpacity)
+                        .offset(y: messageOffset)
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. All these times are optimal wake-up times.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. All these times are optimal wake-up times.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
@@ -333,32 +333,19 @@ struct ContentView: View {
             timeOffset = 0
         }
         
-        // Phase 3: Message text appears with staggered animation
-        // "Wake Up Like A Boss" (0.5s)
+        // Phase 3: Message text appears (0.5s)
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.5)) {
-            titleTextOpacity = 1.0
-            titleTextOffset = 0
+            messageOpacity = 1.0
+            messageOffset = 0
         }
         
-        // "Sleep now and wake up at these times." (0.8s)
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.8)) {
-            descriptionOpacity = 1.0
-            descriptionOffset = 0
-        }
-        
-        // "All these times are optimal wake-up times" (1.1s)
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(1.1)) {
-            subTextOpacity = 1.0
-            subTextOffset = 0
-        }
-        
-        // Phase 4: Start calculating animation (1.8s delay - time to read all messages)
+        // Phase 4: Start calculating animation (1.0s delay - more time to read message)
         startCalculatingAnimation()
     }
     
     private func startCalculatingAnimation() {
-        // Start calculating state after all message text appears (1.8s delay)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+        // Start calculating state after message text appears (1.2s delay)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isCalculatingWakeUpTimes = true
             }
@@ -445,12 +432,8 @@ struct ContentView: View {
         contentOpacity = 0.0
         titleOffset = -50
         timeOffset = 30
-        titleTextOpacity = 0.0
-        titleTextOffset = 20
-        descriptionOpacity = 0.0
-        descriptionOffset = 20
-        subTextOpacity = 0.0
-        subTextOffset = 20
+        messageOpacity = 0.0
+        messageOffset = 20
         
         // Start the complete entrance sequence immediately (no delay)
         startEntranceAnimation()
