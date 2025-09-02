@@ -150,17 +150,27 @@ struct ContentView: View {
                             VStack(spacing: 20) {
                                 ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
                                     VStack(spacing: 12) {
-                                        // Category header with icon
-                                        HStack(spacing: 8) {
-                                            Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
-                                                .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                        // Category header with icon and tagline
+                                        VStack(spacing: 4) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
+                                                    .font(.system(size: 16, weight: .medium))
+                                                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                
+                                                Text("\(categoryData.category) \(getCategoryDurationRange(categoryData.category))")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                
+                                                Spacer()
+                                            }
                                             
-                                            Text("\(categoryData.category) \(getCategoryDurationRange(categoryData.category))")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                            
-                                            Spacer()
+                                            HStack {
+                                                Text(getCategoryTagline(categoryData.category))
+                                                    .font(.system(size: 13, weight: .medium))
+                                                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                                                    .multilineTextAlignment(.leading)
+                                                Spacer()
+                                            }
                                         }
                                         .accessibilityAddTraits(.isHeader)
                                         .opacity(categoryHeadersVisible ? 1.0 : 0.0)
@@ -508,6 +518,19 @@ struct ContentView: View {
             return "(4.5h - 6h)"
         case "Full Recharge":
             return "(7.5h - 9h)"
+        default:
+            return ""
+        }
+    }
+    
+    private func getCategoryTagline(_ category: String) -> String {
+        switch category {
+        case "Power Nap":
+            return "Recharge fast without feeling like a zombie"
+        case "Recovery":
+            return "Enough to reset your mind and body"
+        case "Full Recharge":
+            return "Wake up fully restored and ready"
         default:
             return ""
         }
