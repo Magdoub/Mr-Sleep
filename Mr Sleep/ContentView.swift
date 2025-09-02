@@ -46,9 +46,9 @@ struct ContentView: View {
                 } else if showSleepGuide {
                     SleepGuideView(showSleepGuide: $showSleepGuide)
                 } else {
-                    ScrollView {
+                    ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 25) {
-                        Spacer()
+                            Spacer(minLength: 20)
                         
                         // App Title with animated moon and floating zzz
                         HStack(spacing: 15) {
@@ -94,7 +94,9 @@ struct ContentView: View {
                                 .offset(y: timeAnimationTrigger ? -2 : 0)
                                 .animation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0), value: timeAnimationTrigger)
                                 .accessibilityHidden(true)
+                                .frame(minWidth: 120) // Fixed width to prevent layout shifts
                         }
+                        .frame(maxWidth: .infinity) // Center the VStack
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Current time is \(getCurrentTime())")
                         .accessibilityAddTraits([.updatesFrequently, .playsSound])
@@ -137,6 +139,7 @@ struct ContentView: View {
                         // Wake up times or loading animation
                         if isCalculatingWakeUpTimes {
                             CalculatingWakeUpTimesView(progress: calculationProgress)
+                                .frame(maxWidth: .infinity) // Center the loading view
                                 .padding(.horizontal, 20)
                                 .accessibilityElement(children: .combine)
                                 .accessibilityLabel("Calculating wake-up times")
@@ -144,6 +147,7 @@ struct ContentView: View {
                                 .accessibilityAddTraits(.updatesFrequently)
                         } else if isFinishingUp {
                             FinishingUpView()
+                                .frame(maxWidth: .infinity) // Center the finishing up view
                                 .padding(.horizontal, 20)
                                 .accessibilityElement(children: .combine)
                                 .accessibilityLabel("Finishing up calculation")
@@ -203,6 +207,7 @@ struct ContentView: View {
                         
                         Spacer()
                         }
+                        .frame(maxWidth: .infinity) // Ensure full width centering
                         .scaleEffect(breathingScale)
                         .animation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
                         .padding()
