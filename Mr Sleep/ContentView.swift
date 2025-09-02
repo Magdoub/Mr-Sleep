@@ -648,8 +648,20 @@ struct WakeUpTimeButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                // Left side - Total Sleep and Sleep Cycle
-                VStack(alignment: .leading, spacing: 8) {
+                // Left side - Wake Up Time
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Wake Up Time")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                    Text(wakeUpTime)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                }
+                
+                Spacer()
+                
+                // Right side - Total Sleep and Sleep Cycle (side by side)
+                HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Total Sleep")
                             .font(.system(size: 12, weight: .medium))
@@ -667,18 +679,6 @@ struct WakeUpTimeButton: View {
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
                     }
-                }
-                
-                Spacer()
-                
-                // Right side - Wake Up Time
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Wake Up Time")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                    Text(wakeUpTime)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                 }
             }
             .frame(maxWidth: .infinity)
