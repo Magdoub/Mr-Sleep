@@ -108,11 +108,18 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
                             
-                            Text("Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired.")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
+                            VStack(spacing: 4) {
+                                Text("Sleep now and wake up at these times.")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("You will feel refreshed and not tired")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal)
                             
                             Text("All these times are good wake-up times")
                                 .font(.system(size: 14, weight: .medium))
@@ -120,7 +127,7 @@ struct ContentView: View {
                                 .opacity(0.9)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at the end of a complete sleep cycle to avoid feeling tired. All these times are good wake-up times.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. All these times are good wake-up times.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
