@@ -55,12 +55,25 @@ class SleepCalculator {
         switch cycles {
         case 1...2:
             return "Power Nap"
-        case 3...5:
+        case 3...4:
             return "Recovery"
-        case 6...:
+        case 5...:
             return "Full Recharge"
         default:
             return "Recovery"
+        }
+    }
+    
+    func getCategoryIcon(_ category: String) -> String {
+        switch category {
+        case "Power Nap":
+            return "powersleep"
+        case "Recovery":
+            return "heart.fill"
+        case "Full Recharge":
+            return "battery.100"
+        default:
+            return "moon.fill"
         }
     }
     

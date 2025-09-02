@@ -138,12 +138,19 @@ struct ContentView: View {
                             VStack(spacing: 20) {
                                 ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
                                     VStack(spacing: 12) {
-                                        // Category header
-                                        Text(categoryData.category)
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .accessibilityAddTraits(.isHeader)
+                                        // Category header with icon
+                                        HStack(spacing: 8) {
+                                            Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                            
+                                            Text(categoryData.category)
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                            
+                                            Spacer()
+                                        }
+                                        .accessibilityAddTraits(.isHeader)
                                         
                                         // Times in this category
                                         ForEach(Array(categoryData.times.enumerated()), id: \.offset) { timeIndex, timeData in
@@ -402,17 +409,20 @@ struct ContentView: View {
     
     private func formatSleepDuration(cycles: Int) -> String {
         let hours = Double(cycles) * 1.5
-        let cycleText = cycles == 1 ? "cycle" : "cycles"
+        let cycleText = cycles == 1 ? "sleep cycle" : "sleep cycles"
         
         if hours == floor(hours) {
-            return "\(Int(hours)) hours • \(cycles) \(cycleText)"
+            let hoursInt = Int(hours)
+            let hoursText = hoursInt == 1 ? "hour of sleep" : "hours of sleep"
+            return "\(hoursInt) \(hoursText) • \(cycles) \(cycleText)"
         } else {
             let wholeHours = Int(hours)
             let minutes = Int((hours - Double(wholeHours)) * 60)
             if wholeHours == 0 {
-                return "\(minutes) mins • \(cycles) \(cycleText)"
+                return "\(minutes) mins of sleep • \(cycles) \(cycleText)"
             } else {
-                return "\(wholeHours)h \(minutes)m • \(cycles) \(cycleText)"
+                let hoursText = wholeHours == 1 ? "hour" : "hours"
+                return "\(wholeHours)h \(minutes)m of sleep • \(cycles) \(cycleText)"
             }
         }
     }
