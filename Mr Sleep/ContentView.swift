@@ -172,10 +172,9 @@ struct ContentView: View {
                                                 }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
-                                            .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.85)
-                                            .offset(y: overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : 30)
-                                            .rotationEffect(.degrees(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : -2))
-                                            .animation(.interpolatingSpring(stiffness: 300, damping: 25).delay(Double(overallIndex) * 0.1), value: overallIndex < wakeUpTimeVisibility.count ? wakeUpTimeVisibility[overallIndex] : false)
+                                            .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
+                                            .offset(y: overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : 20)
+                                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(Double(overallIndex) * 0.15), value: overallIndex < wakeUpTimeVisibility.count ? wakeUpTimeVisibility[overallIndex] : false)
                                         }
                                     }
                                 }
@@ -576,8 +575,6 @@ struct WakeUpTimeButton: View {
     let pulseScale: Double
     let action: () -> Void
     
-    @State private var isPressed = false
-    
     
     var body: some View {
         Button(action: action) {
@@ -605,15 +602,9 @@ struct WakeUpTimeButton: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(isPressed ? 0.1 : 0.05), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 2)
             )
-            .scaleEffect(isPressed ? 0.96 : 1.0)
-            .animation(.interpolatingSpring(stiffness: 400, damping: 20), value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
-        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            isPressed = pressing
-        }, perform: {})
         .accessibilityLabel("Wake up at \(time), \(duration)")
         .accessibilityHint("Double tap to get instructions for setting an alarm")
         .accessibilityAddTraits([.isButton])
