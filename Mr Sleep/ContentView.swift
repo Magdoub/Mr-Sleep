@@ -190,7 +190,6 @@ struct ContentView: View {
                                                     showAlarmInstructions = true
                                                 }
                                             )
-                                            .padding(.leading, 24) // Align with category text (icon width 16 + spacing 8)
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
                                             .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
                                             .offset(y: overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 0 : 20)
