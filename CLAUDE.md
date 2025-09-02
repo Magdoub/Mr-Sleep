@@ -75,14 +75,17 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 ## Git Workflow
 
 ### Repository Information
+- **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep/.git`
 - **Remote Repository**: https://github.com/Magdoub/Mr-Sleep
 - **Automated Commits**: Claude Code automatically commits all changes
 
 ### Commit Strategy
-- **REQUIRED**: Every edit/change must be committed to git
-- Use descriptive commit messages explaining the purpose of changes
-- Always commit changes after completing any modification
-- Include Claude Code attribution in commit messages
+- **REQUIRED**: Every edit/change must be committed to git immediately after completion
+- **MANDATORY**: Create a git commit with clear, descriptive commit messages for every change
+- Commit messages should explain what was changed and why
+- Always commit changes after completing any modification - no exceptions
+- Include Claude Code attribution in all commit messages
+- Use present tense and imperative mood (e.g., "Add feature X", "Fix bug in Y", "Update Z configuration")
 
 ## Development Notes
 
