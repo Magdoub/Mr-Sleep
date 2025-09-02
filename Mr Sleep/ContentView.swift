@@ -411,10 +411,25 @@ struct ContentView: View {
     private func triggerCompletionMicroInteraction() {
         // Haptic feedback - gentle success notification
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.prepare() // Prepare for better performance
         impactFeedback.impactOccurred()
         
-        // Relaxing completion sound using system sounds
-        AudioServicesPlaySystemSound(1057) // Gentle notification sound
+        // Alternative: Use notification feedback for success
+        // let notificationFeedback = UINotificationFeedbackGenerator()
+        // notificationFeedback.prepare()
+        // notificationFeedback.notificationOccurred(.success)
+        
+        // Relaxing completion sound - try different system sounds:
+        AudioServicesPlaySystemSound(1057) // Current: Gentle notification
+        
+        // Other smooth sound alternatives (replace 1057 with any of these):
+        // AudioServicesPlaySystemSound(1052) // Very soft chime
+        // AudioServicesPlaySystemSound(1054) // Soft bell
+        // AudioServicesPlaySystemSound(1055) // Gentle ping
+        // AudioServicesPlaySystemSound(1106) // Camera shutter (subtle)
+        // AudioServicesPlaySystemSound(1003) // SMS received (soft)
+        // AudioServicesPlaySystemSound(1014) // Very gentle notification
+        // AudioServicesPlaySystemSound(1016) // Soft success tone
     }
     
     private func startPostOnboardingLoading() {
