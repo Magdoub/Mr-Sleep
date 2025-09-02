@@ -523,7 +523,7 @@ struct ContentView: View {
     private func getCategoryIconImage(for category: String) -> some View {
         let iconName = SleepCalculator.shared.getCategoryIcon(category)
         
-        if iconName.contains("-3d-icon") {
+        if iconName.contains("-3D-icon") {
             // Custom 3D icon from assets
             Image(iconName)
                 .resizable()
