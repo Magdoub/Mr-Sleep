@@ -420,7 +420,7 @@ struct ContentView: View {
         // notificationFeedback.notificationOccurred(.success)
         
         // Relaxing completion sound - try different system sounds:
-        AudioServicesPlaySystemSound(1014) // Very gentle notification
+        AudioServicesPlaySystemSound(1057) // Gentle notification beep
         
         // Other smooth sound alternatives (replace 1057 with any of these):
         // AudioServicesPlaySystemSound(1052) // Very soft chime
