@@ -151,11 +151,11 @@ struct ContentView: View {
                                 ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
                                     VStack(spacing: 12) {
                                         // Category header with icon and tagline
-                                        HStack(alignment: .top, spacing: 8) {
+                                        HStack(alignment: .center, spacing: 12) {
                                             Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
-                                                .font(.system(size: 16, weight: .medium))
+                                                .font(.system(size: 24, weight: .medium))
                                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                                .frame(width: 16) // Fixed width for icon alignment
+                                                .frame(width: 24, height: 24) // Fixed size for icon alignment
                                             
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(categoryData.category)

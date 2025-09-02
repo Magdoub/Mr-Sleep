@@ -67,11 +67,11 @@ class SleepCalculator {
     func getCategoryIcon(_ category: String) -> String {
         switch category {
         case "Quick Boost":
-            return "powersleep"
+            return "bolt.fill"
         case "Recovery":
             return "heart.fill"
         case "Full Recharge":
-            return "battery.100"
+            return "battery.100.bolt"
         default:
             return "moon.fill"
         }
