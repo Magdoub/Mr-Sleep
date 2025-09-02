@@ -93,11 +93,12 @@ class SleepCalculator {
             categorizedTimes[category]?.append((time: time, cycles: cycles))
         }
         
-        // Return in desired order
+        // Return in desired order with times sorted by cycles ascending within each category
         let categoryOrder = ["Power Nap", "Recovery", "Full Recharge"]
         return categoryOrder.compactMap { category in
             guard let times = categorizedTimes[category], !times.isEmpty else { return nil }
-            return (category: category, times: times)
+            let sortedTimes = times.sorted { $0.cycles < $1.cycles }
+            return (category: category, times: sortedTimes)
         }
     }
     

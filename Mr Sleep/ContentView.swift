@@ -112,14 +112,26 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
                             
-                            Text("Sleep now and set your alarm on any of these times")
-                                .font(.system(size: 16, weight: .medium))
+                            VStack(spacing: 4) {
+                                Text("Sleep now and wake up at these times.")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("You will feel refreshed and not tired")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal)
+                            
+                            Text("Set your alarm for a Wake up time. Sleep now")
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and set your alarm on any of these times.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. Set your alarm for a Wake up time. Sleep now.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
