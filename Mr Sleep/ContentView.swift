@@ -670,21 +670,21 @@ struct OnboardingView: View {
             icon: "moon.zzz.fill",
             title: "Welcome to Mr Sleep",
             subtitle: "Your sleep companion",
-            description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle (instead of in the middle) helps you feel more refreshed and alert.",
+            description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle helps you feel refreshed.",
             buttonText: "Tell me more"
         ),
         OnboardingStep(
             icon: "clock.fill",
             title: "Wake Up Smarter",
             subtitle: "Science-based wake times",
-            description: "We calculate the best times for you to wake up based on when you plan to sleep. Each suggestion aligns with your natural sleep cycles.",
+            description: "We calculate the best times for you to wake up based on when you plan to sleep.",
             buttonText: "How does it work?"
         ),
         OnboardingStep(
             icon: "alarm.fill",
             title: "Set & Sleep",
-            subtitle: "Your path to ZERO brain-fog",
-            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes. Wake up refreshed instead of tired!",
+            subtitle: "Your path to ZERO brain fog",
+            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes.",
             buttonText: "Let's sleep better!"
         )
     ]
