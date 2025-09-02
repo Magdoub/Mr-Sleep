@@ -925,7 +925,7 @@ struct FinishingUpView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Simple pulsing checkmark or completion icon
+            // Simple pulsing checkmark or completion icon - match CalculatingWakeUpTimesView positioning
             ZStack {
                 Circle()
                     .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.2))
@@ -937,11 +937,18 @@ struct FinishingUpView: View {
                     .font(.system(size: 24, weight: .medium))
                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
             }
+            .scaleEffect(1.1) // Match the CalculatingWakeUpTimesView scale
             
             // Finishing up text
             Text("Finishing up...")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+            
+            // Progress percentage placeholder (invisible to match layout)
+            Text("100%")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .opacity(0) // Invisible but maintains layout spacing
         }
         .frame(height: 140)
         .onAppear {
