@@ -334,8 +334,8 @@ struct ContentView: View {
             // Animate progress from 0 to 1 over 1.5 seconds
             startProgressAnimation()
             
-            // After calculation animation completes (2.5s total), show wake-up times
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            // After calculation animation completes (3.5s total), show wake-up times
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
                 withAnimation(.easeOut(duration: 0.3)) {
                     isCalculatingWakeUpTimes = false
                 }
@@ -348,7 +348,7 @@ struct ContentView: View {
     }
     
     private func startProgressAnimation() {
-        let animationDuration = 1.8
+        let animationDuration = 2.8
         let steps = 60 // 60 steps for smooth animation
         let stepDuration = animationDuration / Double(steps)
         
@@ -442,7 +442,9 @@ struct ContentView: View {
         
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        formatter.locale = Locale(identifier: "en_US_POSIX") // Prevent crashes from locale issues
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.amSymbol = "AM"
+        formatter.pmSymbol = "PM"
         
         let formattedTime = formatter.string(from: currentTime)
         return formattedTime.isEmpty ? "12:00 AM" : formattedTime
