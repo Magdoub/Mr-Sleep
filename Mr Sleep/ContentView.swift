@@ -339,8 +339,8 @@ struct ContentView: View {
     }
     
     private func startCalculatingAnimation() {
-        // Start calculating state after text appears (0.6s delay)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        // Start calculating state after text appears (1.1s delay - 0.5s extra for smoothness)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isCalculatingWakeUpTimes = true
             }
