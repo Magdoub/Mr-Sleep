@@ -178,9 +178,10 @@ struct ContentView: View {
                                         ForEach(Array(categoryData.times.enumerated()), id: \.offset) { timeIndex, timeData in
                                             let overallIndex = getOverallIndex(categoryIndex: categoryIndex, timeIndex: timeIndex)
                                             WakeUpTimeButton(
-                                                time: SleepCalculator.shared.formatTime(timeData.time),
-                                                duration: formatSleepDuration(cycles: timeData.cycles),
-                                                isRecommended: false, // Remove recommended highlighting
+                                                wakeUpTime: SleepCalculator.shared.formatTime(timeData.time),
+                                                currentTime: getCurrentTime(),
+                                                sleepDuration: formatSleepDurationSimple(cycles: timeData.cycles),
+                                                isRecommended: false,
                                                 cycles: timeData.cycles,
                                                 pulseScale: 1.0,
                                                 action: {
@@ -485,6 +486,10 @@ struct ContentView: View {
         return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours)) \(hoursText) • \(cycles) \(cycleText)"
     }
     
+    private func formatSleepDurationSimple(cycles: Int) -> String {
+        let hours = Double(cycles) * 1.5
+        return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours))h"
+    }
     
     private func getCurrentTime() -> String {
         guard !currentTime.timeIntervalSince1970.isNaN && !currentTime.timeIntervalSince1970.isInfinite else {
@@ -632,8 +637,9 @@ struct SleepGuideView: View {
 }
 
 struct WakeUpTimeButton: View {
-    let time: String
-    let duration: String
+    let wakeUpTime: String
+    let currentTime: String
+    let sleepDuration: String
     let isRecommended: Bool
     let cycles: Int
     let pulseScale: Double
@@ -641,34 +647,84 @@ struct WakeUpTimeButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(time)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+            VStack(spacing: 12) {
+                // Current Time Section
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Sleep Now")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        Text(currentTime)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                    }
                     
-                    Text(duration)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                    Spacer()
+                    
+                    // Sleep Duration - Highlighted
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Total Sleep")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        Text(sleepDuration)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.15))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.3), lineWidth: 1)
+                            )
+                    )
                 }
                 
-                Spacer()
+                // Divider
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 1)
                 
+                // Wake Up Time Section
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Wake Up Time")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                        Text(wakeUpTime)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                    }
+                    
+                    Spacer()
+                    
+                    // Cycles indicator
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(cycles) cycle\(cycles == 1 ? "" : "s")")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                        Image(systemName: "moon.zzz.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                    }
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white.opacity(0.08))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 16)
                             .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .accessibilityLabel("Wake up at \(time), \(duration)")
+        .accessibilityLabel("Sleep now at \(currentTime), wake up at \(wakeUpTime), \(sleepDuration) total sleep")
         .accessibilityHint("Double tap to get instructions for setting an alarm")
         .accessibilityAddTraits([.isButton])
         .accessibility(value: Text("\(cycles) sleep cycles"))
