@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showAlarmInstructions = false
     @State private var selectedWakeUpTime = ""
     @State private var wakeUpTimeVisibility: [Bool] = [false, false, false, false, false, false]
+    @State private var categoryHeadersVisible: Bool = false
     @State private var isCalculatingWakeUpTimes = false
     @State private var calculationProgress: Double = 0.0
     
@@ -156,6 +157,9 @@ struct ContentView: View {
                                             Spacer()
                                         }
                                         .accessibilityAddTraits(.isHeader)
+                                        .opacity(categoryHeadersVisible ? 1.0 : 0.0)
+                                        .scaleEffect(categoryHeadersVisible ? 1.0 : 0.8)
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(Double(categoryIndex) * 0.1), value: categoryHeadersVisible)
                                         
                                         // Times in this category
                                         ForEach(Array(categoryData.times.enumerated()), id: \.offset) { timeIndex, timeData in
@@ -361,9 +365,14 @@ struct ContentView: View {
     }
     
     private func startWakeUpTimesAnimation() {
-        // Show all 6 wake-up times with staggered animation
+        // First show category headers
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            categoryHeadersVisible = true
+        }
+        
+        // Then show wake-up times with staggered animation after headers appear
         for i in 0..<6 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3 + Double(i) * 0.15) {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     wakeUpTimeVisibility[i] = true
                 }
@@ -375,6 +384,7 @@ struct ContentView: View {
     private func startPostOnboardingLoading() {
         // IMMEDIATELY reset ALL states to prevent card flash
         wakeUpTimeVisibility = [false, false, false, false, false, false]
+        categoryHeadersVisible = false
         calculationProgress = 0.0
         isCalculatingWakeUpTimes = false
         
