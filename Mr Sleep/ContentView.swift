@@ -106,32 +106,25 @@ struct ContentView: View {
                         
                         // Sleep message
                         VStack(spacing: 12) {
-                            Text("Wake Up Like A Boss")
+                            Text("Sleep Now . Wake up like boss")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
                             
-                            VStack(spacing: 4) {
-                                Text("Sleep now and wake up at these times.")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                    .multilineTextAlignment(.center)
-                                
-                                Text("You will feel refreshed and not tired")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal)
+                            Text("You will feel refreshed and not tired")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                             
-                            Text("Set your alarm for a Wake up time. Sleep now")
+                            Text("Set your alarm for a wake up time that suits you")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .multilineTextAlignment(.center)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. Set your alarm for a Wake up time. Sleep now.")
+                        .accessibilityLabel("Sleep Now . Wake up like boss. You will feel refreshed and not tired. Set your alarm for a wake up time that suits you.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
