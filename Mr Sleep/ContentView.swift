@@ -357,8 +357,10 @@ struct ContentView: View {
                 
                 // Show finishing up for 1 second, then complete with micro interaction
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    // Trigger haptic feedback and sound
-                    triggerCompletionMicroInteraction()
+                    // Only trigger micro interaction if not in onboarding
+                    if !showOnboarding {
+                        triggerCompletionMicroInteraction()
+                    }
                     
                     withAnimation(.easeOut(duration: 0.3)) {
                         isFinishingUp = false
