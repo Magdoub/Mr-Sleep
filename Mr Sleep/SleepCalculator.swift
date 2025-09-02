@@ -54,23 +54,23 @@ class SleepCalculator {
     func getCategoryForCycles(_ cycles: Int) -> String {
         switch cycles {
         case 1...2:
-            return "Power nap wake up times"
+            return "Power Nap"
         case 3...4:
-            return "Recovery wake up times"
+            return "Recovery"
         case 5...:
-            return "Full recharge wake up times"
+            return "Full Recharge"
         default:
-            return "Recovery wake up times"
+            return "Recovery"
         }
     }
     
     func getCategoryIcon(_ category: String) -> String {
         switch category {
-        case "Power nap wake up times":
+        case "Power Nap":
             return "powersleep"
-        case "Recovery wake up times":
+        case "Recovery":
             return "heart.fill"
-        case "Full recharge wake up times":
+        case "Full Recharge":
             return "battery.100"
         default:
             return "moon.fill"
@@ -94,7 +94,7 @@ class SleepCalculator {
         }
         
         // Return in desired order
-        let categoryOrder = ["Power nap wake up times", "Recovery wake up times", "Full recharge wake up times"]
+        let categoryOrder = ["Power Nap", "Recovery", "Full Recharge"]
         return categoryOrder.compactMap { category in
             guard let times = categorizedTimes[category], !times.isEmpty else { return nil }
             return (category: category, times: times)
