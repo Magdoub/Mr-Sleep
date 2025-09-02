@@ -112,26 +112,14 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
                             
-                            VStack(spacing: 4) {
-                                Text("Sleep now and wake up at these times.")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                    .multilineTextAlignment(.center)
-                                
-                                Text("You will feel refreshed and not tired")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal)
-                            
-                            Text("Here are your optimal wake-up times")
-                                .font(.system(size: 14, weight: .medium))
+                            Text("Sleep now and set your alarm on any of these times")
+                                .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                .opacity(0.9)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. Here are your optimal wake-up times.")
+                        .accessibilityLabel("Wake Up Like A Boss. Sleep now and set your alarm on any of these times.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .opacity(contentOpacity)
@@ -163,7 +151,7 @@ struct ContentView: View {
                                                 .font(.system(size: 16, weight: .medium))
                                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                             
-                                            Text(categoryData.category)
+                                            Text("\(categoryData.category) \(getCategoryDurationRange(categoryData.category))")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                             
@@ -506,6 +494,19 @@ struct ContentView: View {
         let formattedTime = formatter.string(from: currentTime)
         return formattedTime.isEmpty ? "12:00 AM" : formattedTime
     }
+    
+    private func getCategoryDurationRange(_ category: String) -> String {
+        switch category {
+        case "Power Nap":
+            return "(1.5h - 3h)"
+        case "Recovery":
+            return "(4.5h - 6h)"
+        case "Full Recharge":
+            return "(7.5h - 9h)"
+        default:
+            return ""
+        }
+    }
 }
 
 struct SleepGuideView: View {
@@ -672,7 +673,7 @@ struct WakeUpTimeButton: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Sleep Cycle")
+                        Text("Sleep Cycle\(cycles == 1 ? "" : "s")")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
                         Text("\(cycles)")
