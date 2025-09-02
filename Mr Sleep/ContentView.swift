@@ -53,7 +53,7 @@ struct ContentView: View {
                         // App Title with animated moon and floating zzz
                         HStack(spacing: 15) {
                             HStack(spacing: 12) {
-                                Image("moon-icon")
+                                Image("moon-3D-icon")
                                     .resizable()
                                     .frame(width: 72, height: 72)
                                     .accessibilityLabel("Moon icon")
@@ -153,7 +153,7 @@ struct ContentView: View {
                                         // Category header with icon and tagline
                                         HStack(alignment: .center, spacing: 12) {
                                             getCategoryIconImage(for: categoryData.category)
-                                                .frame(width: 24, height: 24) // Fixed size for icon alignment
+                                                .frame(width: 32, height: 32) // Fixed size for icon alignment
                                             
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(categoryData.category)
