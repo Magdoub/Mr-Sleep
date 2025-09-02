@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFoundation
+import AudioToolbox
 
 struct ContentView: View {
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
@@ -19,6 +21,7 @@ struct ContentView: View {
     @State private var categoryHeadersVisible: Bool = false
     @State private var isCalculatingWakeUpTimes = false
     @State private var calculationProgress: Double = 0.0
+    @State private var isFinishingUp = false
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -138,6 +141,12 @@ struct ContentView: View {
                                 .accessibilityElement(children: .combine)
                                 .accessibilityLabel("Calculating wake-up times")
                                 .accessibilityValue("\(Int(calculationProgress * 100)) percent complete")
+                                .accessibilityAddTraits(.updatesFrequently)
+                        } else if isFinishingUp {
+                            FinishingUpView()
+                                .padding(.horizontal, 20)
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Finishing up calculation")
                                 .accessibilityAddTraits(.updatesFrequently)
                         } else {
                             // Categorized wake up times
@@ -334,21 +343,33 @@ struct ContentView: View {
             // Animate progress from 0 to 1 over 1.5 seconds
             startProgressAnimation()
             
-            // After calculation animation completes (3.5s total), show wake-up times
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            // After calculation animation completes (3.8s total), show finishing up
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
                 withAnimation(.easeOut(duration: 0.3)) {
                     isCalculatingWakeUpTimes = false
+                    isFinishingUp = true
                 }
-                // Small delay before wake-up times start appearing
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    startWakeUpTimesAnimation()
+                
+                // Show finishing up for 1 second, then complete with micro interaction
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    // Trigger haptic feedback and sound
+                    triggerCompletionMicroInteraction()
+                    
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        isFinishingUp = false
+                    }
+                    
+                    // Small delay before wake-up times start appearing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        startWakeUpTimesAnimation()
+                    }
                 }
             }
         }
     }
     
     private func startProgressAnimation() {
-        let animationDuration = 2.8
+        let animationDuration = 3.8
         let steps = 60 // 60 steps for smooth animation
         let stepDuration = animationDuration / Double(steps)
         
@@ -380,6 +401,14 @@ struct ContentView: View {
         }
     }
     
+    private func triggerCompletionMicroInteraction() {
+        // Haptic feedback - gentle success notification
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+        
+        // Relaxing completion sound using system sounds
+        AudioServicesPlaySystemSound(1057) // Gentle notification sound
+    }
     
     private func startPostOnboardingLoading() {
         // IMMEDIATELY reset ALL states to prevent card flash
@@ -387,6 +416,7 @@ struct ContentView: View {
         categoryHeadersVisible = false
         calculationProgress = 0.0
         isCalculatingWakeUpTimes = false
+        isFinishingUp = false
         
         // IMMEDIATELY reset entrance animation states to initial values
         contentOpacity = 0.0
@@ -883,6 +913,35 @@ struct CalculatingWakeUpTimesView: View {
     }
 }
 
+struct FinishingUpView: View {
+    @State private var pulseScale: Double = 1.0
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Simple pulsing checkmark or completion icon
+            ZStack {
+                Circle()
+                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.2))
+                    .frame(width: 60, height: 60)
+                    .scaleEffect(pulseScale)
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+            }
+            
+            // Finishing up text
+            Text("Finishing up...")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+        }
+        .frame(height: 140)
+        .onAppear {
+            pulseScale = 1.2
+        }
+    }
+}
 
 struct AlarmInstructionsModal: View {
     let wakeUpTime: String
