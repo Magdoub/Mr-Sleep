@@ -74,6 +74,10 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 
 ## Git Workflow
 
+### Repository Information
+- **Remote Repository**: https://github.com/Magdoub/Mr-Sleep
+- **Automated Commits**: Claude Code automatically commits all changes
+
 ### Commit Strategy
 - **REQUIRED**: Every edit/change must be committed to git
 - Use descriptive commit messages explaining the purpose of changes
