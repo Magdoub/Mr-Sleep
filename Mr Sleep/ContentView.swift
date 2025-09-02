@@ -409,38 +409,12 @@ struct ContentView: View {
     
     private func formatSleepDuration(cycles: Int) -> String {
         let hours = Double(cycles) * 1.5
-        let cycleText = cycles == 1 ? "sleep cycle" : "sleep cycles"
+        let cycleText = cycles == 1 ? "cycle" : "cycles"
+        let hoursText = hours == 1.0 ? "hour of sleep" : "hours of sleep"
         
-        if hours == floor(hours) {
-            let hoursInt = Int(hours)
-            let hoursText = hoursInt == 1 ? "hour of sleep" : "hours of sleep"
-            return "\(hoursInt) \(hoursText) • \(cycles) \(cycleText)"
-        } else {
-            let wholeHours = Int(hours)
-            let minutes = Int((hours - Double(wholeHours)) * 60)
-            if wholeHours == 0 {
-                return "\(minutes) mins of sleep • \(cycles) \(cycleText)"
-            } else {
-                let hoursText = wholeHours == 1 ? "hour" : "hours"
-                return "\(wholeHours)h \(minutes)m of sleep • \(cycles) \(cycleText)"
-            }
-        }
+        return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours)) \(hoursText) • \(cycles) \(cycleText)"
     }
     
-    private func getCustomTag(for cycles: Int) -> (text: String, icon: String)? {
-        switch cycles {
-        case 1:
-            return ("NAP MODE", "moon.zzz")
-        case 2:
-            return ("MINI SLEEP", "powersleep")
-        case 3:
-            return ("QUICK RECOVERY", "bolt")
-        case 6:
-            return ("DREAMLAND", "cloud.moon")
-        default:
-            return nil
-        }
-    }
     
     private func getCurrentTime() -> String {
         guard !currentTime.timeIntervalSince1970.isNaN && !currentTime.timeIntervalSince1970.isInfinite else {
@@ -593,20 +567,6 @@ struct WakeUpTimeButton: View {
     let pulseScale: Double
     let action: () -> Void
     
-    private func getCustomTag(for cycles: Int) -> (text: String, icon: String)? {
-        switch cycles {
-        case 1:
-            return ("NAP MODE", "moon.zzz")
-        case 2:
-            return ("MINI SLEEP", "powersleep")
-        case 3:
-            return ("QUICK RECOVERY", "bolt")
-        case 6:
-            return ("DREAMLAND", "cloud.moon")
-        default:
-            return nil
-        }
-    }
     
     var body: some View {
         Button(action: action) {
@@ -623,26 +583,6 @@ struct WakeUpTimeButton: View {
                 
                 Spacer()
                 
-                // Custom tags only (no recommended tags)
-                VStack(alignment: .trailing, spacing: 4) {
-                    if let customTag = getCustomTag(for: cycles) {
-                        HStack(spacing: 4) {
-                            Image(systemName: customTag.icon)
-                                .font(.system(size: 8, weight: .medium))
-                                .foregroundColor(Color(red: 0.4, green: 0.7, blue: 1.0))
-                            
-                            Text(customTag.text)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(Color(red: 0.4, green: 0.7, blue: 1.0))
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color(red: 0.4, green: 0.7, blue: 1.0).opacity(0.12))
-                        )
-                    }
-                }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
