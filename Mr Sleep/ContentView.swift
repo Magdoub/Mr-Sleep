@@ -152,9 +152,7 @@ struct ContentView: View {
                                     VStack(spacing: 12) {
                                         // Category header with icon and tagline
                                         HStack(alignment: .center, spacing: 12) {
-                                            Image(systemName: SleepCalculator.shared.getCategoryIcon(categoryData.category))
-                                                .font(.system(size: 24, weight: .medium))
-                                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                            getCategoryIconImage(for: categoryData.category)
                                                 .frame(width: 24, height: 24) // Fixed size for icon alignment
                                             
                                             VStack(alignment: .leading, spacing: 2) {
@@ -518,6 +516,23 @@ struct ContentView: View {
             return "Wake up fully restored and ready"
         default:
             return ""
+        }
+    }
+    
+    @ViewBuilder
+    private func getCategoryIconImage(for category: String) -> some View {
+        let iconName = SleepCalculator.shared.getCategoryIcon(category)
+        
+        if iconName.contains("-3d-icon") {
+            // Custom 3D icon from assets
+            Image(iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            // System SF Symbol
+            Image(systemName: iconName)
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
         }
     }
 }
