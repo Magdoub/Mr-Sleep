@@ -12,8 +12,6 @@ struct ContentView: View {
     @State private var contentOpacity: Double = 0
     @State private var titleOffset: CGFloat = -50
     @State private var timeOffset: CGFloat = 30
-    @State private var messageOpacity: Double = 0
-    @State private var messageOffset: CGFloat = 20
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [1.0, 0.8, 0.6]
     @State private var breathingScale: Double = 1.0
@@ -130,8 +128,6 @@ struct ContentView: View {
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
                         }
-                        .opacity(messageOpacity)
-                        .offset(y: messageOffset)
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Wake Up Like A Boss. Sleep now and wake up at these times. You will feel refreshed and not tired. All these times are optimal wake-up times.")
                         .accessibilityAddTraits(.isHeader)
@@ -333,19 +329,13 @@ struct ContentView: View {
             timeOffset = 0
         }
         
-        // Phase 3: Message text appears (0.5s)
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.5)) {
-            messageOpacity = 1.0
-            messageOffset = 0
-        }
-        
-        // Phase 4: Start calculating animation (1.0s delay - more time to read message)
+        // Phase 3: Start calculating animation (0.6s delay)
         startCalculatingAnimation()
     }
     
     private func startCalculatingAnimation() {
-        // Start calculating state after message text appears (1.2s delay)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        // Start calculating state after text appears (0.6s delay)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isCalculatingWakeUpTimes = true
             }
@@ -432,8 +422,6 @@ struct ContentView: View {
         contentOpacity = 0.0
         titleOffset = -50
         timeOffset = 30
-        messageOpacity = 0.0
-        messageOffset = 20
         
         // Start the complete entrance sequence immediately (no delay)
         startEntranceAnimation()
@@ -675,21 +663,21 @@ struct OnboardingView: View {
             icon: "moon.zzz.fill",
             title: "Welcome to Mr Sleep",
             subtitle: "Your sleep companion",
-            description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle helps you feel refreshed.",
+            description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle (instead of in the middle) helps you feel more refreshed and alert.",
             buttonText: "Tell me more"
         ),
         OnboardingStep(
             icon: "clock.fill",
             title: "Wake Up Smarter",
             subtitle: "Science-based wake times",
-            description: "We calculate the best times for you to wake up based on when you plan to sleep.",
+            description: "We calculate the best times for you to wake up based on when you plan to sleep. Each suggestion aligns with your natural sleep cycles.",
             buttonText: "How does it work?"
         ),
         OnboardingStep(
             icon: "alarm.fill",
             title: "Set & Sleep",
-            subtitle: "Your path to ZERO brain fog",
-            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes.",
+            subtitle: "Your path to ZERO brain-fog",
+            description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes. Wake up refreshed instead of tired!",
             buttonText: "Let's sleep better!"
         )
     ]
