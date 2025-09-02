@@ -64,8 +64,6 @@ struct ContentView: View {
                                     .foregroundColor(Color(red: [0.9, 0.85, 0.8][index], green: [0.9, 0.85, 0.8][index], blue: [0.95, 0.9, 0.85][index]))
                                     .offset(x: [-5, -8, -10][index], y: [-5 + zzzFloatingOffsets[index], -8 + zzzFloatingOffsets[index], -12 + zzzFloatingOffsets[index]][index])
                                     .opacity(zzzOpacities[index])
-                                    .animation(.easeInOut(duration: 2.5 + Double(index) * 0.3).repeatForever(autoreverses: true).delay(Double(index) * 0.5), value: zzzFloatingOffsets[index])
-                                    .animation(.easeInOut(duration: 2.0 + Double(index) * 0.2).repeatForever(autoreverses: true).delay(Double(index) * 0.3), value: zzzOpacities[index])
                                     .accessibilityHidden(true)
                             }
                         }
@@ -121,7 +119,7 @@ struct ContentView: View {
                             }
                             .padding(.horizontal)
                             
-                            Text("All these times are good wake-up times")
+                            Text("All these times are optimal wake-up times")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
                                 .opacity(0.9)
@@ -401,15 +399,18 @@ struct ContentView: View {
     }
     
     private func startZzzAnimation() {
-        // Floating ZZZ animation
+        // Simplified floating ZZZ animation for better device performance
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            for i in 0..<3 {
-                withAnimation(.easeInOut(duration: 2.5 + Double(i) * 0.3).repeatForever(autoreverses: true).delay(Double(i) * 0.5)) {
-                    zzzFloatingOffsets[i] = -8.0 - Double(i) * 2
-                }
-                withAnimation(.easeInOut(duration: 2.0 + Double(i) * 0.2).repeatForever(autoreverses: true).delay(Double(i) * 0.3)) {
-                    zzzOpacities[i] = [0.6, 0.4, 0.2][i]
-                }
+            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+                zzzFloatingOffsets[0] = -8.0
+                zzzFloatingOffsets[1] = -10.0
+                zzzFloatingOffsets[2] = -12.0
+            }
+            
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true).delay(0.3)) {
+                zzzOpacities[0] = 0.6
+                zzzOpacities[1] = 0.4
+                zzzOpacities[2] = 0.2
             }
         }
     }
