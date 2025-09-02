@@ -674,25 +674,14 @@ struct WakeUpTimeButton: View {
                 
                 Spacer()
                 
-                // Right side - Total Sleep and Sleep Cycle (side by side)
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Total Sleep")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                        Text(sleepDuration)
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Sleep Cycle\(cycles == 1 ? "" : "s")")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                        Text("\(cycles)")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-                    }
+                // Right side - Total Sleep only
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Total Sleep")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                    Text(sleepDuration)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -708,10 +697,9 @@ struct WakeUpTimeButton: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .accessibilityLabel("Wake up at \(wakeUpTime), \(sleepDuration) total sleep, \(cycles) sleep cycles")
+        .accessibilityLabel("Wake up at \(wakeUpTime), \(sleepDuration) total sleep")
         .accessibilityHint("Double tap to get instructions for setting an alarm")
         .accessibilityAddTraits([.isButton])
-        .accessibility(value: Text("\(cycles) sleep cycles"))
     }
 }
 
