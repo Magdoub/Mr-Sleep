@@ -535,6 +535,7 @@ struct ContentView: View {
                 .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
         }
     }
+    
 }
 
 struct SleepGuideView: View {
@@ -725,21 +726,21 @@ struct OnboardingView: View {
     
     let onboardingSteps = [
         OnboardingStep(
-            icon: "moon.zzz.fill",
+            icon: "sleep-moon-3D-icon",
             title: "Welcome to Mr Sleep",
             subtitle: "Your sleep companion",
             description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle helps you feel refreshed.",
             buttonText: "Tell me more"
         ),
         OnboardingStep(
-            icon: "clock.fill",
+            icon: "sleepy-human-3D-icon",
             title: "Wake Up Smarter",
             subtitle: "Science-based wake times",
             description: "We calculate the best times for you to wake up based on when you plan to sleep.",
             buttonText: "How does it work?"
         ),
         OnboardingStep(
-            icon: "alarm.fill",
+            icon: "clock-3D-icon",
             title: "Set & Sleep",
             subtitle: "Your path to ZERO brain fog",
             description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes.",
@@ -765,9 +766,8 @@ struct OnboardingView: View {
                 // Fixed content area
                 VStack(spacing: 30) {
                     // Icon
-                    Image(systemName: currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].icon : "moon.zzz.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    getOnboardingIconImage(for: currentStep)
+                        .frame(width: 80, height: 80)
                         .scaleEffect(1.0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
                         .accessibilityHidden(true)
@@ -874,6 +874,23 @@ struct OnboardingView: View {
                 .padding(.bottom, 50)
             }
             .padding(.horizontal, 30)
+        }
+    }
+    
+    @ViewBuilder
+    private func getOnboardingIconImage(for step: Int) -> some View {
+        let iconName = step >= 0 && step < onboardingSteps.count ? onboardingSteps[step].icon : "moon.zzz.fill"
+        
+        if iconName.contains("-3D-icon") {
+            // Custom 3D icon from assets
+            Image(iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        } else {
+            // System SF Symbol
+            Image(systemName: iconName)
+                .font(.system(size: 60))
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
         }
     }
 }
