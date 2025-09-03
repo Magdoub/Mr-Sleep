@@ -726,7 +726,7 @@ struct OnboardingView: View {
     
     let onboardingSteps = [
         OnboardingStep(
-            icon: "sleep-moon-3D-icon",
+            icon: "moon-sleepy-3D-icon",
             title: "Welcome to Mr Sleep",
             subtitle: "Your sleep companion",
             description: "Sleep happens in 90-minute cycles. Waking up at the end of a cycle helps you feel refreshed.",
