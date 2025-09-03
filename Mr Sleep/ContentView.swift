@@ -723,15 +723,14 @@ struct OnboardingView: View {
     @Binding var showOnboarding: Bool
     let onComplete: () -> Void
     @State private var currentStep = 0
-    @State private var iconScale: Double = 0.8
-    @State private var iconRotation: Double = -5
-    @State private var titleOpacity: Double = 0
-    @State private var subtitleOpacity: Double = 0
-    @State private var descriptionOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 0
+    @State private var contentOpacity: Double = 1.0
+    @State private var iconScale: Double = 1.0
     @State private var buttonScale: Double = 0.9
     @State private var buttonPressed: Bool = false
     @State private var progressScale: [Double] = [1.0, 1.0, 1.0]
     @State private var isTransitioning: Bool = false
+    @State private var showInitialAnimation: Bool = false
     
     let onboardingSteps = [
         OnboardingStep(
@@ -772,49 +771,43 @@ struct OnboardingView: View {
             .ignoresSafeArea(.all)
             
             VStack(spacing: 0) {
-                // Fixed content area
+                // Content with smooth sliding transitions
                 VStack(spacing: 30) {
-                    // Icon with smooth animations
+                    // Icon with unified animation
                     getOnboardingIconImage(for: currentStep)
                         .frame(width: 240, height: 240)
-                        .scaleEffect(iconScale)
-                        .rotationEffect(.degrees(iconRotation))
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0), value: iconScale)
-                        .animation(.spring(response: 1.2, dampingFraction: 0.6, blendDuration: 0), value: iconRotation)
+                        .scaleEffect(showInitialAnimation ? iconScale : 0.8)
+                        .animation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0), value: showInitialAnimation)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0), value: iconScale)
                         .accessibilityHidden(true)
                     
-                    // Title and subtitle with staggered animations
+                    // Title and subtitle with unified sliding
                     VStack(spacing: 8) {
                         Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].title : "Loading...")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                             .multilineTextAlignment(.center)
-                            .opacity(titleOpacity)
-                            .offset(y: titleOpacity == 1.0 ? 0 : 20)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: titleOpacity)
                             .accessibilityAddTraits(.isHeader)
                         
                         Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : "")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .multilineTextAlignment(.center)
-                            .opacity(subtitleOpacity)
-                            .offset(y: subtitleOpacity == 1.0 ? 0 : 15)
-                            .animation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.2), value: subtitleOpacity)
                     }
                     
-                    // Description with smooth animation
+                    // Description
                     Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].description : "")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
                         .multilineTextAlignment(.center)
                         .lineSpacing(6)
                         .padding(.horizontal, 20)
-                        .opacity(descriptionOpacity)
-                        .offset(y: descriptionOpacity == 1.0 ? 0 : 10)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.4), value: descriptionOpacity)
-                        .frame(minHeight: 120, alignment: .top) // Fixed minimum height
+                        .frame(minHeight: 120, alignment: .top)
                 }
+                .opacity(contentOpacity)
+                .offset(x: contentOffset)
+                .animation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0), value: contentOffset)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: contentOpacity)
                 .frame(maxHeight: .infinity) // Take available space
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].title : "Loading"). \(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : ""). \(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].description : "")")
@@ -910,38 +903,28 @@ struct OnboardingView: View {
     }
     
     private func startInitialAnimations() {
-        // Reset all states for initial load
+        // Start with content off-screen
+        contentOffset = 50
+        contentOpacity = 0
         iconScale = 0.8
-        iconRotation = -5
-        titleOpacity = 0
-        subtitleOpacity = 0
-        descriptionOpacity = 0
         buttonScale = 0.9
         
-        // Animate entrance with staggered timing
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0).delay(0.1)) {
+        // Smooth entrance animation
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.2)) {
+            showInitialAnimation = true
+            contentOffset = 0
+            contentOpacity = 1.0
             iconScale = 1.0
-            iconRotation = 0
         }
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.3)) {
-            titleOpacity = 1.0
-        }
-        
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.5)) {
-            subtitleOpacity = 1.0
-        }
-        
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.7)) {
-            descriptionOpacity = 1.0
-        }
-        
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0).delay(0.9)) {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0).delay(0.5)) {
             buttonScale = 1.0
         }
         
         // Animate progress indicators
-        animateProgressIndicators()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            animateProgressIndicators()
+        }
     }
     
     private func performStepTransition(to newStep: Int) {
@@ -949,62 +932,58 @@ struct OnboardingView: View {
         
         isTransitioning = true
         
-        // Add haptic feedback for transitions
+        // Add subtle haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
         
-        // Animate out current content
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
-            iconScale = 0.8
-            titleOpacity = 0
-            subtitleOpacity = 0
-            descriptionOpacity = 0
-            iconRotation = newStep > currentStep ? 5 : -5
+        // Determine slide direction
+        let slideDirection: CGFloat = newStep > currentStep ? -100 : 100
+        
+        // Smooth slide out with crossfade
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0)) {
+            contentOffset = slideDirection
+            contentOpacity = 0.3
+            iconScale = 0.95
         }
         
-        // Update step after brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        // Update step at the peak of transition
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             currentStep = newStep
+        }
+        
+        // Slide in new content from opposite direction
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            contentOffset = -slideDirection * 0.5 // Start from opposite side, closer
             
-            // Animate in new content with staggered timing
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0).delay(0.1)) {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0)) {
+                contentOffset = 0
+                contentOpacity = 1.0
                 iconScale = 1.0
-                iconRotation = 0
             }
             
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.2)) {
-                titleOpacity = 1.0
+            // Animate progress indicators with slight delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                animateProgressIndicators()
             }
-            
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.3)) {
-                subtitleOpacity = 1.0
-            }
-            
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.4)) {
-                descriptionOpacity = 1.0
-            }
-            
-            // Animate progress indicator
-            animateProgressIndicators()
             
             // Allow next transition
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTransitioning = false
             }
         }
     }
     
     private func animateProgressIndicators() {
-        for i in 0..<progressScale.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.1) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) {
-                    progressScale[i] = 1.2
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
-                        progressScale[i] = 1.0
-                    }
+        // Only animate the current step indicator with a subtle pulse
+        let currentIndex = currentStep
+        if currentIndex < progressScale.count {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
+                progressScale[currentIndex] = 1.15
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0)) {
+                    progressScale[currentIndex] = 1.0
                 }
             }
         }
