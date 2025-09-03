@@ -120,7 +120,7 @@ struct ContentView: View {
                             
                             Text("Set your alarm for a wake up time")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                                 .multilineTextAlignment(.center)
                         }
                         .accessibilityElement(children: .combine)
@@ -158,7 +158,7 @@ struct ContentView: View {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(categoryData.category)
                                                     .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                                                 
                                                 Text(getCategoryTagline(categoryData.category))
                                                     .font(.system(size: 13, weight: .medium))
@@ -532,7 +532,7 @@ struct ContentView: View {
             // System SF Symbol
             Image(systemName: iconName)
                 .font(.system(size: 24, weight: .medium))
-                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
         }
     }
     
@@ -561,7 +561,7 @@ struct SleepGuideView: View {
                     
                     Text("Sleep Cycle Guide")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                         .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
@@ -634,7 +634,7 @@ struct SleepGuideView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                     .frame(width: 30)
                     .accessibilityHidden(true)
                 
@@ -723,6 +723,15 @@ struct OnboardingView: View {
     @Binding var showOnboarding: Bool
     let onComplete: () -> Void
     @State private var currentStep = 0
+    @State private var iconScale: Double = 0.8
+    @State private var iconRotation: Double = -5
+    @State private var titleOpacity: Double = 0
+    @State private var subtitleOpacity: Double = 0
+    @State private var descriptionOpacity: Double = 0
+    @State private var buttonScale: Double = 0.9
+    @State private var buttonPressed: Bool = false
+    @State private var progressScale: [Double] = [1.0, 1.0, 1.0]
+    @State private var isTransitioning: Bool = false
     
     let onboardingSteps = [
         OnboardingStep(
@@ -765,34 +774,45 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 // Fixed content area
                 VStack(spacing: 30) {
-                    // Icon
+                    // Icon with smooth animations
                     getOnboardingIconImage(for: currentStep)
                         .frame(width: 240, height: 240)
-                        .scaleEffect(1.0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
+                        .scaleEffect(iconScale)
+                        .rotationEffect(.degrees(iconRotation))
+                        .animation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0), value: iconScale)
+                        .animation(.spring(response: 1.2, dampingFraction: 0.6, blendDuration: 0), value: iconRotation)
                         .accessibilityHidden(true)
                     
-                    // Title and subtitle
+                    // Title and subtitle with staggered animations
                     VStack(spacing: 8) {
                         Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].title : "Loading...")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                             .multilineTextAlignment(.center)
+                            .opacity(titleOpacity)
+                            .offset(y: titleOpacity == 1.0 ? 0 : 20)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: titleOpacity)
                             .accessibilityAddTraits(.isHeader)
                         
                         Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].subtitle : "")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .multilineTextAlignment(.center)
+                            .opacity(subtitleOpacity)
+                            .offset(y: subtitleOpacity == 1.0 ? 0 : 15)
+                            .animation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.2), value: subtitleOpacity)
                     }
                     
-                    // Description with fixed frame
+                    // Description with smooth animation
                     Text(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].description : "")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
                         .multilineTextAlignment(.center)
                         .lineSpacing(6)
                         .padding(.horizontal, 20)
+                        .opacity(descriptionOpacity)
+                        .offset(y: descriptionOpacity == 1.0 ? 0 : 10)
+                        .animation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.4), value: descriptionOpacity)
                         .frame(minHeight: 120, alignment: .top) // Fixed minimum height
                 }
                 .frame(maxHeight: .infinity) // Take available space
@@ -802,44 +822,44 @@ struct OnboardingView: View {
                 .gesture(
                     DragGesture()
                         .onEnded { value in
+                            guard !isTransitioning else { return }
                             let threshold: CGFloat = 50
                             if value.translation.width > threshold && currentStep > 0 {
                                 // Swipe right - go to previous step
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    currentStep -= 1
-                                }
+                                performStepTransition(to: currentStep - 1)
                             } else if value.translation.width < -threshold && currentStep < onboardingSteps.count - 1 {
                                 // Swipe left - go to next step
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    currentStep += 1
-                                }
+                                performStepTransition(to: currentStep + 1)
                             }
                         }
                 )
                 
                 // Bottom section with consistent positioning
                 VStack(spacing: 25) {
-                        // Step indicators
+                        // Step indicators with smooth animations
                         HStack(spacing: 12) {
                             ForEach(0..<onboardingSteps.count, id: \.self) { index in
                                 Circle()
                                     .frame(width: 10, height: 10)
                                     .foregroundColor(
                                         index == currentStep ?
-                                        Color(red: 1.0, green: 0.85, blue: 0.3) :
+                                        Color(red: 0.894, green: 0.729, blue: 0.306) :
                                         Color.white.opacity(0.3)
                                     )
-                                    .scaleEffect(index == currentStep ? 1.2 : 1.0)
-                                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentStep)
+                                    .scaleEffect(index == currentStep ? 1.3 * progressScale[index] : progressScale[index])
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0), value: currentStep)
+                                    .animation(.spring(response: 0.3, dampingFraction: 0.8, blendDuration: 0).repeatCount(1), value: progressScale[index])
                             }
                         }
                         
-                        // Action button
+                        // Action button with enhanced interactions
                         Button(action: {
+                            // Add haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                            
                             if currentStep < onboardingSteps.count - 1 {
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    currentStep += 1
-                                }
+                                performStepTransition(to: currentStep + 1)
                             } else {
                                 // Completed onboarding - reset states BEFORE dismissal animation
                                 onComplete()
@@ -863,10 +883,18 @@ struct OnboardingView: View {
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 28)
-                                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                    .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 3)
+                                    .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                    .shadow(color: Color.black.opacity(buttonPressed ? 0.1 : 0.2), radius: buttonPressed ? 3 : 6, x: 0, y: buttonPressed ? 1 : 3)
                             )
+                            .scaleEffect(buttonScale)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0), value: buttonScale)
                         }
+                        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                                buttonPressed = pressing
+                                buttonScale = pressing ? 0.95 : 1.0
+                            }
+                        }, perform: {})
                         .accessibilityLabel(currentStep >= 0 && currentStep < onboardingSteps.count ? onboardingSteps[currentStep].buttonText : "Continue")
                         .accessibilityHint(currentStep < onboardingSteps.count - 1 ? "Double tap to continue to next step" : "Double tap to complete onboarding and start using the app")
                         .accessibilityAddTraits(.isButton)
@@ -874,6 +902,111 @@ struct OnboardingView: View {
                 .padding(.bottom, 50)
             }
             .padding(.horizontal, 30)
+        }
+        .onAppear {
+            // Initial entrance animations
+            startInitialAnimations()
+        }
+    }
+    
+    private func startInitialAnimations() {
+        // Reset all states for initial load
+        iconScale = 0.8
+        iconRotation = -5
+        titleOpacity = 0
+        subtitleOpacity = 0
+        descriptionOpacity = 0
+        buttonScale = 0.9
+        
+        // Animate entrance with staggered timing
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0).delay(0.1)) {
+            iconScale = 1.0
+            iconRotation = 0
+        }
+        
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.3)) {
+            titleOpacity = 1.0
+        }
+        
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.5)) {
+            subtitleOpacity = 1.0
+        }
+        
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.7)) {
+            descriptionOpacity = 1.0
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0).delay(0.9)) {
+            buttonScale = 1.0
+        }
+        
+        // Animate progress indicators
+        animateProgressIndicators()
+    }
+    
+    private func performStepTransition(to newStep: Int) {
+        guard newStep >= 0 && newStep < onboardingSteps.count && !isTransitioning else { return }
+        
+        isTransitioning = true
+        
+        // Add haptic feedback for transitions
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+        
+        // Animate out current content
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
+            iconScale = 0.8
+            titleOpacity = 0
+            subtitleOpacity = 0
+            descriptionOpacity = 0
+            iconRotation = newStep > currentStep ? 5 : -5
+        }
+        
+        // Update step after brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            currentStep = newStep
+            
+            // Animate in new content with staggered timing
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7, blendDuration: 0).delay(0.1)) {
+                iconScale = 1.0
+                iconRotation = 0
+            }
+            
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.2)) {
+                titleOpacity = 1.0
+            }
+            
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.8, blendDuration: 0).delay(0.3)) {
+                subtitleOpacity = 1.0
+            }
+            
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0).delay(0.4)) {
+                descriptionOpacity = 1.0
+            }
+            
+            // Animate progress indicator
+            animateProgressIndicators()
+            
+            // Allow next transition
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                isTransitioning = false
+            }
+        }
+    }
+    
+    private func animateProgressIndicators() {
+        for i in 0..<progressScale.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) {
+                    progressScale[i] = 1.2
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
+                        progressScale[i] = 1.0
+                    }
+                }
+            }
         }
     }
     
@@ -890,7 +1023,7 @@ struct OnboardingView: View {
             // System SF Symbol
             Image(systemName: iconName)
                 .font(.system(size: 60))
-                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
         }
     }
 }
@@ -917,7 +1050,7 @@ struct CalculatingWakeUpTimesView: View {
                 Circle()
                     .stroke(
                         LinearGradient(
-                            colors: [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.3)],
+                            colors: [Color(red: 0.894, green: 0.729, blue: 0.306), Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -931,7 +1064,7 @@ struct CalculatingWakeUpTimesView: View {
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
-                        Color(red: 1.0, green: 0.85, blue: 0.3),
+                        Color(red: 0.894, green: 0.729, blue: 0.306),
                         style: StrokeStyle(lineWidth: 4, lineCap: .round)
                     )
                     .frame(width: 50, height: 50)
@@ -940,7 +1073,7 @@ struct CalculatingWakeUpTimesView: View {
                 
                 // Center pulsing dot
                 Circle()
-                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
                     .frame(width: 12, height: 12)
                     .scaleEffect(pulseScale)
                     .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseScale)
@@ -958,7 +1091,7 @@ struct CalculatingWakeUpTimesView: View {
                     ForEach(0..<3, id: \.self) { index in
                         Text(".")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .opacity(dotAnimation[index])
                             .animation(
                                 .easeInOut(duration: 0.6)
@@ -973,7 +1106,7 @@ struct CalculatingWakeUpTimesView: View {
             // Progress percentage
             Text("\(Int(progress * 100))%")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 .opacity(0.8)
                 .accessibilityHidden(true)
         }
@@ -1003,14 +1136,14 @@ struct FinishingUpView: View {
             // Simple pulsing checkmark or completion icon - match CalculatingWakeUpTimesView positioning
             ZStack {
                 Circle()
-                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.2))
+                    .fill(Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.2))
                     .frame(width: 60, height: 60)
                     .scaleEffect(pulseScale)
                     .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
                 
                 Image(systemName: "checkmark")
                     .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
             }
             .scaleEffect(1.1) // Match the CalculatingWakeUpTimesView scale
             
@@ -1022,7 +1155,7 @@ struct FinishingUpView: View {
             // Progress percentage placeholder (invisible to match layout)
             Text("100%")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 .opacity(0) // Invisible but maintains layout spacing
         }
         .frame(height: 140)
@@ -1062,7 +1195,7 @@ struct AlarmInstructionsModal: View {
                     
                     Text("Wake up at \(wakeUpTime)")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Set Your Alarm. Wake up at \(wakeUpTime)")
@@ -1073,7 +1206,7 @@ struct AlarmInstructionsModal: View {
                     HStack(alignment: .top, spacing: 12) {
                         Text("1.")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .frame(width: 20, alignment: .leading)
                         
                         Text("Open the Clock app on your iPhone")
@@ -1084,7 +1217,7 @@ struct AlarmInstructionsModal: View {
                     HStack(alignment: .top, spacing: 12) {
                         Text("2.")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .frame(width: 20, alignment: .leading)
                         
                         Text("Tap the '+' button to add a new alarm")
@@ -1095,7 +1228,7 @@ struct AlarmInstructionsModal: View {
                     HStack(alignment: .top, spacing: 12) {
                         Text("3.")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                             .frame(width: 20, alignment: .leading)
                         
                         Text("Set the time to \(wakeUpTime) and save")
@@ -1111,7 +1244,7 @@ struct AlarmInstructionsModal: View {
                 VStack(spacing: 8) {
                     Text("💤 Sleep Tip")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.3))
+                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                     
                     Text("Try to fall asleep within the next 15 minutes for the best results!")
                         .font(.system(size: 13, weight: .medium))
@@ -1138,7 +1271,7 @@ struct AlarmInstructionsModal: View {
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
+                                .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
                         )
                 }
                 .accessibilityLabel("Got it")
