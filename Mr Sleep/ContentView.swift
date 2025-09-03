@@ -767,7 +767,7 @@ struct OnboardingView: View {
                 VStack(spacing: 30) {
                     // Icon
                     getOnboardingIconImage(for: currentStep)
-                        .frame(width: 80, height: 80)
+                        .frame(width: 240, height: 240)
                         .scaleEffect(1.0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.7), value: currentStep)
                         .accessibilityHidden(true)
