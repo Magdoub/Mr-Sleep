@@ -229,8 +229,8 @@ struct ContentView: View {
             calculateWakeUpTimes()
             currentTime = Date()
             
-            // Randomly select moon icon for this app launch
-            selectRandomMoonIcon()
+            // Select next moon icon in sequence for this app launch
+            selectNextMoonIcon()
             
             startEntranceAnimation()
             startBreathingEffect()
@@ -293,9 +293,18 @@ struct ContentView: View {
         categorizedWakeUpTimes = SleepCalculator.shared.getCategorizedWakeUpTimes()
     }
     
-    private func selectRandomMoonIcon() {
+    private func selectNextMoonIcon() {
         let moonIcons = ["moon-3D-icon", "moon-cool-3D-icon", "moon-mask-3D-icon"]
-        currentMoonIcon = moonIcons.randomElement() ?? "moon-3D-icon"
+        
+        // Get current index from UserDefaults (default to 0 for first launch)
+        let currentIndex = UserDefaults.standard.integer(forKey: "moonIconIndex")
+        
+        // Set the current moon icon
+        currentMoonIcon = moonIcons[currentIndex]
+        
+        // Calculate next index and save it for next launch
+        let nextIndex = (currentIndex + 1) % moonIcons.count
+        UserDefaults.standard.set(nextIndex, forKey: "moonIconIndex")
     }
     
     private func getOverallIndex(categoryIndex: Int, timeIndex: Int) -> Int {
