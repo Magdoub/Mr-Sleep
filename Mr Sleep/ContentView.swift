@@ -239,6 +239,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             updateTimeAndCalculations()
             triggerTimeAnimation()
+            selectNextMoonIcon()
         }
         .onReceive(timer) { _ in
             let newTime = Date()
