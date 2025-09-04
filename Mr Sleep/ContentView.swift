@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var breathingScale: Double = 1.0
     @State private var showAlarmInstructions = false
     @State private var selectedWakeUpTime = ""
+    @State private var currentMoonIcon: String = "moon-3D-icon"
     @State private var wakeUpTimeVisibility: [Bool] = [false, false, false, false, false, false]
     @State private var categoryHeadersVisible: Bool = false
     @State private var isCalculatingWakeUpTimes = false
@@ -53,7 +54,7 @@ struct ContentView: View {
                         // App Title with animated moon and floating zzz
                         HStack(spacing: 15) {
                             HStack(spacing: 12) {
-                                Image("moon-3D-icon")
+                                Image(currentMoonIcon)
                                     .resizable()
                                     .frame(width: 90, height: 90)
                                     .accessibilityLabel("Moon icon")
@@ -228,6 +229,8 @@ struct ContentView: View {
             calculateWakeUpTimes()
             currentTime = Date()
             
+            // Randomly select moon icon for this app launch
+            selectRandomMoonIcon()
             
             startEntranceAnimation()
             startBreathingEffect()
@@ -288,6 +291,11 @@ struct ContentView: View {
     
     private func calculateWakeUpTimes() {
         categorizedWakeUpTimes = SleepCalculator.shared.getCategorizedWakeUpTimes()
+    }
+    
+    private func selectRandomMoonIcon() {
+        let moonIcons = ["moon-3D-icon", "moon-cool-3D-icon", "moon-mask-3D-icon"]
+        currentMoonIcon = moonIcons.randomElement() ?? "moon-3D-icon"
     }
     
     private func getOverallIndex(categoryIndex: Int, timeIndex: Int) -> Int {
