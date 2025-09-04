@@ -229,12 +229,13 @@ struct ContentView: View {
             calculateWakeUpTimes()
             currentTime = Date()
             
-            // Select next moon icon in sequence for this app launch
-            selectNextMoonIcon()
-            
-            startEntranceAnimation()
-            startBreathingEffect()
-            startZzzAnimation()
+            // Only start animations and select moon if onboarding is not active
+            if !showOnboarding {
+                selectNextMoonIcon()
+                startEntranceAnimation()
+                startBreathingEffect()
+                startZzzAnimation()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             updateTimeAndCalculations()
