@@ -463,6 +463,14 @@ struct ContentView: View {
         titleOffset = -50
         timeOffset = 30
         
+        // Reset ZZZ animation states
+        zzzFloatingOffsets = [0, 0, 0]
+        zzzOpacities = [1.0, 0.8, 0.6]
+        breathingScale = 1.0
+        
+        // Select next moon icon for post-onboarding
+        selectNextMoonIcon()
+        
         // Start the complete entrance sequence immediately (no delay)
         startEntranceAnimation()
         startBreathingEffect()
