@@ -356,6 +356,53 @@ struct ContentView: View {
         startCalculatingAnimation()
     }
     
+    private func startPostOnboardingEntranceAnimation() {
+        // Post-onboarding entrance animation with proper timing
+        
+        // Phase 1: Title appears quickly (0.1s)
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0).delay(0.1)) {
+            contentOpacity = 1.0
+            titleOffset = 0
+        }
+        
+        // Phase 2: Time display appears (0.3s)
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0).delay(0.3)) {
+            timeOffset = 0
+        }
+        
+        // Phase 3: Start calculating animation after 1s (as requested)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isCalculatingWakeUpTimes = true
+            }
+            
+            // Animate progress from 0 to 1 over 1.5 seconds
+            startProgressAnimation()
+            
+            // After calculation animation completes (3.8s total), show finishing up
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    isCalculatingWakeUpTimes = false
+                    isFinishingUp = true
+                }
+                
+                // Show finishing up for 1 second, then complete with micro interaction
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    triggerCompletionMicroInteraction()
+                    
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        isFinishingUp = false
+                    }
+                    
+                    // Small delay before wake-up times start appearing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        startWakeUpTimesAnimation()
+                    }
+                }
+            }
+        }
+    }
+    
     private func startCalculatingAnimation() {
         // Start calculating state after text appears (1.1s delay - 0.5s extra for smoothness)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
@@ -471,8 +518,8 @@ struct ContentView: View {
         // Select next moon icon for post-onboarding
         selectNextMoonIcon()
         
-        // Start the complete entrance sequence immediately (no delay)
-        startEntranceAnimation()
+        // Start post-onboarding entrance sequence with proper timing
+        startPostOnboardingEntranceAnimation()
         startBreathingEffect()
         startZzzAnimation()
     }
