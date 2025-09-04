@@ -66,7 +66,7 @@ struct ContentView: View {
                                 Text("z")
                                     .font(.system(size: [30, 25, 20][index], weight: .light))
                                     .foregroundColor(Color(red: [0.9, 0.85, 0.8][index], green: [0.9, 0.85, 0.8][index], blue: [0.95, 0.9, 0.85][index]))
-                                    .offset(x: [-5, -8, -10][index], y: [-5 + zzzFloatingOffsets[index], -8 + zzzFloatingOffsets[index], -12 + zzzFloatingOffsets[index]][index])
+                                    .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
                                     .opacity(zzzOpacities[index])
                                     .accessibilityHidden(true)
                             }
