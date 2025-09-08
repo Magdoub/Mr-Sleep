@@ -69,7 +69,7 @@ struct MainTabView: View {
             UITabBar.appearance().scrollEdgeAppearance = appearance
             
             // Increase the height of the tab bar for more top padding
-            UITabBar.appearance().frame.size.height = 100
+            UITabBar.appearance().frame.size.height = 120
         }
     }
 }
