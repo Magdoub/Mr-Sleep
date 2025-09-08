@@ -5,9 +5,12 @@
 //  Created by Magdoub on 08/09/2025.
 //
 
-import ActivityKit
 import Foundation
 import AVFoundation
+#if canImport(ActivityKit)
+import ActivityKit
+
+@available(iOS 16.1, *)
 
 @MainActor
 class AlarmLiveActivityManager: ObservableObject {
@@ -224,3 +227,4 @@ class AlarmLiveActivityManager: ObservableObject {
         return authInfo.areActivitiesEnabled
     }
 }
+#endif

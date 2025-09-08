@@ -56,9 +56,6 @@ struct AlarmItem: Identifiable, Codable {
 @MainActor
 class AlarmManager: ObservableObject {
     @Published var alarms: [AlarmItem] = []
-    #if canImport(ActivityKit)
-    private let liveActivityManager = AlarmLiveActivityManager.shared
-    #endif
     
     init() {
         loadAlarms()
@@ -332,6 +329,7 @@ class AlarmManager: ObservableObject {
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
         #if canImport(ActivityKit)
         if #available(iOS 16.1, *) {
+            let liveActivityManager = AlarmLiveActivityManager.shared
             liveActivityManager.startAlarmActivity(for: alarm)
         }
         #endif
@@ -341,6 +339,7 @@ class AlarmManager: ObservableObject {
         #if canImport(ActivityKit)
         if #available(iOS 16.1, *) {
             Task {
+                let liveActivityManager = AlarmLiveActivityManager.shared
                 await liveActivityManager.endActivity(for: alarmId)
             }
         }

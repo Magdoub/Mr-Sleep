@@ -5,10 +5,14 @@
 //  Created by Magdoub on 08/09/2025.
 //
 
-import ActivityKit
-import WidgetKit
+import Foundation
 import SwiftUI
 import AVFoundation
+#if canImport(ActivityKit) && canImport(WidgetKit)
+import ActivityKit
+import WidgetKit
+
+@available(iOS 16.1, *)
 
 struct AlarmLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
@@ -214,3 +218,4 @@ struct DismissAlarmIntent: AppIntent {
         return .result()
     }
 }
+#endif
