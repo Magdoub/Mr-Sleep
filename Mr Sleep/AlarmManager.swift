@@ -258,9 +258,78 @@ class AlarmManager: NSObject, ObservableObject {
     private func scheduleNotification(for alarm: AlarmItem) {
         guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return }
         
-        // Schedule only the FIRST notification initially
-        // Subsequent notifications will be scheduled conditionally based on lock state
-        scheduleNextNotification(for: alarm, repetition: 0, baseTime: scheduledDate)
+        // Pre-schedule ALL 6 notifications upfront
+        // We'll cancel remaining ones if phone gets unlocked
+        scheduleAllNotifications(for: alarm, baseTime: scheduledDate)
+    }
+    
+    private func scheduleAllNotifications(for alarm: AlarmItem, baseTime: Date) {
+        print("📅 Pre-scheduling all 6 notifications for alarm: \(alarm.time)")
+        
+        // Schedule all 6 notifications at once
+        for repetition in 0..<6 {
+            let notificationTime = baseTime.addingTimeInterval(TimeInterval(repetition * 30))
+            let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
+            
+            let content = UNMutableNotificationContent()
+            
+            // Customize title based on repetition
+            if repetition == 0 {
+                content.title = "🚨 WAKE UP! 🚨"
+                content.subtitle = "💗 Tap to continue alarm!"
+                content.body = "\(alarm.label) - Sound will loop when opened"
+            } else {
+                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/6)"
+                content.subtitle = "💗 Still sleeping? Time to wake up!"
+                content.body = "\(alarm.label) - Tap to stop repeating"
+            }
+            
+            // Set custom sound based on alarm's sound selection
+            content.sound = getNotificationSound(for: alarm.soundName)
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            
+            // Make notification critical to bypass Do Not Disturb and volume settings
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            
+            // Add badge to make it more noticeable
+            content.badge = NSNumber(value: repetition + 1)
+            
+            // Add user info for enhanced handling
+            content.userInfo = [
+                "isAlarm": true,
+                "alarmId": alarm.id.uuidString,
+                "alarmTime": alarm.time,
+                "alarmLabel": alarm.label,
+                "repetition": repetition,
+                "totalRepetitions": 6,
+                "baseTime": baseTime.timeIntervalSince1970
+            ]
+            
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: notificationTime)
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+            
+            // Schedule this notification
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Error scheduling notification \(repetition + 1)/6: \(error.localizedDescription)")
+                } else {
+                    print("✅ Scheduled notification \(repetition + 1)/6 for \(notificationTime)")
+                }
+            }
+        }
+        
+        // Schedule automatic cleanup after all notifications
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(6 * 30)) {
+            if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
+                self.alarms[alarmIndex].isEnabled = false
+                self.saveAlarms()
+                print("🏁 Automatically toggled off alarm after all 6 notifications: \(alarm.time)")
+            }
+        }
     }
     
     private func scheduleNextNotification(for alarm: AlarmItem, repetition: Int, baseTime: Date) {
@@ -876,41 +945,12 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     startLiveActivityForAlarm(alarm)
                 }
                 
-                // Check if phone is locked and decide whether to schedule next notification
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
-                let baseTimeInterval = notification.request.content.userInfo["baseTime"] as? TimeInterval ?? Date().timeIntervalSince1970
-                let baseTime = Date(timeIntervalSince1970: baseTimeInterval)
-                
-                // Check if phone is locked
                 print("🔔 Notification \(currentRepetition + 1)/6 is presenting for alarm: \(alarm.time)")
                 
-                if isPhoneLocked() {
-                    print("📱 Phone is locked, scheduling next notification (current: \(currentRepetition + 1)/6)")
-                    
-                    // Schedule the next notification
-                    let nextRepetition = currentRepetition + 1
-                    if nextRepetition < 6 {
-                        print("⏰ Scheduling notification \(nextRepetition + 1)/6 for 30 seconds from now")
-                        scheduleNextNotification(for: alarm, repetition: nextRepetition, baseTime: baseTime)
-                    } else {
-                        print("🏁 This was the last notification (6/6), scheduling auto-toggle-off in 30s")
-                        // This was the last notification, schedule auto-toggle-off
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                            if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
-                                self.alarms[alarmIndex].isEnabled = false
-                                self.saveAlarms()
-                                print("Automatically toggled off alarm after 6 notifications: \(alarm.time)")
-                            }
-                        }
-                    }
-                } else {
-                    print("📱 Phone is unlocked, stopping notifications and toggling off alarm: \(alarm.time)")
-                    
-                    // Phone is unlocked, stop the alarm sequence
-                    cancelNotification(for: alarm)
-                    toggleOffAlarm(with: alarmId)
-                    dismissLiveActivity(for: alarmIdString)
-                }
+                // Since we pre-schedule all notifications, we just need to handle the first one
+                // for starting Live Activity. The app lifecycle events will handle cancellation
+                // if the phone gets unlocked.
                 
                 // Also disable the alarm if it's set to auto-reset (only for regular alarms)
                 if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {
