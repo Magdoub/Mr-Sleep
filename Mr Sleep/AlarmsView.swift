@@ -19,6 +19,8 @@ class SoundPreviewManager: ObservableObject {
         // Map sound names to actual file names
         let fileName: String
         switch soundName.lowercased() {
+        case "morning":
+            fileName = "morning-alarm-clock"
         case "smooth":
             fileName = "smooth-alarm-clock"
         case "classic":
@@ -57,12 +59,14 @@ class SoundPreviewManager: ObservableObject {
         let systemSoundID: SystemSoundID
         
         switch soundName.lowercased() {
+        case "morning":
+            systemSoundID = 1007 // Horn sound (morning-like)
         case "smooth":
             systemSoundID = 1013 // SMS received sound (smooth)
         case "classic":
             systemSoundID = 1005 // Classic alarm beep
         default:
-            systemSoundID = 1005 // Default beep
+            systemSoundID = 1007 // Default to morning-like sound
         }
         
         // Play the sound 3 times
@@ -287,10 +291,10 @@ struct AddAlarmView: View {
     @ObservedObject var alarmManager: AlarmManager
     @Binding var selectedTime: Date
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedSound = "Smooth"
+    @State private var selectedSound = "Morning"
     @StateObject private var soundPreview = SoundPreviewManager()
     
-    let soundOptions = ["Smooth", "Classic"]
+    let soundOptions = ["Morning", "Smooth", "Classic"]
     
     var body: some View {
         NavigationView {
@@ -458,7 +462,7 @@ struct EditAlarmView: View {
                             }
                             
                             HStack(spacing: 8) {
-                                ForEach(["Smooth", "Classic"], id: \.self) { sound in
+                                ForEach(["Morning", "Smooth", "Classic"], id: \.self) { sound in
                                     Button(action: {
                                         selectedSound = sound
                                         soundPreview.playSound(sound)

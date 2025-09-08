@@ -136,7 +136,14 @@ class AlarmLiveActivityManager: ObservableObject {
         if let alarm = alarm {
             let soundName = alarm.soundName.lowercased()
             
-            if soundName.contains("smooth") {
+            if soundName.contains("morning") {
+                // Try morning-alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
+                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "caf")
+                print("🔊 Live Activity attempting to play morning-alarm-clock sound")
+            } else if soundName.contains("smooth") {
                 // Try smooth-alarm-clock sound
                 soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
                           Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
@@ -155,7 +162,11 @@ class AlarmLiveActivityManager: ObservableObject {
         
         // Fallback to default sounds if no specific alarm or sound not found
         if soundURL == nil {
-            soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+            soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "caf") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
                       Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
                       Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
                       Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "caf") ??

@@ -23,7 +23,7 @@ struct AlarmItem: Identifiable, Codable {
     var category: String // "Quick Boost", "Recovery", "Full Recharge"
     var cycles: Int
     var createdFromSleepNow: Bool = false
-    var soundName: String = "Smooth" // Default to smooth sound
+    var soundName: String = "Morning" // Default to morning sound
     var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
     
     // Convert time string to Date for scheduling
@@ -302,7 +302,13 @@ class AlarmManager: NSObject, ObservableObject {
         // Use the specific sound based on user selection
         let fileName = soundName.lowercased()
         
-        if fileName.contains("smooth") {
+        if fileName.contains("morning") {
+            // Try morning-alarm-clock sound
+            if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                print("🔊 Using morning-alarm-clock.mp3 for notification sound")
+                return UNNotificationSound(named: UNNotificationSoundName(rawValue: "morning-alarm-clock.mp3"))
+            }
+        } else if fileName.contains("smooth") {
             // Try smooth-alarm-clock sound
             if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
                 print("🔊 Using smooth-alarm-clock.mp3 for notification sound")
@@ -316,9 +322,12 @@ class AlarmManager: NSObject, ObservableObject {
             }
         }
         
-        // Default to smooth sound if available, then classic, then system
-        if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-            print("🔊 Using smooth-alarm-clock.mp3 as default notification sound")
+        // Default to morning sound if available, then smooth, then classic, then system
+        if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+            print("🔊 Using morning-alarm-clock.mp3 as default notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "morning-alarm-clock.mp3"))
+        } else if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+            print("🔊 Using smooth-alarm-clock.mp3 as fallback notification sound")
             return UNNotificationSound(named: UNNotificationSoundName(rawValue: "smooth-alarm-clock.mp3"))
         } else if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
             print("🔊 Using alarm-clock.mp3 as fallback notification sound")
@@ -396,7 +405,13 @@ class AlarmManager: NSObject, ObservableObject {
         if let alarm = alarm {
             let soundName = alarm.soundName.lowercased()
             
-            if soundName.contains("smooth") {
+            if soundName.contains("morning") {
+                // Try morning-alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a")
+                print("🔊 Attempting to play morning-alarm-clock sound")
+            } else if soundName.contains("smooth") {
                 // Try smooth-alarm-clock sound
                 soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
                           Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
@@ -413,7 +428,10 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Fallback to default sounds if no specific alarm or sound not found
         if soundURL == nil {
-            soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+            soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
                       Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
                       Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
                       Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??

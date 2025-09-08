@@ -9,7 +9,8 @@
 /* Begin PBXBuildFile section */
 		1D4770C22E6F3CE4007AF563 /* AlarmOverlayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4770C02E6F3CE4007AF563 /* AlarmOverlayManager.swift */; };
 		1D4770C32E6F3CE4007AF563 /* AlarmRingingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4770C12E6F3CE4007AF563 /* AlarmRingingView.swift */; };
-		1D4770CB2E6F6599007AF563 /* smooth-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CA2E6F6599007AF563 /* smooth-alarm-clock.mp3 */; };
+		1D4770CE2E6F7177007AF563 /* smooth-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */; };
+		1D4770CF2E6F7177007AF563 /* morning-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */; };
 		1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */; };
 		1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */; };
 		1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC22E52405C003DCB88 /* ContentView.swift */; };
@@ -29,7 +30,8 @@
 /* Begin PBXFileReference section */
 		1D4770C02E6F3CE4007AF563 /* AlarmOverlayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmOverlayManager.swift; sourceTree = "<group>"; };
 		1D4770C12E6F3CE4007AF563 /* AlarmRingingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmRingingView.swift; sourceTree = "<group>"; };
-		1D4770CA2E6F6599007AF563 /* smooth-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "smooth-alarm-clock.mp3"; sourceTree = "<group>"; };
+		1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "morning-alarm-clock.mp3"; sourceTree = "<group>"; };
+		1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "smooth-alarm-clock.mp3"; sourceTree = "<group>"; };
 		1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "alarm-clock.mp3"; sourceTree = "<group>"; };
 		1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mr Sleep.entitlements"; sourceTree = "<group>"; };
 		1DB00CBD2E52405C003DCB88 /* Mr Sleep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mr Sleep.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,7 +82,8 @@
 		1DB00CBF2E52405C003DCB88 /* Mr Sleep */ = {
 			isa = PBXGroup;
 			children = (
-				1D4770CA2E6F6599007AF563 /* smooth-alarm-clock.mp3 */,
+				1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */,
+				1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */,
 				1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */,
 				1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */,
 				1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */,
@@ -166,11 +169,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D4770CB2E6F6599007AF563 /* smooth-alarm-clock.mp3 in Resources */,
 				1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */,
 				1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */,
 				1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */,
 				1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */,
+				1D4770CE2E6F7177007AF563 /* smooth-alarm-clock.mp3 in Resources */,
+				1D4770CF2E6F7177007AF563 /* morning-alarm-clock.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

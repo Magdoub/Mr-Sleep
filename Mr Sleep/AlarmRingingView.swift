@@ -164,6 +164,11 @@ struct AlarmRingingView: View {
             print("🔊 Using pulse sound pattern")
             playPulseAlarmSound()
             return
+        } else if selectedSound.contains("morning") || selectedSound == "morning" {
+            // Check for morning-alarm-clock sound file
+            soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a")
         } else if selectedSound.contains("smooth") || selectedSound == "smooth" {
             // Check for smooth-alarm-clock sound file
             soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
@@ -203,7 +208,29 @@ struct AlarmRingingView: View {
     private func playDefaultAlarmSound() {
         print("🔄 Trying default alarm sounds...")
         
-        // Try smooth sound first, then classic, then pulse pattern
+        // Try morning sound first, then smooth, then classic, then pulse pattern
+        if let url = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") {
+            print("📁 Found morning-alarm-clock.mp3, attempting to play...")
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: url)
+                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.volume = 1.0
+                audioPlayer?.prepareToPlay()
+                
+                let success = audioPlayer?.play() ?? false
+                if success {
+                    print("🔊 SUCCESS: Playing default morning alarm sound with looping")
+                    return
+                } else {
+                    print("❌ FAILED: Could not start morning alarm playback")
+                }
+            } catch {
+                print("❌ Failed to create morning alarm player: \(error)")
+            }
+        } else {
+            print("📁 morning-alarm-clock.mp3 not found in bundle")
+        }
+        
         if let url = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") {
             print("📁 Found smooth-alarm-clock.mp3, attempting to play...")
             do {
@@ -214,7 +241,7 @@ struct AlarmRingingView: View {
                 
                 let success = audioPlayer?.play() ?? false
                 if success {
-                    print("🔊 SUCCESS: Playing default smooth alarm sound with looping")
+                    print("🔊 SUCCESS: Playing fallback smooth alarm sound with looping")
                     return
                 } else {
                     print("❌ FAILED: Could not start smooth alarm playback")
