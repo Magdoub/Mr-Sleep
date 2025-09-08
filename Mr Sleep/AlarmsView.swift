@@ -239,7 +239,7 @@ struct AddAlarmView: View {
                     .background(Color.clear)
                 
                 // Options Section
-                List {
+                VStack(spacing: 30) {
                     // Snooze Section
                     HStack {
                         Text("Snooze")
@@ -251,14 +251,16 @@ struct AddAlarmView: View {
                         Toggle("", isOn: $snoozeEnabled)
                             .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
                     }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
+                    .padding(.horizontal, 20)
                     
                     // Sound Section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Sound")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white)
+                        HStack {
+                            Text("Sound")
+                                .font(.system(size: 17))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
                         
                         HStack(spacing: 8) {
                             ForEach(soundOptions, id: \.self) { sound in
@@ -281,11 +283,9 @@ struct AddAlarmView: View {
                             }
                         }
                     }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
+                    .padding(.horizontal, 20)
                 }
-                .listStyle(GroupedListStyle())
-                .background(Color.clear)
+                .padding(.top, 20)
                 
                 Spacer()
                 }
@@ -361,18 +361,20 @@ struct EditAlarmView: View {
                 )
                 .ignoresSafeArea(.all)
                 
-                List {
-                    Section {
+                VStack(spacing: 30) {
+                    // Time Picker Section
+                    VStack {
                         DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
                             .datePickerStyle(WheelDatePickerStyle())
                             .labelsHidden()
                             .background(Color.clear)
                             .colorScheme(.dark)
                             .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                            .scaleEffect(1.1)
                     }
-                    .listRowBackground(Color.clear)
+                    .padding(.top, 20)
                     
-                    Section {
+                    VStack(spacing: 25) {
                         if !alarm.createdFromSleepNow {
                             HStack {
                                 Text("Label")
@@ -382,6 +384,7 @@ struct EditAlarmView: View {
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.trailing)
                             }
+                            .padding(.horizontal, 20)
                         }
                         
                         HStack {
@@ -391,11 +394,15 @@ struct EditAlarmView: View {
                             Toggle("", isOn: $snoozeEnabled)
                                 .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
                         }
+                        .padding(.horizontal, 20)
                         
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Sound")
-                                .foregroundColor(.white)
-                                .font(.system(size: 16, weight: .medium))
+                            HStack {
+                                Text("Sound")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16, weight: .medium))
+                                Spacer()
+                            }
                             
                             HStack(spacing: 8) {
                                 ForEach(["Radar", "Apex", "Beacon"], id: \.self) { sound in
@@ -418,11 +425,10 @@ struct EditAlarmView: View {
                                 }
                             }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .listRowBackground(Color.clear)
                 }
-                .listStyle(GroupedListStyle())
-                .background(Color.clear)
+                .padding(.bottom, 20)
             }
             .navigationTitle("Edit Alarm")
             .navigationBarTitleDisplayMode(.inline)
