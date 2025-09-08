@@ -428,15 +428,24 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Fallback to default sounds if no specific alarm or sound not found
         if soundURL == nil {
+            // Try morning alarm first
             soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
                       Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a")
+            
+            // Then try smooth alarm
+            if soundURL == nil {
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a")
+            }
+            
+            // Finally try classic alarm
+            if soundURL == nil {
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
+            }
         }
         
         if let soundURL = soundURL {

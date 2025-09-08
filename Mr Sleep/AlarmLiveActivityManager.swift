@@ -162,18 +162,27 @@ class AlarmLiveActivityManager: ObservableObject {
         
         // Fallback to default sounds if no specific alarm or sound not found
         if soundURL == nil {
+            // Try morning alarm first
             soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
                       Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
                       Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
-                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "caf") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
-                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "caf") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
-                      Bundle.main.url(forResource: "alarm-clock", withExtension: "caf")
+                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "caf")
+            
+            // Then try smooth alarm
+            if soundURL == nil {
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "caf")
+            }
+            
+            // Finally try classic alarm
+            if soundURL == nil {
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "caf")
+            }
         }
         
         if let soundURL = soundURL {
