@@ -65,11 +65,18 @@ struct AlarmsView: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(alarmManager.alarms.indices, id: \.self) { index in
+                                ForEach(alarmManager.alarms) { alarm in
                                     AlarmRowView(
-                                        alarm: $alarmManager.alarms[index],
-                                        onToggle: { alarmManager.toggleAlarm(alarmManager.alarms[index]) },
-                                        onDelete: { alarmManager.removeAlarm(alarmManager.alarms[index]) }
+                                        alarm: Binding(
+                                            get: { alarm },
+                                            set: { newValue in
+                                                if let index = alarmManager.alarms.firstIndex(where: { $0.id == alarm.id }) {
+                                                    alarmManager.alarms[index] = newValue
+                                                }
+                                            }
+                                        ),
+                                        onToggle: { alarmManager.toggleAlarm(alarm) },
+                                        onDelete: { alarmManager.removeAlarm(alarm) }
                                     )
                                 }
                             }

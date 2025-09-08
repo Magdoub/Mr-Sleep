@@ -170,12 +170,8 @@ class AlarmManager: ObservableObject {
            let decoded = try? JSONDecoder().decode([AlarmItem].self, from: data) {
             alarms = decoded
         } else {
-            // Default alarms if none saved
-            alarms = [
-                AlarmItem(time: "7:00 AM", isEnabled: true, label: "Work Day", category: "Recovery", cycles: 5),
-                AlarmItem(time: "8:30 AM", isEnabled: false, label: "Weekend", category: "Full Recharge", cycles: 6),
-                AlarmItem(time: "6:45 AM", isEnabled: true, label: "Gym Day", category: "Recovery", cycles: 4)
-            ]
+            // Start with empty alarms array
+            alarms = []
         }
     }
 }
