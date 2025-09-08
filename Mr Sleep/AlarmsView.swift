@@ -121,14 +121,27 @@ struct AlarmRowView: View {
                     .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                 
                 HStack(spacing: 8) {
-                    Text(alarm.label)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                    
                     if alarm.createdFromSleepNow {
-                        Image(systemName: "moon.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        HStack(spacing: 4) {
+                            Image(systemName: "moon.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                            Text(alarm.label)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                        }
+                    } else {
+                        // Manual alarm - show snooze and sound info
+                        VStack(alignment: .leading, spacing: 2) {
+                            if alarm.snoozeEnabled {
+                                Text("Snooze")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                            }
+                            Text(alarm.soundName)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                        }
                     }
                 }
             }
@@ -174,93 +187,95 @@ struct AddAlarmView: View {
     @ObservedObject var alarmManager: AlarmManager
     @Binding var selectedTime: Date
     @Environment(\.dismiss) private var dismiss
-    @State private var alarmLabel = ""
+    @State private var snoozeEnabled = true
+    @State private var selectedSound = "Radar"
+    
+    let soundOptions = ["Radar", "Apex", "Beacon"]
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Background gradient matching the main app
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.1, green: 0.25, blue: 0.5),
-                        Color(red: 0.06, green: 0.15, blue: 0.35),
-                        Color(red: 0.03, green: 0.08, blue: 0.2)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.all)
+            VStack(spacing: 0) {
+                // Time Picker Section
+                VStack(spacing: 20) {
+                    DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(WheelDatePickerStyle())
+                        .labelsHidden()
+                        .colorScheme(.dark)
+                        .scaleEffect(1.1)
+                }
+                .padding(.top, 40)
+                .padding(.bottom, 30)
+                .background(Color.black)
                 
-                VStack(spacing: 30) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("⏰")
-                            .font(.system(size: 48))
+                // Options Section
+                List {
+                    // Snooze Section
+                    HStack {
+                        Text("Snooze")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
                         
-                        Text("Add New Alarm")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                    }
-                    .padding(.top, 20)
-                    
-                    // Time Picker
-                    VStack(spacing: 16) {
-                        Text("Wake up time")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        Spacer()
                         
-                        DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
-                            .datePickerStyle(WheelDatePickerStyle())
-                            .labelsHidden()
-                            .colorScheme(.dark)
+                        Toggle("", isOn: $snoozeEnabled)
+                            .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
                     
-                    // Label Input
-                    VStack(spacing: 16) {
-                        Text("Alarm name (optional)")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    // Sound Section
+                    HStack {
+                        Text("Sound")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white)
                         
-                        TextField("Enter alarm name", text: $alarmLabel)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.system(size: 16))
-                    }
-                    .padding(.horizontal, 20)
-                    
-                    Spacer()
-                    
-                    // Action Buttons
-                    HStack(spacing: 20) {
-                        Button("Cancel") {
-                            dismiss()
+                        Spacer()
+                        
+                        Menu {
+                            ForEach(soundOptions, id: \.self) { sound in
+                                Button(sound) {
+                                    selectedSound = sound
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(selectedSound)
+                                    .font(.system(size: 17))
+                                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
                         }
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.1))
-                        )
-                        
-                        Button("Add Alarm") {
-                            addAlarm()
-                        }
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
-                        )
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 30)
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
+                }
+                .listStyle(GroupedListStyle())
+                .background(Color.black)
+                
+                Spacer()
+            }
+            .background(Color.black)
+            .navigationTitle("Add Alarm")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        addAlarm()
+                    }
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    .font(.system(size: 17, weight: .semibold))
                 }
             }
-            .navigationBarHidden(true)
         }
     }
     
@@ -269,9 +284,7 @@ struct AddAlarmView: View {
         formatter.dateFormat = "h:mm a"
         let timeString = formatter.string(from: selectedTime)
         
-        let label = alarmLabel.isEmpty ? "Manual Alarm" : alarmLabel
-        
-        alarmManager.addManualAlarm(time: timeString, label: label)
+        alarmManager.addManualAlarm(time: timeString, snoozeEnabled: snoozeEnabled, soundName: selectedSound)
         dismiss()
     }
 }

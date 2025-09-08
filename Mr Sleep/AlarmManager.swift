@@ -18,6 +18,9 @@ struct AlarmItem: Identifiable, Codable {
     var category: String // "Quick Boost", "Recovery", "Full Recharge"
     var cycles: Int
     var createdFromSleepNow: Bool = false
+    var snoozeEnabled: Bool = true
+    var soundName: String = "Radar" // Default sound
+    var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
     
     // Convert time string to Date for scheduling
     var scheduledDate: Date? {
@@ -53,6 +56,7 @@ class AlarmManager: ObservableObject {
     init() {
         loadAlarms()
         requestNotificationPermission()
+        checkAndResetExpiredAlarms()
     }
     
     // MARK: - Development Helper
@@ -63,6 +67,26 @@ class AlarmManager: ObservableObject {
         // Cancel all pending notifications
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         print("All alarms and notifications cleared")
+    }
+    
+    // MARK: - Auto Reset
+    func checkAndResetExpiredAlarms() {
+        let now = Date()
+        
+        for index in alarms.indices {
+            let alarm = alarms[index]
+            if alarm.shouldAutoReset && alarm.isEnabled {
+                if let scheduledDate = alarm.scheduledDate {
+                    // If the scheduled time has passed, disable the alarm
+                    if scheduledDate < now {
+                        alarms[index].isEnabled = false
+                        cancelNotification(for: alarm)
+                        print("Auto-reset alarm: \(alarm.time)")
+                    }
+                }
+            }
+        }
+        saveAlarms()
     }
     
     // MARK: - Notification Permissions
@@ -101,14 +125,17 @@ class AlarmManager: ObservableObject {
         impactFeedback.impactOccurred()
     }
     
-    func addManualAlarm(time: String, label: String) {
+    func addManualAlarm(time: String, snoozeEnabled: Bool, soundName: String) {
         let newAlarm = AlarmItem(
             time: time,
             isEnabled: true,
-            label: label,
+            label: "Alarm",
             category: "Manual",
             cycles: 0,
-            createdFromSleepNow: false
+            createdFromSleepNow: false,
+            snoozeEnabled: snoozeEnabled,
+            soundName: soundName,
+            shouldAutoReset: true
         )
         
         alarms.append(newAlarm)
