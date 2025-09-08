@@ -11,6 +11,8 @@ struct AlarmsView: View {
     @ObservedObject var alarmManager: AlarmManager
     @State private var showingAddAlarm = false
     @State private var selectedTime = Date()
+    @State private var showingEditAlarm = false
+    @State private var alarmToEdit: AlarmItem?
     
     var body: some View {
         GeometryReader { geometry in
@@ -88,7 +90,11 @@ struct AlarmsView: View {
                                             }
                                         ),
                                         onToggle: { alarmManager.toggleAlarm(alarm) },
-                                        onDelete: { alarmManager.removeAlarm(alarm) }
+                                        onDelete: { alarmManager.removeAlarm(alarm) },
+                                        onEdit: {
+                                            alarmToEdit = alarm
+                                            showingEditAlarm = true
+                                        }
                                     )
                                 }
                             }
@@ -104,6 +110,11 @@ struct AlarmsView: View {
         .sheet(isPresented: $showingAddAlarm) {
             AddAlarmView(alarmManager: alarmManager, selectedTime: $selectedTime)
         }
+        .sheet(isPresented: $showingEditAlarm) {
+            if let alarmToEdit = alarmToEdit {
+                EditAlarmView(alarmManager: alarmManager, alarm: alarmToEdit)
+            }
+        }
     }
 }
 
@@ -111,10 +122,11 @@ struct AlarmRowView: View {
     @Binding var alarm: AlarmItem
     let onToggle: () -> Void
     let onDelete: () -> Void
+    let onEdit: () -> Void
     
     var body: some View {
         HStack(spacing: 16) {
-            // Time and Label
+            // Time and Label (tappable area)
             VStack(alignment: .leading, spacing: 4) {
                 Text(alarm.time)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -144,6 +156,9 @@ struct AlarmRowView: View {
                         }
                     }
                 }
+            }
+            .onTapGesture {
+                onEdit()
             }
             
             Spacer()
@@ -285,6 +300,120 @@ struct AddAlarmView: View {
         let timeString = formatter.string(from: selectedTime)
         
         alarmManager.addManualAlarm(time: timeString, snoozeEnabled: snoozeEnabled, soundName: selectedSound)
+        dismiss()
+    }
+}
+
+struct EditAlarmView: View {
+    @ObservedObject var alarmManager: AlarmManager
+    let alarm: AlarmItem
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTime: Date
+    @State private var snoozeEnabled: Bool
+    @State private var selectedSound: String
+    @State private var alarmLabel: String
+    
+    init(alarmManager: AlarmManager, alarm: AlarmItem) {
+        self.alarmManager = alarmManager
+        self.alarm = alarm
+        
+        // Parse the time string to create a Date
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        let parsedTime = formatter.date(from: alarm.time) ?? Date()
+        
+        // Initialize state with alarm values
+        _selectedTime = State(initialValue: parsedTime)
+        _snoozeEnabled = State(initialValue: alarm.snoozeEnabled)
+        _selectedSound = State(initialValue: alarm.soundName)
+        _alarmLabel = State(initialValue: alarm.label)
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                List {
+                    Section {
+                        DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(WheelDatePickerStyle())
+                            .labelsHidden()
+                            .background(Color.black)
+                    }
+                    .listRowBackground(Color.black)
+                    
+                    Section {
+                        if !alarm.createdFromSleepNow {
+                            HStack {
+                                Text("Label")
+                                    .foregroundColor(.white)
+                                Spacer()
+                                TextField("Alarm", text: $alarmLabel)
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.trailing)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Snooze")
+                                .foregroundColor(.white)
+                            Spacer()
+                            Toggle("", isOn: $snoozeEnabled)
+                                .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
+                        }
+                        
+                        HStack {
+                            Text("Sound")
+                                .foregroundColor(.white)
+                            Spacer()
+                            Picker("Sound", selection: $selectedSound) {
+                                Text("Radar").tag("Radar")
+                                Text("Apex").tag("Apex")
+                                Text("Beacon").tag("Beacon")
+                            }
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                            .pickerStyle(MenuPickerStyle())
+                        }
+                    }
+                    .listRowBackground(Color.white.opacity(0.1))
+                }
+                .listStyle(GroupedListStyle())
+                .background(Color.black)
+            }
+            .navigationTitle("Edit Alarm")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        updateAlarm()
+                    }
+                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    .font(.system(size: 17, weight: .semibold))
+                }
+            }
+        }
+    }
+    
+    private func updateAlarm() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        let timeString = formatter.string(from: selectedTime)
+        
+        alarmManager.updateAlarm(
+            alarm: alarm,
+            newTime: timeString,
+            newLabel: alarmLabel,
+            newSnoozeEnabled: snoozeEnabled,
+            newSoundName: selectedSound
+        )
         dismiss()
     }
 }

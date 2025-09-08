@@ -169,6 +169,30 @@ class AlarmManager: ObservableObject {
         }
     }
     
+    func updateAlarm(alarm: AlarmItem, newTime: String, newLabel: String, newSnoozeEnabled: Bool, newSoundName: String) {
+        if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
+            // Cancel existing notification
+            cancelNotification(for: alarms[index])
+            
+            // Update alarm properties
+            alarms[index].time = newTime
+            alarms[index].label = newLabel
+            alarms[index].snoozeEnabled = newSnoozeEnabled
+            alarms[index].soundName = newSoundName
+            
+            // Reschedule notification if alarm is enabled
+            if alarms[index].isEnabled {
+                scheduleNotification(for: alarms[index])
+            }
+            
+            saveAlarms()
+            
+            // Provide haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        }
+    }
+    
     // MARK: - Helper Methods
     private func generateAlarmLabel(category: String, cycles: Int) -> String {
         let cycleText = cycles == 1 ? "cycle" : "cycles"
