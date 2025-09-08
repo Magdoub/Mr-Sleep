@@ -156,6 +156,14 @@ refactor(ui): Extract sleep analytics into separate view component
 - Maintain existing functionality while improving structure
 ```
 
+#### ⚠️ IMPORTANT: Keep Commit Messages Short
+**To avoid terminal hanging issues, prefer SHORT commit messages:**
+- ✅ GOOD: `"Add alarm navigation feature"`
+- ✅ GOOD: `"Fix popup dismiss behavior"`
+- ✅ GOOD: `"Update tab navigation flow"`
+- ❌ AVOID: Multi-line messages with bullets and special characters
+- ❌ AVOID: Very long descriptions that cause terminal to hang
+
 #### Commit Frequency Rules
 1. **Every file change** must be committed immediately
 2. **Every feature addition** gets its own commit
