@@ -210,18 +210,30 @@ struct AddAlarmView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Time Picker Section
-                VStack(spacing: 20) {
-                    DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(WheelDatePickerStyle())
-                        .labelsHidden()
-                        .colorScheme(.dark)
-                        .scaleEffect(1.1)
-                }
-                .padding(.top, 40)
-                .padding(.bottom, 30)
-                .background(Color.black)
+            ZStack {
+                // Background gradient to match app theme
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.25, blue: 0.5),
+                        Color(red: 0.06, green: 0.15, blue: 0.35),
+                        Color(red: 0.03, green: 0.08, blue: 0.2)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea(.all)
+                
+                VStack(spacing: 0) {
+                    // Time Picker Section
+                    VStack(spacing: 20) {
+                        DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(WheelDatePickerStyle())
+                            .labelsHidden()
+                            .colorScheme(.dark)
+                            .scaleEffect(1.1)
+                    }
+                    .padding(.top, 40)
+                    .padding(.bottom, 30)
                 
                 // Options Section
                 List {
@@ -270,11 +282,11 @@ struct AddAlarmView: View {
                     .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
                 }
                 .listStyle(GroupedListStyle())
-                .background(Color.black)
+                .background(Color.clear)
                 
                 Spacer()
+                }
             }
-            .background(Color.black)
             .navigationTitle("Add Alarm")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -334,16 +346,26 @@ struct EditAlarmView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea()
+                // Background gradient to match app theme
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.25, blue: 0.5),
+                        Color(red: 0.06, green: 0.15, blue: 0.35),
+                        Color(red: 0.03, green: 0.08, blue: 0.2)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea(.all)
                 
                 List {
                     Section {
                         DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
                             .datePickerStyle(WheelDatePickerStyle())
                             .labelsHidden()
-                            .background(Color.black)
+                            .background(Color.clear)
                     }
-                    .listRowBackground(Color.black)
+                    .listRowBackground(Color.white.opacity(0.1))
                     
                     Section {
                         if !alarm.createdFromSleepNow {
@@ -395,7 +417,7 @@ struct EditAlarmView: View {
                     .listRowBackground(Color.white.opacity(0.1))
                 }
                 .listStyle(GroupedListStyle())
-                .background(Color.black)
+                .background(Color.clear)
             }
             .navigationTitle("Edit Alarm")
             .navigationBarTitleDisplayMode(.inline)
