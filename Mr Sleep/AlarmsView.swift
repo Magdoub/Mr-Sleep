@@ -10,6 +10,7 @@ import AVFoundation
 
 class SoundPreviewManager: ObservableObject {
     private var audioPlayer: AVAudioPlayer?
+    private var isPlayingSystemSound = false
     
     func playSound(_ soundName: String) {
         // Always stop any currently playing sound first
@@ -47,21 +48,42 @@ class SoundPreviewManager: ObservableObject {
         switch soundName.lowercased() {
         case "radar":
             systemSoundID = 1005 // Short beep
-        case "apex":
-            systemSoundID = 1013 // Ascending tone
+        case "pulse":
+            systemSoundID = 1009 // Double beep
         case "beacon":
             systemSoundID = 1016 // Alert tone
         default:
             systemSoundID = 1005 // Default beep
         }
         
-        AudioServicesPlaySystemSound(systemSoundID)
+        // Play the sound 3 times
+        playSystemSoundRepeated(systemSoundID, repeatCount: 3)
+    }
+    
+    private func playSystemSoundRepeated(_ soundID: SystemSoundID, repeatCount: Int) {
+        guard repeatCount > 0 && !isPlayingSystemSound else { return }
+        
+        if repeatCount == 3 {
+            isPlayingSystemSound = true
+        }
+        
+        AudioServicesPlaySystemSound(soundID)
+        
+        if repeatCount > 1 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, self.isPlayingSystemSound else { return }
+                self.playSystemSoundRepeated(soundID, repeatCount: repeatCount - 1)
+            }
+        } else {
+            isPlayingSystemSound = false
+        }
     }
     
     func stopCurrentSound() {
         audioPlayer?.stop()
         audioPlayer = nil
-        // Note: Can't stop system sounds once started, but they're very short
+        isPlayingSystemSound = false
+        // Note: Can't stop system sounds once started, but we prevent new repeats
     }
 }
 
@@ -265,7 +287,7 @@ struct AddAlarmView: View {
     @State private var selectedSound = "Radar"
     @StateObject private var soundPreview = SoundPreviewManager()
     
-    let soundOptions = ["Radar", "Apex", "Beacon"]
+    let soundOptions = ["Radar", "Pulse", "Beacon"]
     
     var body: some View {
         NavigationView {
@@ -468,7 +490,7 @@ struct EditAlarmView: View {
                             }
                             
                             HStack(spacing: 8) {
-                                ForEach(["Radar", "Apex", "Beacon"], id: \.self) { sound in
+                                ForEach(["Radar", "Pulse", "Beacon"], id: \.self) { sound in
                                     Button(action: {
                                         selectedSound = sound
                                         soundPreview.playSound(sound)
