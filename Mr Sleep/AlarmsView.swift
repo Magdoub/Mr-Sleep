@@ -447,15 +447,6 @@ struct EditAlarmView: View {
                     
                     VStack(spacing: 25) {
                         if !alarm.createdFromSleepNow {
-                            HStack {
-                                Text("Label")
-                                    .foregroundColor(.white)
-                                Spacer()
-                                TextField("Alarm", text: $alarmLabel)
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.trailing)
-                            }
-                            .padding(.horizontal, 20)
                         }
                         
                         VStack(alignment: .leading, spacing: 12) {
