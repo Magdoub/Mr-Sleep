@@ -42,62 +42,7 @@ struct SettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         
-                        // Developer Testing Section
-                        #if DEBUG
-                        SettingsSectionView(title: "Live Activity Testing", icon: "bell.fill") {
-                            VStack(spacing: 16) {
-                                Button("🚨 Test Alarm Sound") {
-                                    // Create a test alarm and trigger it
-                                    let testAlarm = AlarmItem(
-                                        time: "12:28 PM",
-                                        isEnabled: true,
-                                        label: "💗 It's Monday afternoon",
-                                        category: "Test",
-                                        cycles: 5,
-                                        createdFromSleepNow: true,
-                                        snoozeEnabled: true,
-                                        soundName: "alarm-clock",
-                                        shouldAutoReset: false
-                                    )
-                                    
-                                    // Simulate alarm firing by calling the notification delegate method
-                                    let content = UNMutableNotificationContent()
-                                    content.title = "Test Alarm"
-                                    content.body = testAlarm.label
-                                    
-                                    let request = UNNotificationRequest(identifier: testAlarm.id.uuidString, content: content, trigger: nil)
-                                    let notification = UNNotification(request: request, date: Date())
-                                    
-                                    // This will trigger our alarm sound and any Live Activities
-                                    if let alarmManager = (UIApplication.shared.delegate as? UIApplicationDelegate) as? AlarmManager {
-                                        // For testing purposes, we'll just start the alarm sound directly
-                                        print("🧪 Testing alarm sound...")
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.red.opacity(0.8))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                
-                                Button("❌ Stop Test") {
-                                    print("🛑 Test alarm stopped")
-                                    // Stop any test sounds
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.gray.opacity(0.6))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                
-                                Text("⚠️ Test Live Activities - tap and lock phone immediately")
-                                    .font(.caption)
-                                    .foregroundColor(.yellow)
-                            }
-                            .padding(16)
-                        }
-                        .padding(.horizontal, 20)
-                        #endif
+                        // Alarm testing temporarily disabled for build compatibility
                     
                     // Sleep Settings Section
                     SettingsSectionView(title: "Sleep Settings", icon: "moon.fill") {
