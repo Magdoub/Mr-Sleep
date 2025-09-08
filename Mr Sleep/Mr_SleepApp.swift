@@ -12,13 +12,22 @@ import WidgetKit
 
 @main
 struct Mr_SleepApp: App {
+    @StateObject private var alarmManager = AlarmManager()
+    
     var body: some Scene {
         WindowGroup {
             MainTabView()  // Use MainTabView to show the bottom tab bar
                 .preferredColorScheme(.dark)
+                .environmentObject(alarmManager)
                 .onAppear {
                     incrementLaunchCount()
                     setupLiveActivities()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    handleAppWillEnterForeground()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    handleAppDidBecomeActive()
                 }
         }
     }
@@ -33,6 +42,16 @@ struct Mr_SleepApp: App {
             }
         }
         #endif
+    }
+    
+    private func handleAppWillEnterForeground() {
+        print("📱 App will enter foreground - checking for active alarms")
+        alarmManager.handleAppForeground()
+    }
+    
+    private func handleAppDidBecomeActive() {
+        print("📱 App became active - checking for active alarms")
+        alarmManager.handleAppBecameActive()
     }
     
     private func incrementLaunchCount() {

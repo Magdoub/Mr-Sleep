@@ -350,6 +350,57 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - App Lifecycle Handling
+    func handleAppForeground() {
+        // Called when app enters foreground (phone unlocked or app opened)
+        dismissActiveAlarmsOnUserInteraction()
+    }
+    
+    func handleAppBecameActive() {
+        // Called when app becomes active (additional check for user interaction)
+        dismissActiveAlarmsOnUserInteraction()
+    }
+    
+    private func dismissActiveAlarmsOnUserInteraction() {
+        let now = Date()
+        let fiveMinutesAgo = now.addingTimeInterval(-5 * 60) // 5 minutes ago
+        
+        // Find alarms that should be active right now (within the last 5 minutes)
+        let activeAlarms = alarms.filter { alarm in
+            guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return false }
+            
+            // Check if the alarm was scheduled within the last 5 minutes
+            // This accounts for the 6 notifications over 3 minutes plus some buffer
+            return scheduledDate >= fiveMinutesAgo && scheduledDate <= now
+        }
+        
+        if !activeAlarms.isEmpty {
+            print("📱 User interaction detected - dismissing \(activeAlarms.count) active alarm(s)")
+            
+            for alarm in activeAlarms {
+                // Cancel all notifications for this alarm
+                cancelNotification(for: alarm)
+                
+                // Toggle off the alarm
+                toggleOffAlarm(with: alarm.id)
+                
+                // Dismiss any live activities
+                dismissLiveActivity(for: alarm.id.uuidString)
+                
+                print("✅ Dismissed active alarm: \(alarm.time)")
+            }
+            
+            // Also clear any notification badges
+            UNUserNotificationCenter.current().setBadgeCount(0)
+        }
+    }
+    
+    // MARK: - Public method for manual dismissal
+    func dismissActiveAlarms() {
+        // Public method that can be called from anywhere in the app
+        dismissActiveAlarmsOnUserInteraction()
+    }
+    
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
         // Use the specific sound based on user selection
         let fileName = soundName.lowercased()

@@ -10,7 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-    @StateObject private var alarmManager = AlarmManager()
+    @EnvironmentObject var alarmManager: AlarmManager
     @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
     
     var body: some View {
@@ -90,4 +90,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AlarmManager())
 }
