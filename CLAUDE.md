@@ -35,7 +35,11 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 
 ### Key Components
 - `Mr_SleepApp.swift` - App entry point with dark mode configuration
-- `ContentView.swift` - Main UI containing all app functionality and state
+- `MainTabView.swift` - Tab bar container managing app navigation
+- `SleepNowView.swift` - Main sleep calculation and wake-up time selection
+- `AlarmsView.swift` - Alarm management with native iOS Clock app experience
+- `SettingsView.swift` - User preferences and app configuration
+- `AlarmManager.swift` - Alarm data management and notification handling
 - `SleepCalculator.swift` - Business logic singleton for sleep calculations
 - `WakeUpTimeButton` - Reusable button component for time display
 - `SleepGuideView` - Educational overlay about sleep hygiene
@@ -45,6 +49,9 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - **Fall asleep buffer**: 15 minutes automatically added
 - **Recommended sleep**: 4.5-6 hours highlighted as optimal
 - **Real-time updates**: Timer publishes minute-level updates to UI
+- **Alarm creation**: One-tap alarm creation from sleep calculations
+- **Auto-reset alarms**: Manual alarms automatically disable after firing
+- **Notification permissions**: Automatic request and management
 
 ## Code Patterns and Conventions
 
@@ -184,6 +191,7 @@ refactor(ui): Extract sleep analytics into separate view component
 - Educational sleep guide overlay
 - Recommended times highlighted visually
 - Custom gradient backgrounds and button styling
+- **Automatic navigation**: After creating an alarm, automatically switches to Alarms tab
 
 ### Platform Specifics
 - iPhone-only application (no iPad/Mac support)
