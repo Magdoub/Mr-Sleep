@@ -231,9 +231,12 @@ struct AddAlarmView: View {
                             .labelsHidden()
                             .colorScheme(.dark)
                             .scaleEffect(1.1)
+                            .background(Color.clear)
+                            .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                     }
                     .padding(.top, 40)
                     .padding(.bottom, 30)
+                    .background(Color.clear)
                 
                 // Options Section
                 List {
@@ -364,6 +367,8 @@ struct EditAlarmView: View {
                             .datePickerStyle(WheelDatePickerStyle())
                             .labelsHidden()
                             .background(Color.clear)
+                            .colorScheme(.dark)
+                            .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                     }
                     .listRowBackground(Color.clear)
                     
