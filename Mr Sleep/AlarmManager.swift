@@ -329,15 +329,29 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        // Start enhanced alarm with sound and Live Activity attempt
+        // Start enhanced alarm with sound and Live Activity
         print("🚨 Starting alarm with sound for: \(alarm.label)")
         startAlarmSound()
+        
+        // Start Live Activity on supported devices
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            AlarmLiveActivity.start(for: alarm)
+        }
+        #endif
     }
     
     func dismissLiveActivity(for alarmId: String) {
         // Stop alarm sound and Live Activity
         print("⏹️ Stopping alarm for ID: \(alarmId)")
         stopAlarmSound()
+        
+        // Stop Live Activity
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            AlarmLiveActivity.stop()
+        }
+        #endif
     }
     
     // MARK: - Direct Alarm Sound Management

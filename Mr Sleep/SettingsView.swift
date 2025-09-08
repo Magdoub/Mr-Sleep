@@ -42,7 +42,31 @@ struct SettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         
-                        // Alarm testing temporarily disabled for build compatibility
+                        // Live Activity Testing
+                        #if DEBUG && canImport(ActivityKit)
+                        if #available(iOS 16.1, *) {
+                            SettingsSectionView(title: "🧪 Test Live Activities", icon: "bell.fill") {
+                                VStack(spacing: 12) {
+                                    Button("🚨 Test Live Activity") {
+                                        testLiveActivity()
+                                    }
+                                    .buttonStyle(TestButtonStyle(color: .red))
+                                    
+                                    Button("❌ Stop Live Activity") {
+                                        stopTestLiveActivity()
+                                    }
+                                    .buttonStyle(TestButtonStyle(color: .gray))
+                                    
+                                    Text("⚠️ Tap test button then immediately lock your phone")
+                                        .font(.caption)
+                                        .foregroundColor(.yellow)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(16)
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                        #endif
                     
                     // Sleep Settings Section
                     SettingsSectionView(title: "Sleep Settings", icon: "moon.fill") {
@@ -265,5 +289,51 @@ struct SettingsInfoView: View {
 
 #Preview {
     SettingsView()
+}
+
+extension SettingsView {
+    // MARK: - Live Activity Testing Functions
+    #if DEBUG && canImport(ActivityKit)
+    @available(iOS 16.1, *)
+    private func testLiveActivity() {
+        let testAlarm = AlarmItem(
+            time: "12:28 PM",
+            isEnabled: true,
+            label: "💗 It's Monday afternoon",
+            category: "Test",
+            cycles: 5,
+            createdFromSleepNow: true,
+            snoozeEnabled: true,
+            soundName: "alarm-clock",
+            shouldAutoReset: false
+        )
+        
+        AlarmLiveActivity.start(for: testAlarm)
+        print("🧪 Test Live Activity started - lock your phone now!")
+    }
+    
+    @available(iOS 16.1, *)
+    private func stopTestLiveActivity() {
+        AlarmLiveActivity.stop()
+        print("🛑 Test Live Activity stopped")
+    }
+    #endif
+}
+
+// MARK: - Test Button Style
+struct TestButtonStyle: ButtonStyle {
+    let color: Color
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(color.opacity(configuration.isPressed ? 0.8 : 1.0))
+            .cornerRadius(12)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
 }
 

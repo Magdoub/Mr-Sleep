@@ -24,10 +24,13 @@ struct Mr_SleepApp: App {
     }
     
     private func setupLiveActivities() {
-        // Register the Live Activity widget
-        #if !targetEnvironment(simulator)
+        #if canImport(ActivityKit)
         if #available(iOS 16.1, *) {
-            WidgetCenter.shared.reloadAllTimelines()
+            // Request Live Activities authorization
+            Task {
+                let authStatus = ActivityAuthorizationInfo().areActivitiesEnabled
+                print("Live Activities authorized: \(authStatus)")
+            }
         }
         #endif
     }
