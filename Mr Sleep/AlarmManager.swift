@@ -353,12 +353,25 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - App Lifecycle Handling
     func handleAppForeground() {
         // Called when app enters foreground (phone unlocked or app opened)
+        trackAppActivity()
         dismissActiveAlarmsOnUserInteraction()
     }
     
     func handleAppBecameActive() {
         // Called when app becomes active (additional check for user interaction)
+        trackAppActivity()
         dismissActiveAlarmsOnUserInteraction()
+    }
+    
+    func handleAppEnteredBackground() {
+        // Called when app enters background - this can help detect when user is done interacting
+        print("📱 App entered background")
+    }
+    
+    private func trackAppActivity() {
+        // Track when the app becomes active for unlock detection
+        UserDefaults.standard.set(Date(), forKey: "lastAppActiveTime")
+        print("📱 App activity tracked at \(Date())")
     }
     
     private func dismissActiveAlarmsOnUserInteraction() {
@@ -474,6 +487,78 @@ class AlarmManager: NSObject, ObservableObject {
     func dismissActiveAlarms() {
         // Public method that can be called from anywhere in the app
         dismissActiveAlarmsOnUserInteraction()
+    }
+    
+    // MARK: - Unlock Detection
+    private func scheduleUnlockDetection(for alarm: AlarmItem) {
+        // Schedule periodic checks to see if user has unlocked phone
+        // We'll check every 15 seconds for the first 3 minutes (duration of 6 notifications)
+        
+        for checkInterval in stride(from: 15, through: 180, by: 15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(checkInterval)) {
+                self.checkForUserActivity(alarmId: alarm.id)
+            }
+        }
+    }
+    
+    private func checkForUserActivity(alarmId: UUID) {
+        // Check if the alarm is still enabled and active
+        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
+            return // Alarm already disabled
+        }
+        
+        // Check if the app has become active recently (indicating user interaction)
+        let now = Date()
+        let lastActiveTime = UserDefaults.standard.object(forKey: "lastAppActiveTime") as? Date ?? Date.distantPast
+        let timeSinceLastActive = now.timeIntervalSince(lastActiveTime)
+        
+        // If app was active within the last 30 seconds, consider it user interaction
+        if timeSinceLastActive < 30 {
+            print("🔍 Detected recent user activity (app active \(Int(timeSinceLastActive))s ago), dismissing alarm: \(alarm.time)")
+            cancelNotification(for: alarm)
+            toggleOffAlarm(with: alarmId)
+            dismissLiveActivity(for: alarmId.uuidString)
+            return
+        }
+        
+        // Alternative check: See if there are fewer pending notifications than expected
+        // This could indicate user interaction with notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let alarmNotifications = requests.filter { request in
+                request.identifier.contains(alarmId.uuidString)
+            }
+            
+            DispatchQueue.main.async {
+                // If there are significantly fewer notifications than expected, user likely interacted
+                let expectedNotifications = 6 // We schedule 6 notifications
+                let actualNotifications = alarmNotifications.count
+                
+                if actualNotifications < expectedNotifications - 1 {
+                    print("🔍 Detected notification interaction (\(actualNotifications)/\(expectedNotifications) remaining), dismissing alarm: \(alarm.time)")
+                    self.cancelNotification(for: alarm)
+                    self.toggleOffAlarm(with: alarmId)
+                    self.dismissLiveActivity(for: alarmId.uuidString)
+                }
+            }
+        }
+        
+        // Additional check: Look for any signs of device activity
+        // Check if notification center has been accessed (indicated by delivered notifications being cleared)
+        UNUserNotificationCenter.current().getDeliveredNotifications { deliveredNotifications in
+            let alarmDeliveredCount = deliveredNotifications.filter { notification in
+                notification.request.identifier.contains(alarmId.uuidString)
+            }.count
+            
+            DispatchQueue.main.async {
+                // If user has cleared notifications from notification center, they're likely awake
+                if alarmDeliveredCount == 0 {
+                    print("🔍 Detected notification center interaction (no delivered notifications), dismissing alarm: \(alarm.time)")
+                    self.cancelNotification(for: alarm)
+                    self.toggleOffAlarm(with: alarmId)
+                    self.dismissLiveActivity(for: alarmId.uuidString)
+                }
+            }
+        }
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -730,14 +815,22 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             alarmIdString = notificationId
         }
         
+        // Check if this is the first notification (repeat-0) or a later one
+        let isFirstNotification = notificationId.contains("-repeat-0") || !notificationId.contains("-repeat-")
+        
         if let alarmId = UUID(uuidString: alarmIdString) {
             // Check both regular alarms and test alarms
             let alarm = alarms.first(where: { $0.id == alarmId }) ?? 
                        testAlarms.first(where: { $0.id == alarmId })
             
             if let alarm = alarm {
-                // Start Live Activity when alarm fires
-                startLiveActivityForAlarm(alarm)
+                if isFirstNotification {
+                    // Start Live Activity when alarm fires (only for first notification)
+                    startLiveActivityForAlarm(alarm)
+                    
+                    // Schedule a background check to see if user has unlocked phone
+                    scheduleUnlockDetection(for: alarm)
+                }
                 
                 // Also disable the alarm if it's set to auto-reset (only for regular alarms)
                 if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {

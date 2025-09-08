@@ -29,6 +29,9 @@ struct Mr_SleepApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     handleAppDidBecomeActive()
                 }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    handleAppDidEnterBackground()
+                }
         }
     }
     
@@ -52,6 +55,11 @@ struct Mr_SleepApp: App {
     private func handleAppDidBecomeActive() {
         print("📱 App became active - checking for active alarms")
         alarmManager.handleAppBecameActive()
+    }
+    
+    private func handleAppDidEnterBackground() {
+        print("📱 App entered background")
+        alarmManager.handleAppEnteredBackground()
     }
     
     private func incrementLaunchCount() {
