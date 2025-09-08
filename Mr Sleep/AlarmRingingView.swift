@@ -11,7 +11,6 @@ import AVFoundation
 struct AlarmRingingView: View {
     let alarm: AlarmItem
     let onDismiss: () -> Void
-    let onSnooze: () -> Void
     
     @State private var isAnimating = false
     @State private var currentTime = Date()
@@ -110,24 +109,6 @@ struct AlarmRingingView: View {
                         .buttonStyle(PlainButtonStyle())
                         .scaleEffect(isAnimating ? 1.02 : 1.0)
                         .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isAnimating)
-                        
-                        // Snooze option
-                        Button(action: onSnooze) {
-                            Text("Snooze (9 min)")
-                                .font(.headline)
-                                .foregroundColor(.white.opacity(0.8))
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 32)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.white.opacity(0.2))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(20)
                     .background(

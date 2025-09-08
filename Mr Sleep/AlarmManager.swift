@@ -23,7 +23,6 @@ struct AlarmItem: Identifiable, Codable {
     var category: String // "Quick Boost", "Recovery", "Full Recharge"
     var cycles: Int
     var createdFromSleepNow: Bool = false
-    var snoozeEnabled: Bool = true
     var soundName: String = "Smooth" // Default to smooth sound
     var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
     
@@ -124,13 +123,6 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func setupNotificationCategories() {
-        // Create snooze action
-        let snoozeAction = UNNotificationAction(
-            identifier: "SNOOZE_ACTION",
-            title: "Snooze",
-            options: []
-        )
-        
         // Create dismiss action
         let dismissAction = UNNotificationAction(
             identifier: "DISMISS_ACTION",
@@ -141,7 +133,7 @@ class AlarmManager: NSObject, ObservableObject {
         // Create alarm category with actions
         let alarmCategory = UNNotificationCategory(
             identifier: "ALARM_CATEGORY",
-            actions: [snoozeAction, dismissAction],
+            actions: [dismissAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
@@ -173,7 +165,7 @@ class AlarmManager: NSObject, ObservableObject {
         impactFeedback.impactOccurred()
     }
     
-    func addManualAlarm(time: String, snoozeEnabled: Bool, soundName: String) {
+    func addManualAlarm(time: String, soundName: String) {
         let newAlarm = AlarmItem(
             time: time,
             isEnabled: true,
@@ -181,7 +173,6 @@ class AlarmManager: NSObject, ObservableObject {
             category: "Manual",
             cycles: 0,
             createdFromSleepNow: false,
-            snoozeEnabled: snoozeEnabled,
             soundName: soundName,
             shouldAutoReset: true
         )
@@ -217,15 +208,13 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
     
-    func updateAlarm(alarm: AlarmItem, newTime: String, newLabel: String, newSnoozeEnabled: Bool, newSoundName: String) {
+    func updateAlarm(alarm: AlarmItem, newTime: String, newSoundName: String) {
         if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
             // Cancel existing notification
             cancelNotification(for: alarms[index])
             
             // Update alarm properties
             alarms[index].time = newTime
-            alarms[index].label = newLabel
-            alarms[index].snoozeEnabled = newSnoozeEnabled
             alarms[index].soundName = newSoundName
             
             // Reschedule notification if alarm is enabled
@@ -529,13 +518,6 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         let alarmId = response.notification.request.identifier
         
         switch response.actionIdentifier {
-        case "SNOOZE_ACTION":
-            // Handle snooze - reschedule for 9 minutes later
-            if let alarmUUID = UUID(uuidString: alarmId),
-               let alarm = alarms.first(where: { $0.id == alarmUUID }) {
-                snoozeAlarm(alarm)
-            }
-            
         case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
             // Handle dismiss - end Live Activity
             dismissLiveActivity(for: alarmId)
@@ -547,26 +529,4 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         completionHandler()
     }
     
-    private func snoozeAlarm(_ alarm: AlarmItem) {
-        // Create a new notification 9 minutes from now
-        let content = UNMutableNotificationContent()
-        content.title = "⏰ Wake Up Time (Snoozed)"
-        content.body = "Time to wake up! \(alarm.label)"
-        content.sound = getNotificationSound(for: alarm.soundName)
-        content.categoryIdentifier = "ALARM_CATEGORY"
-        content.interruptionLevel = .critical
-        content.relevanceScore = 1.0
-        
-        // Schedule for 9 minutes from now
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 540, repeats: false) // 9 minutes
-        let request = UNNotificationRequest(identifier: "\(alarm.id.uuidString)_snooze_\(Date().timeIntervalSince1970)", content: content, trigger: trigger)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling snooze notification: \(error.localizedDescription)")
-            } else {
-                print("Snooze notification scheduled")
-            }
-        }
-    }
 }

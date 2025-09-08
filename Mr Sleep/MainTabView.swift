@@ -51,9 +51,6 @@ struct MainTabView: View {
                     alarm: alarm,
                     onDismiss: {
                         alarmOverlayManager.dismissAlarm()
-                    },
-                    onSnooze: {
-                        alarmOverlayManager.snoozeAlarm()
                     }
                 )
             }

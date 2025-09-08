@@ -233,13 +233,8 @@ struct AlarmRowView: View {
                                 .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
                         }
                     } else {
-                        // Manual alarm - show snooze and sound info
+                        // Manual alarm - show sound info
                         VStack(alignment: .leading, spacing: 2) {
-                            if alarm.snoozeEnabled {
-                                Text("Snooze")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
-                            }
                             Text(alarm.soundName)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
@@ -292,7 +287,6 @@ struct AddAlarmView: View {
     @ObservedObject var alarmManager: AlarmManager
     @Binding var selectedTime: Date
     @Environment(\.dismiss) private var dismiss
-    @State private var snoozeEnabled = true
     @State private var selectedSound = "Smooth"
     @StateObject private var soundPreview = SoundPreviewManager()
     
@@ -330,19 +324,6 @@ struct AddAlarmView: View {
                 
                 // Options Section
                 VStack(spacing: 30) {
-                    // Snooze Section
-                    HStack {
-                        Text("Snooze")
-                            .font(.system(size: 17))
-                            .foregroundColor(.white)
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $snoozeEnabled)
-                            .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
-                    }
-                    .padding(.horizontal, 20)
-                    
                     // Sound Section
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -408,7 +389,7 @@ struct AddAlarmView: View {
         formatter.dateFormat = "h:mm a"
         let timeString = formatter.string(from: selectedTime)
         
-        alarmManager.addManualAlarm(time: timeString, snoozeEnabled: snoozeEnabled, soundName: selectedSound)
+        alarmManager.addManualAlarm(time: timeString, soundName: selectedSound)
         soundPreview.stopCurrentSound()
         dismiss()
     }
@@ -419,9 +400,7 @@ struct EditAlarmView: View {
     let alarm: AlarmItem
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTime: Date
-    @State private var snoozeEnabled: Bool
     @State private var selectedSound: String
-    @State private var alarmLabel: String
     @StateObject private var soundPreview = SoundPreviewManager()
     
     init(alarmManager: AlarmManager, alarm: AlarmItem) {
@@ -435,9 +414,7 @@ struct EditAlarmView: View {
         
         // Initialize state with alarm values
         _selectedTime = State(initialValue: parsedTime)
-        _snoozeEnabled = State(initialValue: alarm.snoozeEnabled)
         _selectedSound = State(initialValue: alarm.soundName)
-        _alarmLabel = State(initialValue: alarm.label)
     }
     
     var body: some View {
@@ -480,15 +457,6 @@ struct EditAlarmView: View {
                             }
                             .padding(.horizontal, 20)
                         }
-                        
-                        HStack {
-                            Text("Snooze")
-                                .foregroundColor(.white)
-                            Spacer()
-                            Toggle("", isOn: $snoozeEnabled)
-                                .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
-                        }
-                        .padding(.horizontal, 20)
                         
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
@@ -555,8 +523,6 @@ struct EditAlarmView: View {
         alarmManager.updateAlarm(
             alarm: alarm,
             newTime: timeString,
-            newLabel: alarmLabel,
-            newSnoozeEnabled: snoozeEnabled,
             newSoundName: selectedSound
         )
         soundPreview.stopCurrentSound()

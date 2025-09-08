@@ -298,7 +298,6 @@ extension SettingsView {
             category: "Test",
             cycles: 5,
             createdFromSleepNow: true,
-            snoozeEnabled: true,
             soundName: "Smooth",
             shouldAutoReset: false
         )
