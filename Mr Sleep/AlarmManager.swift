@@ -53,7 +53,6 @@ struct AlarmItem: Identifiable, Codable {
     }
 }
 
-@MainActor
 class AlarmManager: ObservableObject {
     @Published var alarms: [AlarmItem] = []
     
@@ -351,9 +350,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             
             // Also disable the alarm if it's set to auto-reset
             if alarm.shouldAutoReset {
-                if let index = alarms.firstIndex(where: { $0.id == alarmId }) {
-                    alarms[index].isEnabled = false
-                    saveAlarms()
+                DispatchQueue.main.async {
+                    if let index = self.alarms.firstIndex(where: { $0.id == alarmId }) {
+                        self.alarms[index].isEnabled = false
+                        self.saveAlarms()
+                    }
                 }
             }
         }
