@@ -101,6 +101,25 @@ class AlarmManager: ObservableObject {
         impactFeedback.impactOccurred()
     }
     
+    func addManualAlarm(time: String, label: String) {
+        let newAlarm = AlarmItem(
+            time: time,
+            isEnabled: true,
+            label: label,
+            category: "Manual",
+            cycles: 0,
+            createdFromSleepNow: false
+        )
+        
+        alarms.append(newAlarm)
+        saveAlarms()
+        scheduleNotification(for: newAlarm)
+        
+        // Provide haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+    }
+    
     func removeAlarm(_ alarm: AlarmItem) {
         if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
             cancelNotification(for: alarm)

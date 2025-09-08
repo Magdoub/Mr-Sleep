@@ -9,6 +9,8 @@ import SwiftUI
 
 struct AlarmsView: View {
     @ObservedObject var alarmManager: AlarmManager
+    @State private var showingAddAlarm = false
+    @State private var selectedTime = Date()
     
     var body: some View {
         GeometryReader { geometry in
@@ -45,7 +47,7 @@ struct AlarmsView: View {
                         .accessibilityLabel("Clear all alarms")
                         
                         Button(action: {
-                            // Add new alarm action
+                            showingAddAlarm = true
                         }) {
                             Image(systemName: "plus")
                                 .font(.system(size: 20, weight: .medium))
@@ -98,6 +100,9 @@ struct AlarmsView: View {
                     Spacer()
                 }
             }
+        }
+        .sheet(isPresented: $showingAddAlarm) {
+            AddAlarmView(alarmManager: alarmManager, selectedTime: $selectedTime)
         }
     }
 }
@@ -162,6 +167,112 @@ struct AlarmRowView: View {
                 )
         )
         .opacity(alarm.isEnabled ? 1.0 : 0.6)
+    }
+}
+
+struct AddAlarmView: View {
+    @ObservedObject var alarmManager: AlarmManager
+    @Binding var selectedTime: Date
+    @Environment(\.dismiss) private var dismiss
+    @State private var alarmLabel = ""
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                // Background gradient matching the main app
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.25, blue: 0.5),
+                        Color(red: 0.06, green: 0.15, blue: 0.35),
+                        Color(red: 0.03, green: 0.08, blue: 0.2)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea(.all)
+                
+                VStack(spacing: 30) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("⏰")
+                            .font(.system(size: 48))
+                        
+                        Text("Add New Alarm")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                    }
+                    .padding(.top, 20)
+                    
+                    // Time Picker
+                    VStack(spacing: 16) {
+                        Text("Wake up time")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        
+                        DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(WheelDatePickerStyle())
+                            .labelsHidden()
+                            .colorScheme(.dark)
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    // Label Input
+                    VStack(spacing: 16) {
+                        Text("Alarm name (optional)")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        
+                        TextField("Enter alarm name", text: $alarmLabel)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.system(size: 16))
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    Spacer()
+                    
+                    // Action Buttons
+                    HStack(spacing: 20) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.1))
+                        )
+                        
+                        Button("Add Alarm") {
+                            addAlarm()
+                        }
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 30)
+                }
+            }
+            .navigationBarHidden(true)
+        }
+    }
+    
+    private func addAlarm() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        let timeString = formatter.string(from: selectedTime)
+        
+        let label = alarmLabel.isEmpty ? "Manual Alarm" : alarmLabel
+        
+        alarmManager.addManualAlarm(time: timeString, label: label)
+        dismiss()
     }
 }
 
