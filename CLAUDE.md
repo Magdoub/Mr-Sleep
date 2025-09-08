@@ -87,6 +87,87 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - Include Claude Code attribution in all commit messages
 - Use present tense and imperative mood (e.g., "Add feature X", "Fix bug in Y", "Update Z configuration")
 
+### Detailed Commit Guidelines
+
+#### Commit Message Format
+```
+<type>(<scope>): <description>
+
+<body>
+
+<footer>
+```
+
+#### Commit Types
+- **feat**: New feature or functionality
+- **fix**: Bug fix
+- **refactor**: Code refactoring without changing functionality
+- **style**: Code formatting, missing semicolons, etc.
+- **docs**: Documentation changes
+- **test**: Adding or updating tests
+- **chore**: Build process, auxiliary tool changes
+- **perf**: Performance improvements
+- **ci**: Continuous integration changes
+
+#### Scope Examples
+- **ui**: User interface changes
+- **data**: Data models and persistence
+- **alarm**: Alarm functionality
+- **tracking**: Sleep tracking features
+- **analytics**: Sleep analytics and insights
+- **notifications**: Push notifications
+- **health**: HealthKit integration
+- **config**: Configuration and settings
+
+#### Commit Message Examples
+```
+feat(sleep-tracking): Add sleep session logging with quality ratings
+
+- Implement SleepSession data model with start/end times
+- Add sleep quality rating (1-5 stars) and notes
+- Create SleepTrackingManager singleton for data persistence
+- Add UI for logging sleep sessions in ContentView
+
+Closes #123
+```
+
+```
+fix(alarm): Resolve alarm not triggering on device
+
+- Fix AVAudioSession configuration for background audio
+- Update alarm permissions handling
+- Add proper error handling for alarm setup failures
+
+Fixes #456
+```
+
+```
+refactor(ui): Extract sleep analytics into separate view component
+
+- Move analytics logic from ContentView to SleepAnalyticsView
+- Improve code organization and reusability
+- Maintain existing functionality while improving structure
+```
+
+#### Commit Frequency Rules
+1. **Every file change** must be committed immediately
+2. **Every feature addition** gets its own commit
+3. **Every bug fix** gets its own commit
+4. **Every refactoring** gets its own commit
+5. **Never** leave uncommitted changes at the end of a session
+
+#### Pre-Commit Checklist
+- [ ] All changes are tested and working
+- [ ] Code follows project conventions
+- [ ] Commit message follows the format above
+- [ ] No temporary files or debug code left behind
+- [ ] Changes are logically grouped in the commit
+
+#### Post-Commit Actions
+- Push commits to remote repository immediately
+- Update any related issues or pull requests
+- Document any breaking changes in commit body
+
 ## Development Notes
 
 ### Key Files Structure
