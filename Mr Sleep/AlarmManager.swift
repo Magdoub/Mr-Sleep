@@ -338,7 +338,7 @@ class AlarmManager: ObservableObject {
 }
 
 // MARK: - UNUserNotificationCenterDelegate
-extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
+extension AlarmManager: UNUserNotificationCenterDelegate {
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
