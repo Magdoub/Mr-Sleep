@@ -5,8 +5,11 @@
 //  Created by Magdoub on 08/09/2025.
 //
 
-import ActivityKit
 import Foundation
+#if canImport(ActivityKit)
+import ActivityKit
+
+@available(iOS 16.1, *)
 
 struct AlarmActivityAttributes: ActivityAttributes {
     public typealias AlarmStatus = ContentState
@@ -24,3 +27,4 @@ struct AlarmActivityAttributes: ActivityAttributes {
     var originalAlarmTime: String
     var alarmLabel: String
 }
+#endif

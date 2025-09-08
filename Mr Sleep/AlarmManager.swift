@@ -8,7 +8,9 @@
 import SwiftUI
 import UserNotifications
 import Foundation
+#if canImport(ActivityKit)
 import ActivityKit
+#endif
 
 // Enhanced AlarmItem with more properties
 struct AlarmItem: Identifiable, Codable {
@@ -54,7 +56,9 @@ struct AlarmItem: Identifiable, Codable {
 @MainActor
 class AlarmManager: ObservableObject {
     @Published var alarms: [AlarmItem] = []
+    #if canImport(ActivityKit)
     private let liveActivityManager = AlarmLiveActivityManager.shared
+    #endif
     
     init() {
         loadAlarms()
@@ -326,13 +330,21 @@ class AlarmManager: ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        liveActivityManager.startAlarmActivity(for: alarm)
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            liveActivityManager.startAlarmActivity(for: alarm)
+        }
+        #endif
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        Task {
-            await liveActivityManager.endActivity(for: alarmId)
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await liveActivityManager.endActivity(for: alarmId)
+            }
         }
+        #endif
     }
 }
 
@@ -345,7 +357,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
         if let alarmId = UUID(uuidString: notification.request.identifier),
            let alarm = alarms.first(where: { $0.id == alarmId }) {
             
-            startLiveActivityForAlarm(alarm)
+            #if canImport(ActivityKit)
+            if #available(iOS 16.1, *) {
+                startLiveActivityForAlarm(alarm)
+            }
+            #endif
             
             // Also disable the alarm if it's set to auto-reset
             if alarm.shouldAutoReset {
@@ -374,7 +390,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
             
         case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
             // Handle dismiss - end Live Activity
-            dismissLiveActivity(for: alarmId)
+            #if canImport(ActivityKit)
+            if #available(iOS 16.1, *) {
+                dismissLiveActivity(for: alarmId)
+            }
+            #endif
             
         default:
             break

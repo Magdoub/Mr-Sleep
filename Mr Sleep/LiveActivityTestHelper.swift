@@ -6,7 +6,10 @@
 //
 
 import Foundation
+#if canImport(ActivityKit)
 import ActivityKit
+
+@available(iOS 16.1, *)
 
 class LiveActivityTestHelper {
     
@@ -40,3 +43,4 @@ class LiveActivityTestHelper {
         return isSupported
     }
 }
+#endif

@@ -43,38 +43,40 @@ struct SettingsView: View {
                         .padding(.top, 20)
                         
                         // Developer Testing Section (remove after testing)
-                        #if DEBUG
-                        SettingsSectionView(title: "Live Activity Testing", icon: "bell.fill") {
-                            VStack(spacing: 16) {
-                                Button("🚨 Test Live Activity") {
-                                    Task { @MainActor in
-                                        LiveActivityTestHelper.createTestAlarmActivity()
+                        #if DEBUG && canImport(ActivityKit)
+                        if #available(iOS 16.1, *) {
+                            SettingsSectionView(title: "Live Activity Testing", icon: "bell.fill") {
+                                VStack(spacing: 16) {
+                                    Button("🚨 Test Live Activity") {
+                                        Task { @MainActor in
+                                            LiveActivityTestHelper.createTestAlarmActivity()
+                                        }
                                     }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.red.opacity(0.8))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                
-                                Button("❌ Stop Live Activity") {
-                                    Task { @MainActor in
-                                        LiveActivityTestHelper.endTestActivity()
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.red.opacity(0.8))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                    
+                                    Button("❌ Stop Live Activity") {
+                                        Task { @MainActor in
+                                            LiveActivityTestHelper.endTestActivity()
+                                        }
                                     }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.gray.opacity(0.6))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                    
+                                    Text("⚠️ Test buttons - remove before release")
+                                        .font(.caption)
+                                        .foregroundColor(.yellow)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.gray.opacity(0.6))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                
-                                Text("⚠️ Test buttons - remove before release")
-                                    .font(.caption)
-                                    .foregroundColor(.yellow)
+                                .padding(16)
                             }
-                            .padding(16)
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
                         #endif
                     
                     // Sleep Settings Section
