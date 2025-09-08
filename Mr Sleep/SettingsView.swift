@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var notificationsEnabled: Bool = true
     @State private var hapticFeedback: Bool = true
     @State private var darkMode: Bool = true
+    @StateObject private var alarmManager = AlarmManager()
     
     var body: some View {
         GeometryReader { geometry in
@@ -51,7 +52,7 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(TestButtonStyle(color: .red))
                                 
-                                Text("⚠️ This will trigger multiple loud notifications + haptics")
+                                Text("⚠️ This will send one test notification in 3 seconds")
                                     .font(.caption)
                                     .foregroundColor(.yellow)
                                     .multilineTextAlignment(.center)
@@ -288,7 +289,7 @@ extension SettingsView {
     // MARK: - Enhanced Alarm Testing Functions
     #if DEBUG
     private func testEnhancedAlarm() {
-        // Create a test alarm that fires in 5 seconds
+        // Create a test alarm that fires in 3 seconds
         let testAlarm = AlarmItem(
             time: "Test Alarm",
             isEnabled: true,
@@ -297,23 +298,34 @@ extension SettingsView {
             cycles: 5,
             createdFromSleepNow: true,
             snoozeEnabled: true,
-            soundName: "alarm-clock",
+            soundName: "pulse",
             shouldAutoReset: false
         )
         
         // Schedule immediate test notification
         let content = UNMutableNotificationContent()
         content.title = "🚨 TEST ALARM 🚨"
-        content.subtitle = "💗 Enhanced Alarm Test"
-        content.body = "This is your enhanced alarm experience!"
-        content.sound = .defaultCritical
+        content.subtitle = "💗 Pulse Test"
+        content.body = "Tap to test full-screen alarm with pulse sound!"
+        content.sound = .defaultCritical // Pulse sound for notification
         content.categoryIdentifier = "ALARM_CATEGORY"
         content.interruptionLevel = .critical
         content.relevanceScore = 1.0
         content.badge = 1
         
+        // Add test alarm info for full-screen experience
+        content.userInfo = [
+            "isAlarm": true,
+            "alarmId": testAlarm.id.uuidString,
+            "alarmTime": testAlarm.time,
+            "alarmLabel": testAlarm.label
+        ]
+        
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
-        let request = UNNotificationRequest(identifier: "test_alarm", content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: testAlarm.id.uuidString, content: content, trigger: trigger)
+        
+        // Temporarily add test alarm to AlarmManager so it can be found when notification fires
+        alarmManager.addTestAlarm(testAlarm)
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
@@ -321,21 +333,6 @@ extension SettingsView {
             } else {
                 print("🧪 Test alarm scheduled for 3 seconds from now")
             }
-        }
-        
-        // Schedule backup test notifications
-        for i in 1...3 {
-            let backupContent = UNMutableNotificationContent()
-            backupContent.title = "🔥 BACKUP TEST #\(i) 🔥"
-            backupContent.body = "Enhanced alarm backup notification"
-            backupContent.sound = .defaultCritical
-            backupContent.interruptionLevel = .critical
-            backupContent.badge = NSNumber(value: i + 1)
-            
-            let backupTrigger = UNTimeIntervalNotificationTrigger(timeInterval: 3 + Double(i * 15), repeats: false)
-            let backupRequest = UNNotificationRequest(identifier: "test_alarm_backup_\(i)", content: backupContent, trigger: backupTrigger)
-            
-            UNUserNotificationCenter.current().add(backupRequest)
         }
     }
     #endif

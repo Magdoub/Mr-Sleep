@@ -57,6 +57,7 @@ struct AlarmItem: Identifiable, Codable {
 
 class AlarmManager: NSObject, ObservableObject {
     @Published var alarms: [AlarmItem] = []
+    private var testAlarms: [AlarmItem] = [] // Temporary storage for test alarms
     
     override init() {
         super.init()
@@ -74,6 +75,13 @@ class AlarmManager: NSObject, ObservableObject {
         // Cancel all pending notifications
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         print("All alarms and notifications cleared")
+    }
+    
+    // MARK: - Test Alarm Support
+    func addTestAlarm(_ alarm: AlarmItem) {
+        // Add test alarm temporarily (not saved to UserDefaults)
+        testAlarms.append(alarm)
+        print("Added test alarm: \(alarm.label)")
     }
     
     // MARK: - Auto Reset
@@ -469,20 +477,27 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
         // When alarm notification is about to be presented, start Live Activity
-        if let alarmId = UUID(uuidString: notification.request.identifier),
-           let alarm = alarms.first(where: { $0.id == alarmId }) {
+        if let alarmId = UUID(uuidString: notification.request.identifier) {
+            // Check both regular alarms and test alarms
+            let alarm = alarms.first(where: { $0.id == alarmId }) ?? 
+                       testAlarms.first(where: { $0.id == alarmId })
             
-            // Start Live Activity when alarm fires
-            startLiveActivityForAlarm(alarm)
-            
-            // Also disable the alarm if it's set to auto-reset
-            if alarm.shouldAutoReset {
-                DispatchQueue.main.async {
-                    if let index = self.alarms.firstIndex(where: { $0.id == alarmId }) {
-                        self.alarms[index].isEnabled = false
-                        self.saveAlarms()
+            if let alarm = alarm {
+                // Start Live Activity when alarm fires
+                startLiveActivityForAlarm(alarm)
+                
+                // Also disable the alarm if it's set to auto-reset (only for regular alarms)
+                if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {
+                    DispatchQueue.main.async {
+                        if let index = self.alarms.firstIndex(where: { $0.id == alarmId }) {
+                            self.alarms[index].isEnabled = false
+                            self.saveAlarms()
+                        }
                     }
                 }
+                
+                // Remove test alarm after use
+                testAlarms.removeAll(where: { $0.id == alarmId })
             }
         }
         
