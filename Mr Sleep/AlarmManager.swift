@@ -91,15 +91,43 @@ class AlarmManager: ObservableObject {
     
     // MARK: - Notification Permissions
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
                     print("Notification permission granted")
+                    self.setupNotificationCategories()
                 } else {
                     print("Notification permission denied: \(error?.localizedDescription ?? "Unknown error")")
                 }
             }
         }
+    }
+    
+    private func setupNotificationCategories() {
+        // Create snooze action
+        let snoozeAction = UNNotificationAction(
+            identifier: "SNOOZE_ACTION",
+            title: "Snooze",
+            options: []
+        )
+        
+        // Create dismiss action
+        let dismissAction = UNNotificationAction(
+            identifier: "DISMISS_ACTION",
+            title: "Stop",
+            options: [.destructive]
+        )
+        
+        // Create alarm category with actions
+        let alarmCategory = UNNotificationCategory(
+            identifier: "ALARM_CATEGORY",
+            actions: [snoozeAction, dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        
+        // Register the category
+        UNUserNotificationCenter.current().setNotificationCategories([alarmCategory])
     }
     
     // MARK: - Alarm Management
@@ -216,8 +244,14 @@ class AlarmManager: ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "⏰ Wake Up Time"
         content.body = "Time to wake up! \(alarm.label)"
-        content.sound = .default
+        
+        // Set custom sound based on alarm's sound selection
+        content.sound = getNotificationSound(for: alarm.soundName)
         content.categoryIdentifier = "ALARM_CATEGORY"
+        
+        // Make notification critical to bypass Do Not Disturb and volume settings
+        content.interruptionLevel = .critical
+        content.relevanceScore = 1.0
         
         let calendar = Calendar.current
         let components = calendar.dateComponents([.hour, .minute], from: scheduledDate)
@@ -236,6 +270,31 @@ class AlarmManager: ObservableObject {
     
     private func cancelNotification(for alarm: AlarmItem) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [alarm.id.uuidString])
+    }
+    
+    private func getNotificationSound(for soundName: String) -> UNNotificationSound {
+        // Try to use custom sound file first
+        let soundFileName = "\(soundName.lowercased()).caf"
+        
+        // Check if custom sound file exists in the app bundle
+        if Bundle.main.path(forResource: soundName.lowercased(), ofType: "caf") != nil ||
+           Bundle.main.path(forResource: soundName.lowercased(), ofType: "wav") != nil ||
+           Bundle.main.path(forResource: soundName.lowercased(), ofType: "mp3") != nil ||
+           Bundle.main.path(forResource: soundName.lowercased(), ofType: "m4a") != nil {
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: soundFileName))
+        }
+        
+        // Fallback to system sounds based on alarm type
+        switch soundName.lowercased() {
+        case "radar":
+            return UNNotificationSound.defaultCritical
+        case "pulse":
+            return UNNotificationSound.defaultCritical
+        case "beacon":
+            return UNNotificationSound.defaultCritical
+        default:
+            return UNNotificationSound.defaultCritical
+        }
     }
     
     // MARK: - Persistence
