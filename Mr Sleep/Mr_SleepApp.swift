@@ -12,7 +12,7 @@ import StoreKit
 struct Mr_SleepApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()  // Direct launch - no splash screen
+            MainTabView()  // Use MainTabView to show the bottom tab bar
                 .preferredColorScheme(.dark)
                 .onAppear {
                     incrementLaunchCount()
