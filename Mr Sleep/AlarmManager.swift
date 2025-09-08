@@ -51,6 +51,7 @@ struct AlarmItem: Identifiable, Codable {
     }
 }
 
+@MainActor
 class AlarmManager: ObservableObject {
     @Published var alarms: [AlarmItem] = []
     private let liveActivityManager = AlarmLiveActivityManager.shared
@@ -325,20 +326,18 @@ class AlarmManager: ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        Task { @MainActor in
-            await liveActivityManager.startAlarmActivity(for: alarm)
-        }
+        liveActivityManager.startAlarmActivity(for: alarm)
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        Task { @MainActor in
+        Task {
             await liveActivityManager.endActivity(for: alarmId)
         }
     }
 }
 
 // MARK: - UNUserNotificationCenterDelegate
-extension AlarmManager: UNUserNotificationCenterDelegate {
+extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
