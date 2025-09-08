@@ -300,13 +300,16 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
-        // Map sound names to actual iOS system sounds
+        // Use different iOS system sounds to differentiate between sound types
         switch soundName.lowercased() {
         case "pulse":
+            // Use a short, sharp sound for pulse
             return UNNotificationSound.defaultCritical
         case "radar":
+            // Use default for radar
             return UNNotificationSound.default
         case "beacon":
+            // Use critical for beacon
             return UNNotificationSound.defaultCritical
         default:
             return UNNotificationSound.defaultCritical

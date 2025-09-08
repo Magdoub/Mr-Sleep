@@ -205,11 +205,11 @@ struct AlarmRingingView: View {
     
     private func playPulseAlarmSound() {
         // Create a repeating pulse sound pattern using system sounds
-        soundTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { _ in
-            // Play pulse sound (short beep)
-            AudioServicesPlaySystemSound(1013) // SMS received sound (pulse-like)
+        soundTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in
+            // Play pulse sound - using a sharper, more alarm-like sound
+            AudioServicesPlaySystemSound(1005) // Critical alert sound
         }
-        print("🔊 Started pulse alarm sound pattern")
+        print("🔊 Started pulse alarm sound pattern (0.6s intervals)")
     }
     
     private func playSystemAlarmSound() {
