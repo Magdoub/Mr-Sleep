@@ -239,29 +239,31 @@ struct AddAlarmView: View {
                     .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
                     
                     // Sound Section
-                    HStack {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Sound")
                             .font(.system(size: 17))
                             .foregroundColor(.white)
                         
-                        Spacer()
-                        
-                        Menu {
+                        HStack(spacing: 8) {
                             ForEach(soundOptions, id: \.self) { sound in
-                                Button(sound) {
+                                Button(action: {
                                     selectedSound = sound
+                                }) {
+                                    Text(sound)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(selectedSound == sound ? .black : .white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(selectedSound == sound ? 
+                                                      Color(red: 0.894, green: 0.729, blue: 0.306) : 
+                                                      Color.white.opacity(0.2))
+                                        )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                        } label: {
-                            HStack {
-                                Text(selectedSound)
-                                    .font(.system(size: 17))
-                                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
-                            }
+                            Spacer()
                         }
                     }
                     .padding(.vertical, 8)
@@ -363,17 +365,32 @@ struct EditAlarmView: View {
                                 .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
                         }
                         
-                        HStack {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Sound")
                                 .foregroundColor(.white)
-                            Spacer()
-                            Picker("Sound", selection: $selectedSound) {
-                                Text("Radar").tag("Radar")
-                                Text("Apex").tag("Apex")
-                                Text("Beacon").tag("Beacon")
+                                .font(.system(size: 16, weight: .medium))
+                            
+                            HStack(spacing: 8) {
+                                ForEach(["Radar", "Apex", "Beacon"], id: \.self) { sound in
+                                    Button(action: {
+                                        selectedSound = sound
+                                    }) {
+                                        Text(sound)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(selectedSound == sound ? .black : .white)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .fill(selectedSound == sound ? 
+                                                          Color(red: 0.894, green: 0.729, blue: 0.306) : 
+                                                          Color.white.opacity(0.2))
+                                            )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                                Spacer()
                             }
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                            .pickerStyle(MenuPickerStyle())
                         }
                     }
                     .listRowBackground(Color.white.opacity(0.1))
