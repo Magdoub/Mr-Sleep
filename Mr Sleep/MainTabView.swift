@@ -12,30 +12,37 @@ struct MainTabView: View {
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            SleepNowView()
-                .tabItem {
-                    Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
-                    Text("Sleep Now")
+        Group {
+            if showOnboarding {
+                // Show only SleepNowView during onboarding (no tab bar)
+                SleepNowView()
+            } else {
+                // Show full TabView after onboarding
+                TabView(selection: $selectedTab) {
+                    SleepNowView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
+                            Text("Sleep Now")
+                        }
+                        .tag(0)
+                    
+                    AlarmsView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 1 ? "alarm.fill" : "alarm")
+                            Text("Alarms")
+                        }
+                        .tag(1)
+                    
+                    SettingsView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 2 ? "gearshape.fill" : "gearshape")
+                            Text("Settings")
+                        }
+                        .tag(2)
                 }
-                .tag(0)
-            
-            AlarmsView()
-                .tabItem {
-                    Image(systemName: selectedTab == 1 ? "alarm.fill" : "alarm")
-                    Text("Alarms")
-                }
-                .tag(1)
-            
-            SettingsView()
-                .tabItem {
-                    Image(systemName: selectedTab == 2 ? "gearshape.fill" : "gearshape")
-                    Text("Settings")
-                }
-                .tag(2)
+                .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+            }
         }
-        .toolbar(showOnboarding ? .hidden : .visible, for: .tabBar)
-        .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
         .onChange(of: showOnboarding) { isOnboarding in
             // Update onboarding state when it changes
             showOnboarding = isOnboarding
