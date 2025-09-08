@@ -291,77 +291,30 @@ class AlarmManager: NSObject, ObservableObject {
                 print("Notification scheduled for \(alarm.time)")
             }
         }
-        
-        // Schedule backup notifications (every minute for 5 minutes) to ensure wake up
-        scheduleBackupNotifications(for: alarm, originalDate: scheduledDate)
     }
     
-    private func scheduleBackupNotifications(for alarm: AlarmItem, originalDate: Date) {
-        // Schedule backup notifications every minute for 5 minutes
-        for i in 1...5 {
-            let backupDate = originalDate.addingTimeInterval(TimeInterval(i * 60)) // +1, +2, +3, +4, +5 minutes
-            
-            let content = UNMutableNotificationContent()
-            content.title = "🔥 WAKE UP NOW! 🔥"
-            content.subtitle = "Backup Alarm #\(i)"
-            content.body = "You need to wake up! \(alarm.label)"
-            content.sound = .defaultCritical
-            content.categoryIdentifier = "ALARM_CATEGORY"
-            content.interruptionLevel = .critical
-            content.relevanceScore = 1.0
-            content.badge = NSNumber(value: i + 1)
-            
-            let backupTrigger = UNTimeIntervalNotificationTrigger(timeInterval: backupDate.timeIntervalSinceNow, repeats: false)
-            let backupRequest = UNNotificationRequest(
-                identifier: "\(alarm.id.uuidString)_backup_\(i)",
-                content: content,
-                trigger: backupTrigger
-            )
-            
-            UNUserNotificationCenter.current().add(backupRequest) { error in
-                if let error = error {
-                    print("Error scheduling backup notification \(i): \(error.localizedDescription)")
-                } else {
-                    print("Backup notification \(i) scheduled")
-                }
-            }
-        }
-    }
     
     private func cancelNotification(for alarm: AlarmItem) {
         // Cancel main notification
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [alarm.id.uuidString])
-        
-        // Cancel backup notifications
-        var backupIds: [String] = []
-        for i in 1...5 {
-            backupIds.append("\(alarm.id.uuidString)_backup_\(i)")
-        }
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: backupIds)
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
-        // Try to use custom sound file first
-        let soundFileName = "\(soundName.lowercased()).caf"
-        
-        // Check if custom sound file exists in the app bundle
-        if Bundle.main.path(forResource: soundName.lowercased(), ofType: "caf") != nil ||
-           Bundle.main.path(forResource: soundName.lowercased(), ofType: "wav") != nil ||
-           Bundle.main.path(forResource: soundName.lowercased(), ofType: "mp3") != nil ||
-           Bundle.main.path(forResource: soundName.lowercased(), ofType: "m4a") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: soundFileName))
+        // Use the custom alarm-clock sound for all alarms to ensure it works and repeats
+        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
         }
         
         // Fallback to system sounds based on alarm type
         switch soundName.lowercased() {
         case "radar":
-            return UNNotificationSound.defaultCritical
+            return UNNotificationSound.default
         case "pulse":
-            return UNNotificationSound.defaultCritical
+            return UNNotificationSound.default
         case "beacon":
-            return UNNotificationSound.defaultCritical
+            return UNNotificationSound.default
         default:
-            return UNNotificationSound.defaultCritical
+            return UNNotificationSound.default
         }
     }
     
@@ -385,18 +338,22 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        // Start enhanced alarm with sound and Live Activity
-        print("🚨 Starting alarm with sound for: \(alarm.label)")
-        startAlarmSound()
+        // Start enhanced alarm with overlay (sound handled by AlarmRingingView)
+        print("🚨 Starting alarm overlay for: \(alarm.label)")
         
-        // Start Live Activity on supported devices
+        // Show full-screen alarm overlay (this will handle the sound)
+        AlarmOverlayManager.shared.showAlarm(alarm)
+        
+        // Start Live Activity on supported devices (if available)
         startLiveActivity(for: alarm)
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        // Stop alarm sound and Live Activity
+        // Stop alarm overlay and Live Activity
         print("⏹️ Stopping alarm for ID: \(alarmId)")
-        stopAlarmSound()
+        
+        // Dismiss alarm overlay (this will stop the sound too)
+        AlarmOverlayManager.shared.dismissAlarm()
         
         // Stop Live Activity
         stopLiveActivity()

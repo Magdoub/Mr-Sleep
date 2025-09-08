@@ -11,6 +11,7 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @StateObject private var alarmManager = AlarmManager()
+    @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
     
     var body: some View {
         Group {
@@ -42,6 +43,19 @@ struct MainTabView: View {
                         .tag(2)
                 }
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+            }
+        }
+        .fullScreenCover(isPresented: $alarmOverlayManager.isShowingAlarm) {
+            if let alarm = alarmOverlayManager.currentAlarm {
+                AlarmRingingView(
+                    alarm: alarm,
+                    onDismiss: {
+                        alarmOverlayManager.dismissAlarm()
+                    },
+                    onSnooze: {
+                        alarmOverlayManager.snoozeAlarm()
+                    }
+                )
             }
         }
         .onChange(of: showOnboarding) { isOnboarding in
