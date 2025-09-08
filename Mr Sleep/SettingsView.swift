@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @State private var sleepCycleDuration: Double = 90
@@ -307,7 +308,17 @@ extension SettingsView {
         content.title = "🚨 TEST ALARM 🚨"
         content.subtitle = "💗 Pulse Test"
         content.body = "Tap to test full-screen alarm with pulse sound!"
-        content.sound = .defaultCritical // Pulse sound for notification
+        // Use the same alarm sound that regular alarms use
+        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
+            print("🧪 Test using alarm-clock.mp3 for notification sound")
+        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "wav") != nil {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.wav"))
+            print("🧪 Test using alarm-clock.wav for notification sound")
+        } else {
+            content.sound = .defaultCritical
+            print("🧪 Test using defaultCritical notification sound")
+        }
         content.categoryIdentifier = "ALARM_CATEGORY"
         content.interruptionLevel = .critical
         content.relevanceScore = 1.0

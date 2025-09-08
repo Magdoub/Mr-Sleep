@@ -308,20 +308,21 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
-        // Use different iOS system sounds to differentiate between sound types
-        switch soundName.lowercased() {
-        case "pulse":
-            // Use a short, sharp sound for pulse
-            return UNNotificationSound.defaultCritical
-        case "radar":
-            // Use default for radar
-            return UNNotificationSound.default
-        case "beacon":
-            // Use critical for beacon
-            return UNNotificationSound.defaultCritical
-        default:
-            return UNNotificationSound.defaultCritical
+        // Try to use the alarm-clock sound file in various formats
+        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+            print("🔊 Using alarm-clock.mp3 for notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
+        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "wav") != nil {
+            print("🔊 Using alarm-clock.wav for notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.wav"))
+        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "caf") != nil {
+            print("🔊 Using alarm-clock.caf for notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.caf"))
         }
+        
+        // If no custom sound file, use iOS critical sound (loudest available)
+        print("🔊 No custom alarm sound found, using defaultCritical")
+        return UNNotificationSound.defaultCritical
     }
     
     // MARK: - Persistence
