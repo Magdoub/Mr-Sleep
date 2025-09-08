@@ -42,7 +42,48 @@ struct SettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         
-                        // Live Activity testing temporarily disabled for build compatibility
+                        // Developer Testing Section
+                        #if DEBUG
+                        SettingsSectionView(title: "Live Activity Testing", icon: "bell.fill") {
+                            VStack(spacing: 16) {
+                                Button("🚨 Test Live Activity") {
+                                    let testAlarm = AlarmItem(
+                                        time: "12:28 PM",
+                                        isEnabled: true,
+                                        label: "💗 It's Monday afternoon",
+                                        category: "Test",
+                                        cycles: 5,
+                                        createdFromSleepNow: true,
+                                        snoozeEnabled: true,
+                                        soundName: "alarm-clock",
+                                        shouldAutoReset: false
+                                    )
+                                    
+                                    SimpleLiveActivityManager.shared.startAlarmWithSound(for: testAlarm)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.red.opacity(0.8))
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                                
+                                Button("❌ Stop Test") {
+                                    SimpleLiveActivityManager.shared.stopAlarm()
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.gray.opacity(0.6))
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                                
+                                Text("⚠️ Test Live Activities - tap and lock phone immediately")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                            }
+                            .padding(16)
+                        }
+                        .padding(.horizontal, 20)
+                        #endif
                     
                     // Sleep Settings Section
                     SettingsSectionView(title: "Sleep Settings", icon: "moon.fill") {

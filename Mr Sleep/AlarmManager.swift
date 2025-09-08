@@ -327,13 +327,13 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        // Live Activities temporarily disabled for build compatibility
-        print("Live Activity would start for alarm: \(alarm.label)")
+        // Start Live Activity with sound
+        SimpleLiveActivityManager.shared.startAlarmWithSound(for: alarm)
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        // Live Activities temporarily disabled for build compatibility  
-        print("Live Activity would end for alarm: \(alarmId)")
+        // Stop Live Activity and sound
+        SimpleLiveActivityManager.shared.stopAlarm()
     }
 }
 
@@ -346,7 +346,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         if let alarmId = UUID(uuidString: notification.request.identifier),
            let alarm = alarms.first(where: { $0.id == alarmId }) {
             
-            // Live Activities call temporarily disabled
+            // Start Live Activity when alarm fires
             startLiveActivityForAlarm(alarm)
             
             // Also disable the alarm if it's set to auto-reset
