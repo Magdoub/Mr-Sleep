@@ -6,6 +6,38 @@
 //
 
 import SwiftUI
+import AVFoundation
+
+class SoundPreviewManager: ObservableObject {
+    private var audioPlayer: AVAudioPlayer?
+    
+    func playSound(_ soundName: String) {
+        stopCurrentSound()
+        
+        guard let soundURL = Bundle.main.url(forResource: soundName.lowercased(), withExtension: "mp3") else {
+            // Fallback to system sound if custom sound file doesn't exist
+            playSystemSound()
+            return
+        }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer?.play()
+        } catch {
+            playSystemSound()
+        }
+    }
+    
+    private func playSystemSound() {
+        // Play a short system beep as fallback
+        AudioServicesPlaySystemSound(1005) // System beep sound
+    }
+    
+    func stopCurrentSound() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+    }
+}
 
 struct AlarmsView: View {
     @ObservedObject var alarmManager: AlarmManager
@@ -205,6 +237,7 @@ struct AddAlarmView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var snoozeEnabled = true
     @State private var selectedSound = "Radar"
+    @StateObject private var soundPreview = SoundPreviewManager()
     
     let soundOptions = ["Radar", "Apex", "Beacon"]
     
@@ -266,6 +299,7 @@ struct AddAlarmView: View {
                             ForEach(soundOptions, id: \.self) { sound in
                                 Button(action: {
                                     selectedSound = sound
+                                    soundPreview.playSound(sound)
                                 }) {
                                     Text(sound)
                                         .font(.system(size: 14, weight: .medium))
@@ -295,6 +329,7 @@ struct AddAlarmView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        soundPreview.stopCurrentSound()
                         dismiss()
                     }
                     .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
@@ -317,6 +352,7 @@ struct AddAlarmView: View {
         let timeString = formatter.string(from: selectedTime)
         
         alarmManager.addManualAlarm(time: timeString, snoozeEnabled: snoozeEnabled, soundName: selectedSound)
+        soundPreview.stopCurrentSound()
         dismiss()
     }
 }
@@ -329,6 +365,7 @@ struct EditAlarmView: View {
     @State private var snoozeEnabled: Bool
     @State private var selectedSound: String
     @State private var alarmLabel: String
+    @StateObject private var soundPreview = SoundPreviewManager()
     
     init(alarmManager: AlarmManager, alarm: AlarmItem) {
         self.alarmManager = alarmManager
@@ -408,6 +445,7 @@ struct EditAlarmView: View {
                                 ForEach(["Radar", "Apex", "Beacon"], id: \.self) { sound in
                                     Button(action: {
                                         selectedSound = sound
+                                        soundPreview.playSound(sound)
                                     }) {
                                         Text(sound)
                                             .font(.system(size: 14, weight: .medium))
@@ -435,6 +473,7 @@ struct EditAlarmView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        soundPreview.stopCurrentSound()
                         dismiss()
                     }
                     .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
@@ -463,6 +502,7 @@ struct EditAlarmView: View {
             newSnoozeEnabled: snoozeEnabled,
             newSoundName: selectedSound
         )
+        soundPreview.stopCurrentSound()
         dismiss()
     }
 }
