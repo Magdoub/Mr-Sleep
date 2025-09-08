@@ -212,3 +212,33 @@ refactor(ui): Extract sleep analytics into separate view component
 - Apple Watch companion app potential
 - Internationalization support (currently English-only)
 - Background notifications for optimal sleep times
+
+## Version History
+
+### Version 3.1 (Build 3) - January 2025
+**🔔 Alarm System Overhaul - Now Fully Functional!**
+
+- ✅ **Fixed alarm notifications**: Alarms now work reliably when phone is locked
+- 🔄 **Smart repeat system**: Up to 6 notifications every 30 seconds for heavy sleepers
+- 🔓 **Lock-aware behavior**: Notifications automatically stop when phone is unlocked
+- 🎵 **Multiple alarm sounds**: Choose between Morning, Smooth, and Classic alarm tones
+- 🎯 **Auto-toggle functionality**: Alarms automatically turn off when:
+  - Phone is unlocked (without opening app)
+  - App is opened
+  - Any notification is tapped
+  - All 6 notifications complete
+- 🔊 **Critical alerts**: Bypass Do Not Disturb and volume settings
+- 📱 **Live Activities**: Enhanced alarm display on lock screen
+- 🎨 **Improved UI**: Better sound selection and alarm management
+
+**Technical Improvements:**
+- Pre-scheduling notification system for reliability
+- Enhanced app lifecycle detection
+- Robust background processing handling
+- Comprehensive logging for debugging
+- Multiple fallback mechanisms for alarm dismissal
+
+### Version 3.0 (Build 2) - Previous Release
+- Initial alarm functionality
+- Basic notification system
+- Sleep calculation features
