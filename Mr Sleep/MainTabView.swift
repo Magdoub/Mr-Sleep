@@ -14,7 +14,7 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             SleepNowView()
                 .tabItem {
-                    Image(systemName: selectedTab == 0 ? "moon.fill" : "moon")
+                    Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
                     Text("Sleep Now")
                 }
                 .tag(0)
@@ -52,8 +52,19 @@ struct MainTabView: View {
                 .foregroundColor: UIColor(red: 0.894, green: 0.729, blue: 0.306, alpha: 1.0)
             ]
             
+            // Increase padding for tab bar items
+            appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 12)
+            appearance.stackedLayoutAppearance.selected.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 12)
+            
+            // Add more padding to the tab bar itself
+            appearance.stackedLayoutAppearance.normal.iconPositionAdjustment = UIOffset(horizontal: 0, vertical: 8)
+            appearance.stackedLayoutAppearance.selected.iconPositionAdjustment = UIOffset(horizontal: 0, vertical: 8)
+            
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+            
+            // Increase the height of the tab bar
+            UITabBar.appearance().frame.size.height = 100
         }
     }
 }
