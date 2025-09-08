@@ -126,14 +126,21 @@ class AlarmManager: NSObject, ObservableObject {
         // Create dismiss action
         let dismissAction = UNNotificationAction(
             identifier: "DISMISS_ACTION",
-            title: "Stop",
+            title: "Stop All",
             options: [.destructive]
+        )
+        
+        // Create snooze action (for future use)
+        let snoozeAction = UNNotificationAction(
+            identifier: "SNOOZE_ACTION", 
+            title: "Snooze 5min",
+            options: []
         )
         
         // Create alarm category with actions
         let alarmCategory = UNNotificationCategory(
             identifier: "ALARM_CATEGORY",
-            actions: [dismissAction],
+            actions: [dismissAction, snoozeAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
@@ -250,52 +257,77 @@ class AlarmManager: NSObject, ObservableObject {
     private func scheduleNotification(for alarm: AlarmItem) {
         guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return }
         
-        let content = UNMutableNotificationContent()
-        content.title = "🚨 WAKE UP! 🚨"
-        content.subtitle = "💗 Tap to continue alarm!"
-        content.body = "\(alarm.label) - Sound will loop when opened"
-        
-        // Set custom sound based on alarm's sound selection
-        content.sound = getNotificationSound(for: alarm.soundName)
-        content.categoryIdentifier = "ALARM_CATEGORY"
-        
-        // Make notification critical to bypass Do Not Disturb and volume settings
-        content.interruptionLevel = .critical
-        content.relevanceScore = 1.0
-        
-        // Add badge to make it more noticeable
-        content.badge = 1
-        
-        // Add user info for enhanced handling
-        content.userInfo = [
-            "isAlarm": true,
-            "alarmId": alarm.id.uuidString,
-            "alarmTime": alarm.time,
-            "alarmLabel": alarm.label
-        ]
-        
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute], from: scheduledDate)
-        
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        let request = UNNotificationRequest(identifier: alarm.id.uuidString, content: content, trigger: trigger)
-        
-        // Schedule the main alarm
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
+        // Schedule 4 notifications at 30-second intervals for repeating effect
+        for repetition in 0..<4 {
+            let notificationTime = scheduledDate.addingTimeInterval(TimeInterval(repetition * 30))
+            let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
+            
+            let content = UNMutableNotificationContent()
+            
+            // Customize title based on repetition
+            if repetition == 0 {
+                content.title = "🚨 WAKE UP! 🚨"
+                content.subtitle = "💗 Tap to continue alarm!"
+                content.body = "\(alarm.label) - Sound will loop when opened"
             } else {
-                print("Notification scheduled for \(alarm.time)")
+                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/4)"
+                content.subtitle = "💗 Still sleeping? Time to wake up!"
+                content.body = "\(alarm.label) - Tap to stop repeating"
+            }
+            
+            // Set custom sound based on alarm's sound selection
+            content.sound = getNotificationSound(for: alarm.soundName)
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            
+            // Make notification critical to bypass Do Not Disturb and volume settings
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            
+            // Add badge to make it more noticeable
+            content.badge = NSNumber(value: repetition + 1)
+            
+            // Add user info for enhanced handling
+            content.userInfo = [
+                "isAlarm": true,
+                "alarmId": alarm.id.uuidString,
+                "alarmTime": alarm.time,
+                "alarmLabel": alarm.label,
+                "repetition": repetition,
+                "totalRepetitions": 4
+            ]
+            
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: notificationTime)
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+            
+            // Schedule each repetition
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Error scheduling notification repetition \(repetition + 1): \(error.localizedDescription)")
+                } else {
+                    print("Scheduled alarm repetition \(repetition + 1)/4 for \(alarm.time)")
+                }
             }
         }
-        
-        // Note: iOS notifications can only play sound once - continuous sound requires background audio
     }
     
     
     private func cancelNotification(for alarm: AlarmItem) {
-        // Cancel main notification
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [alarm.id.uuidString])
+        // Cancel all repetitions of the alarm
+        var identifiersToCancel: [String] = []
+        
+        // Add all repetition identifiers
+        for repetition in 0..<4 {
+            identifiersToCancel.append("\(alarm.id.uuidString)-repeat-\(repetition)")
+        }
+        
+        // Also cancel the legacy identifier for backwards compatibility
+        identifiersToCancel.append(alarm.id.uuidString)
+        
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToCancel)
+        print("Cancelled all repetitions for alarm: \(alarm.time)")
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -540,8 +572,19 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
-        // When alarm notification is about to be presented, start Live Activity
-        if let alarmId = UUID(uuidString: notification.request.identifier) {
+        // Extract alarm ID from notification identifier (handle both new format and legacy)
+        let notificationId = notification.request.identifier
+        let alarmIdString: String
+        
+        if notificationId.contains("-repeat-") {
+            // New format: "UUID-repeat-0", "UUID-repeat-1", etc.
+            alarmIdString = String(notificationId.prefix(while: { $0 != "-" }))
+        } else {
+            // Legacy format: just the UUID
+            alarmIdString = notificationId
+        }
+        
+        if let alarmId = UUID(uuidString: alarmIdString) {
             // Check both regular alarms and test alarms
             let alarm = alarms.first(where: { $0.id == alarmId }) ?? 
                        testAlarms.first(where: { $0.id == alarmId })
@@ -571,12 +614,45 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         
-        let alarmId = response.notification.request.identifier
+        // Extract alarm ID from notification identifier (handle both new format and legacy)
+        let notificationId = response.notification.request.identifier
+        let alarmIdString: String
+        
+        if notificationId.contains("-repeat-") {
+            // New format: "UUID-repeat-0", "UUID-repeat-1", etc.
+            alarmIdString = String(notificationId.prefix(while: { $0 != "-" }))
+        } else {
+            // Legacy format: just the UUID
+            alarmIdString = notificationId
+        }
         
         switch response.actionIdentifier {
         case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
-            // Handle dismiss - end Live Activity
-            dismissLiveActivity(for: alarmId)
+            // Handle dismiss - end Live Activity and cancel remaining repetitions
+            dismissLiveActivity(for: alarmIdString)
+            
+            // Cancel all remaining repetitions for this alarm
+            if let alarmId = UUID(uuidString: alarmIdString),
+               let alarm = alarms.first(where: { $0.id == alarmId }) {
+                cancelNotification(for: alarm)
+                print("Cancelled remaining repetitions for alarm: \(alarm.time)")
+            }
+            
+        case "SNOOZE_ACTION":
+            // Handle snooze - schedule a new alarm 5 minutes from now
+            if let alarmId = UUID(uuidString: alarmIdString),
+               let alarm = alarms.first(where: { $0.id == alarmId }) {
+                cancelNotification(for: alarm) // Cancel remaining repetitions
+                
+                // Schedule a new snooze alarm 5 minutes from now
+                let snoozeTime = Date().addingTimeInterval(5 * 60) // 5 minutes
+                let formatter = DateFormatter()
+                formatter.dateFormat = "h:mm a"
+                let snoozeTimeString = formatter.string(from: snoozeTime)
+                
+                addManualAlarm(time: snoozeTimeString, soundName: alarm.soundName)
+                print("Snoozed alarm for 5 minutes: \(snoozeTimeString)")
+            }
             
         default:
             break
