@@ -7,6 +7,8 @@
 
 import SwiftUI
 import StoreKit
+import ActivityKit
+import WidgetKit
 
 @main
 struct Mr_SleepApp: App {
@@ -16,8 +18,18 @@ struct Mr_SleepApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear {
                     incrementLaunchCount()
+                    setupLiveActivities()
                 }
         }
+    }
+    
+    private func setupLiveActivities() {
+        // Register the Live Activity widget
+        #if !targetEnvironment(simulator)
+        if #available(iOS 16.1, *) {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        #endif
     }
     
     private func incrementLaunchCount() {
