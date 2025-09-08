@@ -30,6 +30,7 @@ struct SleepNowView: View {
     @State private var isCalculatingWakeUpTimes = false
     @State private var calculationProgress: Double = 0.0
     @State private var isFinishingUp = false
+    @State private var hasCompletedInitialLoading = false
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -236,10 +237,15 @@ struct SleepNowView: View {
             calculateWakeUpTimes()
             currentTime = Date()
             
-            // Only start animations and select moon if onboarding is not active
-            if !showOnboarding {
+            // Only start animations and select moon if onboarding is not active AND initial loading hasn't been completed
+            if !showOnboarding && !hasCompletedInitialLoading {
                 selectNextMoonIcon()
                 startEntranceAnimation()
+                startBreathingEffect()
+                startZzzAnimation()
+            } else if !showOnboarding {
+                // If we've already completed initial loading, just start the breathing effect and select moon
+                selectNextMoonIcon()
                 startBreathingEffect()
                 startZzzAnimation()
             }
@@ -416,6 +422,7 @@ struct SleepNowView: View {
                     
                     withAnimation(.easeOut(duration: 0.3)) {
                         isFinishingUp = false
+                        hasCompletedInitialLoading = true // Mark initial loading as completed
                     }
                     
                     // Small delay before wake-up times start appearing
