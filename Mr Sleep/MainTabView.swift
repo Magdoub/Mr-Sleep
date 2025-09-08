@@ -56,14 +56,10 @@ struct MainTabView: View {
             appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 12)
             appearance.stackedLayoutAppearance.selected.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 12)
             
-            // Add more padding to the tab bar itself
-            appearance.stackedLayoutAppearance.normal.iconPositionAdjustment = UIOffset(horizontal: 0, vertical: 8)
-            appearance.stackedLayoutAppearance.selected.iconPositionAdjustment = UIOffset(horizontal: 0, vertical: 8)
-            
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
             
-            // Increase the height of the tab bar
+            // Increase the height of the tab bar for more padding
             UITabBar.appearance().frame.size.height = 100
         }
     }
