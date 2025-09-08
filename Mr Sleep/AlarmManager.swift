@@ -257,8 +257,8 @@ class AlarmManager: NSObject, ObservableObject {
     private func scheduleNotification(for alarm: AlarmItem) {
         guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return }
         
-        // Schedule 4 notifications at 30-second intervals for repeating effect
-        for repetition in 0..<4 {
+        // Schedule 6 notifications at 30-second intervals for repeating effect
+        for repetition in 0..<6 {
             let notificationTime = scheduledDate.addingTimeInterval(TimeInterval(repetition * 30))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
             
@@ -270,7 +270,7 @@ class AlarmManager: NSObject, ObservableObject {
                 content.subtitle = "💗 Tap to continue alarm!"
                 content.body = "\(alarm.label) - Sound will loop when opened"
             } else {
-                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/4)"
+                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/6)"
                 content.subtitle = "💗 Still sleeping? Time to wake up!"
                 content.body = "\(alarm.label) - Tap to stop repeating"
             }
@@ -293,7 +293,7 @@ class AlarmManager: NSObject, ObservableObject {
                 "alarmTime": alarm.time,
                 "alarmLabel": alarm.label,
                 "repetition": repetition,
-                "totalRepetitions": 4
+                "totalRepetitions": 6
             ]
             
             let calendar = Calendar.current
@@ -307,8 +307,19 @@ class AlarmManager: NSObject, ObservableObject {
                 if let error = error {
                     print("Error scheduling notification repetition \(repetition + 1): \(error.localizedDescription)")
                 } else {
-                    print("Scheduled alarm repetition \(repetition + 1)/4 for \(alarm.time)")
+                    print("Scheduled alarm repetition \(repetition + 1)/6 for \(alarm.time)")
                 }
+            }
+        }
+        
+        // Schedule a cleanup task to toggle off the alarm after all 6 notifications are done
+        // This will run 30 seconds after the 6th notification (at +180 seconds)
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(6 * 30)) {
+            // Check if the alarm is still enabled (user might have interacted with it already)
+            if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
+                self.alarms[alarmIndex].isEnabled = false
+                self.saveAlarms()
+                print("Automatically toggled off alarm after 6 notifications: \(alarm.time)")
             }
         }
     }
@@ -319,7 +330,7 @@ class AlarmManager: NSObject, ObservableObject {
         var identifiersToCancel: [String] = []
         
         // Add all repetition identifiers
-        for repetition in 0..<4 {
+        for repetition in 0..<6 {
             identifiersToCancel.append("\(alarm.id.uuidString)-repeat-\(repetition)")
         }
         
@@ -328,6 +339,15 @@ class AlarmManager: NSObject, ObservableObject {
         
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToCancel)
         print("Cancelled all repetitions for alarm: \(alarm.time)")
+    }
+    
+    private func toggleOffAlarm(with alarmId: UUID) {
+        // Find and toggle off the alarm
+        if let index = alarms.firstIndex(where: { $0.id == alarmId }) {
+            alarms[index].isEnabled = false
+            saveAlarms()
+            print("Automatically toggled off alarm: \(alarms[index].time)")
+        }
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -631,11 +651,12 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             // Handle dismiss - end Live Activity and cancel remaining repetitions
             dismissLiveActivity(for: alarmIdString)
             
-            // Cancel all remaining repetitions for this alarm
+            // Cancel all remaining repetitions and toggle off the alarm
             if let alarmId = UUID(uuidString: alarmIdString),
                let alarm = alarms.first(where: { $0.id == alarmId }) {
                 cancelNotification(for: alarm)
-                print("Cancelled remaining repetitions for alarm: \(alarm.time)")
+                toggleOffAlarm(with: alarmId)
+                print("Cancelled remaining repetitions and toggled off alarm: \(alarm.time)")
             }
             
         case "SNOOZE_ACTION":
@@ -643,6 +664,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             if let alarmId = UUID(uuidString: alarmIdString),
                let alarm = alarms.first(where: { $0.id == alarmId }) {
                 cancelNotification(for: alarm) // Cancel remaining repetitions
+                toggleOffAlarm(with: alarmId) // Toggle off the current alarm
                 
                 // Schedule a new snooze alarm 5 minutes from now
                 let snoozeTime = Date().addingTimeInterval(5 * 60) // 5 minutes
