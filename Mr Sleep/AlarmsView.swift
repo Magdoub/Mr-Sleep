@@ -249,7 +249,7 @@ struct AddAlarmView: View {
                             .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
                     }
                     .padding(.vertical, 8)
-                    .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
+                    .listRowBackground(Color.clear)
                     
                     // Sound Section
                     VStack(alignment: .leading, spacing: 12) {
@@ -279,7 +279,7 @@ struct AddAlarmView: View {
                         }
                     }
                     .padding(.vertical, 8)
-                    .listRowBackground(Color(red: 0.11, green: 0.11, blue: 0.12))
+                    .listRowBackground(Color.clear)
                 }
                 .listStyle(GroupedListStyle())
                 .background(Color.clear)
@@ -365,7 +365,7 @@ struct EditAlarmView: View {
                             .labelsHidden()
                             .background(Color.clear)
                     }
-                    .listRowBackground(Color.white.opacity(0.1))
+                    .listRowBackground(Color.clear)
                     
                     Section {
                         if !alarm.createdFromSleepNow {
@@ -414,7 +414,7 @@ struct EditAlarmView: View {
                             }
                         }
                     }
-                    .listRowBackground(Color.white.opacity(0.1))
+                    .listRowBackground(Color.clear)
                 }
                 .listStyle(GroupedListStyle())
                 .background(Color.clear)
