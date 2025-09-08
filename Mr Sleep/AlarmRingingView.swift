@@ -16,6 +16,7 @@ struct AlarmRingingView: View {
     @State private var isAnimating = false
     @State private var currentTime = Date()
     @State private var audioPlayer: AVAudioPlayer?
+    @State private var soundTimer: Timer?
     
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
@@ -165,13 +166,24 @@ struct AlarmRingingView: View {
         
         // Try to play the alarm sound based on user's selection
         var soundURL: URL?
+        let selectedSound = alarm.soundName.lowercased()
         
-        // Check for alarm-clock sound file (your main alarm sound)
-        if let url = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                     Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                     Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") {
-            soundURL = url
-            print("🔊 Using alarm-clock sound for: \(alarm.soundName)")
+        // Check for specific sound files based on user selection
+        if selectedSound == "pulse" {
+            // For pulse, use a system-generated repeating pulse sound
+            print("🔊 Using pulse sound pattern")
+            playPulseAlarmSound()
+            return
+        } else if selectedSound == "radar" {
+            // Check for radar sound file
+            soundURL = Bundle.main.url(forResource: "radar", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "radar", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "radar", withExtension: "m4a")
+        } else if selectedSound == "beacon" {
+            // Check for beacon sound file
+            soundURL = Bundle.main.url(forResource: "beacon", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "beacon", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "beacon", withExtension: "m4a")
         }
         
         if let url = soundURL {
@@ -180,15 +192,24 @@ struct AlarmRingingView: View {
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely until dismissed
                 audioPlayer?.volume = 1.0
                 audioPlayer?.play()
-                print("🔊 Playing continuous alarm sound")
+                print("🔊 Playing continuous \(alarm.soundName) sound")
             } catch {
-                print("Failed to play alarm sound: \(error)")
-                playSystemAlarmSound()
+                print("Failed to play \(alarm.soundName) sound: \(error)")
+                playPulseAlarmSound()
             }
         } else {
-            print("No alarm sound file found, using system sound")
-            playSystemAlarmSound()
+            print("No \(alarm.soundName) sound file found, using pulse pattern")
+            playPulseAlarmSound()
         }
+    }
+    
+    private func playPulseAlarmSound() {
+        // Create a repeating pulse sound pattern using system sounds
+        soundTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { _ in
+            // Play pulse sound (short beep)
+            AudioServicesPlaySystemSound(1013) // SMS received sound (pulse-like)
+        }
+        print("🔊 Started pulse alarm sound pattern")
     }
     
     private func playSystemAlarmSound() {
@@ -206,11 +227,17 @@ struct AlarmRingingView: View {
         audioPlayer?.stop()
         audioPlayer = nil
         
+        // Stop any sound timers
+        soundTimer?.invalidate()
+        soundTimer = nil
+        
         do {
             try AVAudioSession.sharedInstance().setActive(false)
         } catch {
             print("Failed to deactivate audio session: \(error)")
         }
+        
+        print("🔇 Stopped alarm sound")
     }
     
     private func startHapticFeedback() {

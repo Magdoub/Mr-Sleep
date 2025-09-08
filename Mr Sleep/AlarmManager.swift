@@ -300,21 +300,16 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
-        // Use the custom alarm-clock sound for all alarms to ensure it works and repeats
-        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
-        }
-        
-        // Fallback to system sounds based on alarm type
+        // Map sound names to actual iOS system sounds
         switch soundName.lowercased() {
+        case "pulse":
+            return UNNotificationSound.defaultCritical
         case "radar":
             return UNNotificationSound.default
-        case "pulse":
-            return UNNotificationSound.default
         case "beacon":
-            return UNNotificationSound.default
+            return UNNotificationSound.defaultCritical
         default:
-            return UNNotificationSound.default
+            return UNNotificationSound.defaultCritical
         }
     }
     
