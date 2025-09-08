@@ -12,30 +12,56 @@ class SoundPreviewManager: ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     
     func playSound(_ soundName: String) {
+        // Always stop any currently playing sound first
         stopCurrentSound()
         
-        guard let soundURL = Bundle.main.url(forResource: soundName.lowercased(), withExtension: "mp3") else {
-            // Fallback to system sound if custom sound file doesn't exist
-            playSystemSound()
-            return
+        // Try to find the sound file in the bundle
+        let possibleExtensions = ["mp3", "wav", "m4a", "caf"]
+        var soundURL: URL?
+        
+        for ext in possibleExtensions {
+            if let url = Bundle.main.url(forResource: soundName.lowercased(), withExtension: ext) {
+                soundURL = url
+                break
+            }
         }
         
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-            audioPlayer?.play()
-        } catch {
-            playSystemSound()
+        if let url = soundURL {
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: url)
+                audioPlayer?.numberOfLoops = 0 // Play once
+                audioPlayer?.play()
+            } catch {
+                playSystemSoundForName(soundName)
+            }
+        } else {
+            // Fallback to different system sounds for each alarm type
+            playSystemSoundForName(soundName)
         }
     }
     
-    private func playSystemSound() {
-        // Play a short system beep as fallback
-        AudioServicesPlaySystemSound(1005) // System beep sound
+    private func playSystemSoundForName(_ soundName: String) {
+        // Use different system sounds to differentiate between alarm types
+        let systemSoundID: SystemSoundID
+        
+        switch soundName.lowercased() {
+        case "radar":
+            systemSoundID = 1005 // Short beep
+        case "apex":
+            systemSoundID = 1013 // Ascending tone
+        case "beacon":
+            systemSoundID = 1016 // Alert tone
+        default:
+            systemSoundID = 1005 // Default beep
+        }
+        
+        AudioServicesPlaySystemSound(systemSoundID)
     }
     
     func stopCurrentSound() {
         audioPlayer?.stop()
         audioPlayer = nil
+        // Note: Can't stop system sounds once started, but they're very short
     }
 }
 
