@@ -174,16 +174,16 @@ struct AlarmRingingView: View {
             print("🔊 Using pulse sound pattern")
             playPulseAlarmSound()
             return
-        } else if selectedSound == "radar" {
-            // Check for radar sound file
-            soundURL = Bundle.main.url(forResource: "radar", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "radar", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "radar", withExtension: "m4a")
-        } else if selectedSound == "beacon" {
-            // Check for beacon sound file
-            soundURL = Bundle.main.url(forResource: "beacon", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "beacon", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "beacon", withExtension: "m4a")
+        } else if selectedSound.contains("smooth") || selectedSound == "smooth" {
+            // Check for smooth-alarm-clock sound file
+            soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a")
+        } else if selectedSound.contains("classic") || selectedSound.contains("alarm-clock") {
+            // Check for classic alarm-clock sound file
+            soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
         }
         
         if let url = soundURL {
@@ -195,12 +195,45 @@ struct AlarmRingingView: View {
                 print("🔊 Playing continuous \(alarm.soundName) sound")
             } catch {
                 print("Failed to play \(alarm.soundName) sound: \(error)")
-                playPulseAlarmSound()
+                playDefaultAlarmSound()
             }
         } else {
-            print("No \(alarm.soundName) sound file found, using pulse pattern")
-            playPulseAlarmSound()
+            print("No \(alarm.soundName) sound file found, trying default sounds")
+            playDefaultAlarmSound()
         }
+    }
+    
+    private func playDefaultAlarmSound() {
+        // Try smooth sound first, then classic, then pulse pattern
+        if let url = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") {
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: url)
+                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.volume = 1.0
+                audioPlayer?.play()
+                print("🔊 Playing default smooth alarm sound")
+                return
+            } catch {
+                print("Failed to play smooth alarm sound: \(error)")
+            }
+        }
+        
+        if let url = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") {
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: url)
+                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.volume = 1.0
+                audioPlayer?.play()
+                print("🔊 Playing classic alarm sound")
+                return
+            } catch {
+                print("Failed to play classic alarm sound: \(error)")
+            }
+        }
+        
+        // Final fallback to pulse pattern
+        print("🔊 No alarm sound files found, using pulse pattern")
+        playPulseAlarmSound()
     }
     
     private func playPulseAlarmSound() {

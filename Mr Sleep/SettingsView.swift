@@ -299,22 +299,22 @@ extension SettingsView {
             cycles: 5,
             createdFromSleepNow: true,
             snoozeEnabled: true,
-            soundName: "pulse",
+            soundName: "Smooth",
             shouldAutoReset: false
         )
         
         // Schedule immediate test notification
         let content = UNMutableNotificationContent()
         content.title = "🚨 TEST ALARM 🚨"
-        content.subtitle = "💗 Pulse Test"
-        content.body = "Tap to test full-screen alarm with pulse sound!"
-        // Use the same alarm sound that regular alarms use
-        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+        content.subtitle = "💗 Smooth Test"
+        content.body = "Tap to test full-screen alarm with smooth sound!"
+        // Use the same alarm sound that regular alarms use (prefer smooth)
+        if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "smooth-alarm-clock.mp3"))
+            print("🧪 Test using smooth-alarm-clock.mp3 for notification sound")
+        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
             content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
             print("🧪 Test using alarm-clock.mp3 for notification sound")
-        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "wav") != nil {
-            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.wav"))
-            print("🧪 Test using alarm-clock.wav for notification sound")
         } else {
             content.sound = .defaultCritical
             print("🧪 Test using defaultCritical notification sound")

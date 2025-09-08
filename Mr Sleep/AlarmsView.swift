@@ -16,12 +16,23 @@ class SoundPreviewManager: ObservableObject {
         // Always stop any currently playing sound first
         stopCurrentSound()
         
+        // Map sound names to actual file names
+        let fileName: String
+        switch soundName.lowercased() {
+        case "smooth":
+            fileName = "smooth-alarm-clock"
+        case "classic":
+            fileName = "alarm-clock"
+        default:
+            fileName = soundName.lowercased()
+        }
+        
         // Try to find the sound file in the bundle
         let possibleExtensions = ["mp3", "wav", "m4a", "caf"]
         var soundURL: URL?
         
         for ext in possibleExtensions {
-            if let url = Bundle.main.url(forResource: soundName.lowercased(), withExtension: ext) {
+            if let url = Bundle.main.url(forResource: fileName, withExtension: ext) {
                 soundURL = url
                 break
             }
@@ -46,12 +57,10 @@ class SoundPreviewManager: ObservableObject {
         let systemSoundID: SystemSoundID
         
         switch soundName.lowercased() {
-        case "radar":
-            systemSoundID = 1005 // Short beep
-        case "pulse":
-            systemSoundID = 1009 // Double beep
-        case "beacon":
-            systemSoundID = 1016 // Alert tone
+        case "smooth":
+            systemSoundID = 1013 // SMS received sound (smooth)
+        case "classic":
+            systemSoundID = 1005 // Classic alarm beep
         default:
             systemSoundID = 1005 // Default beep
         }
@@ -284,10 +293,10 @@ struct AddAlarmView: View {
     @Binding var selectedTime: Date
     @Environment(\.dismiss) private var dismiss
     @State private var snoozeEnabled = true
-    @State private var selectedSound = "Radar"
+    @State private var selectedSound = "Smooth"
     @StateObject private var soundPreview = SoundPreviewManager()
     
-    let soundOptions = ["Radar", "Pulse", "Beacon"]
+    let soundOptions = ["Smooth", "Classic"]
     
     var body: some View {
         NavigationView {
@@ -490,7 +499,7 @@ struct EditAlarmView: View {
                             }
                             
                             HStack(spacing: 8) {
-                                ForEach(["Radar", "Pulse", "Beacon"], id: \.self) { sound in
+                                ForEach(["Smooth", "Classic"], id: \.self) { sound in
                                     Button(action: {
                                         selectedSound = sound
                                         soundPreview.playSound(sound)

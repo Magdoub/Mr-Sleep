@@ -24,7 +24,7 @@ struct AlarmItem: Identifiable, Codable {
     var cycles: Int
     var createdFromSleepNow: Bool = false
     var snoozeEnabled: Bool = true
-    var soundName: String = "Radar" // Default sound
+    var soundName: String = "Smooth" // Default to smooth sound
     var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
     
     // Convert time string to Date for scheduling
@@ -308,19 +308,33 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
-        // Try to use the alarm-clock sound file in various formats
-        if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-            print("🔊 Using alarm-clock.mp3 for notification sound")
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
-        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "wav") != nil {
-            print("🔊 Using alarm-clock.wav for notification sound")
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.wav"))
-        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "caf") != nil {
-            print("🔊 Using alarm-clock.caf for notification sound")
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.caf"))
+        // Use the specific sound based on user selection
+        let fileName = soundName.lowercased()
+        
+        if fileName.contains("smooth") {
+            // Try smooth-alarm-clock sound
+            if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                print("🔊 Using smooth-alarm-clock.mp3 for notification sound")
+                return UNNotificationSound(named: UNNotificationSoundName(rawValue: "smooth-alarm-clock.mp3"))
+            }
+        } else if fileName.contains("alarm-clock") || fileName == "classic" {
+            // Try original alarm-clock sound
+            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                print("🔊 Using alarm-clock.mp3 for notification sound")
+                return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
+            }
         }
         
-        // If no custom sound file, use iOS critical sound (loudest available)
+        // Default to smooth sound if available, then classic, then system
+        if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+            print("🔊 Using smooth-alarm-clock.mp3 as default notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "smooth-alarm-clock.mp3"))
+        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+            print("🔊 Using alarm-clock.mp3 as fallback notification sound")
+            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
+        }
+        
+        // If no custom sound file, use iOS critical sound
         print("🔊 No custom alarm sound found, using defaultCritical")
         return UNNotificationSound.defaultCritical
     }
