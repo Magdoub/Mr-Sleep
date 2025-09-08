@@ -10,6 +10,7 @@ import AVFoundation
 import AudioToolbox
 
 struct SleepNowView: View {
+    @ObservedObject var alarmManager: AlarmManager
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
@@ -193,7 +194,13 @@ struct SleepNowView: View {
                                                 cycles: timeData.cycles,
                                                 pulseScale: 1.0,
                                                 action: {
-                                                    selectedWakeUpTime = SleepCalculator.shared.formatTime(timeData.time)
+                                                    let wakeUpTimeString = SleepCalculator.shared.formatTime(timeData.time)
+                                                    alarmManager.addAlarm(
+                                                        time: wakeUpTimeString,
+                                                        category: categoryData.category,
+                                                        cycles: timeData.cycles
+                                                    )
+                                                    selectedWakeUpTime = wakeUpTimeString
                                                     showAlarmInstructions = true
                                                 }
                                             )
@@ -583,5 +590,5 @@ struct SleepNowView: View {
 }
 
 #Preview {
-    SleepNowView()
+    SleepNowView(alarmManager: AlarmManager())
 }

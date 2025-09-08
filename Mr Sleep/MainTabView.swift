@@ -10,23 +10,24 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @StateObject private var alarmManager = AlarmManager()
     
     var body: some View {
         Group {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
-                SleepNowView()
+                SleepNowView(alarmManager: alarmManager)
             } else {
                 // Show full TabView after onboarding
                 TabView(selection: $selectedTab) {
-                    SleepNowView()
+                    SleepNowView(alarmManager: alarmManager)
                         .tabItem {
                             Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
                             Text("Sleep Now")
                         }
                         .tag(0)
                     
-                    AlarmsView()
+                    AlarmsView(alarmManager: alarmManager)
                         .tabItem {
                             Image(systemName: selectedTab == 1 ? "alarm.fill" : "alarm")
                             Text("Alarms")

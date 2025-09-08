@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct AlarmsView: View {
-    @State private var alarms: [AlarmItem] = [
-        AlarmItem(time: "7:00 AM", isEnabled: true, label: "Work Day"),
-        AlarmItem(time: "8:30 AM", isEnabled: false, label: "Weekend"),
-        AlarmItem(time: "6:45 AM", isEnabled: true, label: "Gym Day")
-    ]
+    @ObservedObject var alarmManager: AlarmManager
     
     var body: some View {
         GeometryReader { geometry in
@@ -51,7 +47,7 @@ struct AlarmsView: View {
                     .padding(.top, 20)
                     
                     // Alarms List
-                    if alarms.isEmpty {
+                    if alarmManager.alarms.isEmpty {
                         VStack(spacing: 20) {
                             Image(systemName: "alarm")
                                 .font(.system(size: 60))
@@ -69,8 +65,12 @@ struct AlarmsView: View {
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 12) {
-                                ForEach(alarms.indices, id: \.self) { index in
-                                    AlarmRowView(alarm: $alarms[index])
+                                ForEach(alarmManager.alarms.indices, id: \.self) { index in
+                                    AlarmRowView(
+                                        alarm: $alarmManager.alarms[index],
+                                        onToggle: { alarmManager.toggleAlarm(alarmManager.alarms[index]) },
+                                        onDelete: { alarmManager.removeAlarm(alarmManager.alarms[index]) }
+                                    )
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -85,35 +85,49 @@ struct AlarmsView: View {
     }
 }
 
-struct AlarmItem: Identifiable {
-    let id = UUID()
-    var time: String
-    var isEnabled: Bool
-    var label: String
-}
-
 struct AlarmRowView: View {
     @Binding var alarm: AlarmItem
+    let onToggle: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         HStack(spacing: 16) {
-            // Time
+            // Time and Label
             VStack(alignment: .leading, spacing: 4) {
                 Text(alarm.time)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                 
-                Text(alarm.label)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                HStack(spacing: 8) {
+                    Text(alarm.label)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                    
+                    if alarm.createdFromSleepNow {
+                        Image(systemName: "moon.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    }
+                }
             }
             
             Spacer()
             
+            // Delete button
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
+            }
+            .padding(.trailing, 8)
+            
             // Toggle
-            Toggle("", isOn: $alarm.isEnabled)
-                .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
-                .scaleEffect(0.8)
+            Toggle("", isOn: Binding(
+                get: { alarm.isEnabled },
+                set: { _ in onToggle() }
+            ))
+            .toggleStyle(SwitchToggleStyle(tint: Color(red: 0.894, green: 0.729, blue: 0.306)))
+            .scaleEffect(0.8)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -122,7 +136,12 @@ struct AlarmRowView: View {
                 .fill(Color.white.opacity(0.08))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        .stroke(
+                            alarm.createdFromSleepNow ? 
+                            Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3) : 
+                            Color.white.opacity(0.15),
+                            lineWidth: 1
+                        )
                 )
         )
         .opacity(alarm.isEnabled ? 1.0 : 0.6)
@@ -130,6 +149,6 @@ struct AlarmRowView: View {
 }
 
 #Preview {
-    AlarmsView()
+    AlarmsView(alarmManager: AlarmManager())
 }
 

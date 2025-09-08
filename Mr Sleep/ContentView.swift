@@ -767,7 +767,7 @@ struct AlarmInstructionsModal: View {
                         .font(.system(size: 48))
                         .accessibilityLabel("Alarm clock")
                     
-                    Text("Set Your Alarm")
+                    Text("Alarm Created!")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                         .accessibilityAddTraits(.isHeader)
@@ -780,44 +780,41 @@ struct AlarmInstructionsModal: View {
                 .accessibilityLabel("Set Your Alarm. Wake up at \(wakeUpTime)")
                 .accessibilityAddTraits(.isHeader)
                 
-                // Instructions
+                // Success Message
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .top, spacing: 12) {
-                        Text("1.")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        Text("✅")
+                            .font(.system(size: 20))
                             .frame(width: 20, alignment: .leading)
                         
-                        Text("Open the Clock app on your iPhone")
+                        Text("Your alarm has been automatically created and will notify you at the optimal wake-up time!")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
                     }
                     
                     HStack(alignment: .top, spacing: 12) {
-                        Text("2.")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        Text("📱")
+                            .font(.system(size: 20))
                             .frame(width: 20, alignment: .leading)
                         
-                        Text("Tap the '+' button to add a new alarm")
+                        Text("Check the Alarms tab to manage your sleep alarms")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
                     }
                     
                     HStack(alignment: .top, spacing: 12) {
-                        Text("3.")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        Text("🔔")
+                            .font(.system(size: 20))
                             .frame(width: 20, alignment: .leading)
                         
-                        Text("Set the time to \(wakeUpTime) and save")
+                        Text("Make sure notifications are enabled for the best experience")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95))
                     }
                 }
                 .padding(.horizontal, 4)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Instructions for setting alarm. Step 1: Open the Clock app on your iPhone. Step 2: Tap the plus button to add a new alarm. Step 3: Set the time to \(wakeUpTime) and save.")
+                .accessibilityLabel("Alarm created successfully. Your alarm has been automatically created and will notify you at the optimal wake-up time. Check the Alarms tab to manage your sleep alarms. Make sure notifications are enabled for the best experience.")
                 
                 // Sleep tip
                 VStack(spacing: 8) {

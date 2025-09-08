@@ -18,6 +18,7 @@
 		1DB00CD62E5240B8003DCB88 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD72E5240B8003DCB88 /* SettingsView.swift */; };
 		1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */; };
 		1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */; };
+		1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDD2E5240B8003DCB88 /* AlarmManager.swift */; };
 		1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
@@ -34,6 +35,7 @@
 		1DB00CD72E5240B8003DCB88 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepGuideView.swift; sourceTree = "<group>"; };
 		1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeUpTimeButton.swift; sourceTree = "<group>"; };
+		1DB00CDD2E5240B8003DCB88 /* AlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmManager.swift; sourceTree = "<group>"; };
 		1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -78,6 +80,7 @@
 				1DB00CD72E5240B8003DCB88 /* SettingsView.swift */,
 				1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */,
 				1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */,
+				1DB00CDD2E5240B8003DCB88 /* AlarmManager.swift */,
 				1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */,
 			);
 			path = "Mr Sleep";
@@ -171,6 +174,7 @@
 				1DB00CD62E5240B8003DCB88 /* SettingsView.swift in Sources */,
 				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
 				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
+				1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
