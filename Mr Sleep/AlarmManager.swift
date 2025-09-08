@@ -53,10 +53,11 @@ struct AlarmItem: Identifiable, Codable {
     }
 }
 
-class AlarmManager: ObservableObject {
+class AlarmManager: NSObject, ObservableObject {
     @Published var alarms: [AlarmItem] = []
     
-    init() {
+    override init() {
+        super.init()
         loadAlarms()
         requestNotificationPermission()
         checkAndResetExpiredAlarms()
