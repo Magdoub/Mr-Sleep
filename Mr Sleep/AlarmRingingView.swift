@@ -145,9 +145,14 @@ struct AlarmRingingView: View {
             currentTime = Date()
         }
         .onAppear {
+            print("🚨 AlarmRingingView appeared - starting alarm experience")
             isAnimating = true
-            startAlarmSound()
-            startHapticFeedback()
+            
+            // Add slight delay to ensure view is fully loaded
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                startAlarmSound()
+                startHapticFeedback()
+            }
         }
         .onDisappear {
             stopAlarmSound()
@@ -155,13 +160,16 @@ struct AlarmRingingView: View {
     }
     
     private func startAlarmSound() {
+        print("🔊 Starting alarm sound for: \(alarm.soundName)")
+        
         // Configure audio session for alarm
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try audioSession.setActive(true)
+            print("✅ Audio session configured successfully")
         } catch {
-            print("Failed to set up audio session: \(error)")
+            print("❌ Failed to set up audio session: \(error)")
         }
         
         // Try to play the alarm sound based on user's selection
@@ -191,10 +199,17 @@ struct AlarmRingingView: View {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely until dismissed
                 audioPlayer?.volume = 1.0
-                audioPlayer?.play()
-                print("🔊 Playing continuous \(alarm.soundName) sound")
+                audioPlayer?.prepareToPlay()
+                
+                let success = audioPlayer?.play() ?? false
+                if success {
+                    print("🔊 SUCCESS: Playing continuous \(alarm.soundName) sound with looping")
+                } else {
+                    print("❌ FAILED: Could not start audio playback")
+                    playDefaultAlarmSound()
+                }
             } catch {
-                print("Failed to play \(alarm.soundName) sound: \(error)")
+                print("❌ Failed to create audio player for \(alarm.soundName): \(error)")
                 playDefaultAlarmSound()
             }
         } else {
@@ -204,45 +219,68 @@ struct AlarmRingingView: View {
     }
     
     private func playDefaultAlarmSound() {
+        print("🔄 Trying default alarm sounds...")
+        
         // Try smooth sound first, then classic, then pulse pattern
         if let url = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") {
+            print("📁 Found smooth-alarm-clock.mp3, attempting to play...")
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
                 audioPlayer?.numberOfLoops = -1
                 audioPlayer?.volume = 1.0
-                audioPlayer?.play()
-                print("🔊 Playing default smooth alarm sound")
-                return
+                audioPlayer?.prepareToPlay()
+                
+                let success = audioPlayer?.play() ?? false
+                if success {
+                    print("🔊 SUCCESS: Playing default smooth alarm sound with looping")
+                    return
+                } else {
+                    print("❌ FAILED: Could not start smooth alarm playback")
+                }
             } catch {
-                print("Failed to play smooth alarm sound: \(error)")
+                print("❌ Failed to create smooth alarm player: \(error)")
             }
+        } else {
+            print("📁 smooth-alarm-clock.mp3 not found in bundle")
         }
         
         if let url = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") {
+            print("📁 Found alarm-clock.mp3, attempting to play...")
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
                 audioPlayer?.numberOfLoops = -1
                 audioPlayer?.volume = 1.0
-                audioPlayer?.play()
-                print("🔊 Playing classic alarm sound")
-                return
+                audioPlayer?.prepareToPlay()
+                
+                let success = audioPlayer?.play() ?? false
+                if success {
+                    print("🔊 SUCCESS: Playing classic alarm sound with looping")
+                    return
+                } else {
+                    print("❌ FAILED: Could not start classic alarm playback")
+                }
             } catch {
-                print("Failed to play classic alarm sound: \(error)")
+                print("❌ Failed to create classic alarm player: \(error)")
             }
+        } else {
+            print("📁 alarm-clock.mp3 not found in bundle")
         }
         
         // Final fallback to pulse pattern
-        print("🔊 No alarm sound files found, using pulse pattern")
+        print("🔊 No alarm sound files found, using pulse pattern as final fallback")
         playPulseAlarmSound()
     }
     
     private func playPulseAlarmSound() {
+        print("🔊 Starting pulse alarm sound pattern as fallback...")
+        
         // Create a repeating pulse sound pattern using system sounds
         soundTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in
             // Play pulse sound - using a sharper, more alarm-like sound
             AudioServicesPlaySystemSound(1005) // Critical alert sound
+            print("🔊 Playing pulse beep")
         }
-        print("🔊 Started pulse alarm sound pattern (0.6s intervals)")
+        print("🔊 SUCCESS: Started pulse alarm sound pattern (0.6s intervals)")
     }
     
     private func playSystemAlarmSound() {
