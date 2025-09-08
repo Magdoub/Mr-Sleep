@@ -365,13 +365,55 @@ class AlarmManager: NSObject, ObservableObject {
         let now = Date()
         let fiveMinutesAgo = now.addingTimeInterval(-5 * 60) // 5 minutes ago
         
-        // Find alarms that should be active right now (within the last 5 minutes)
+        print("🔍 Checking for active alarms at \(now)")
+        
+        // Find alarms that should be active right now
         let activeAlarms = alarms.filter { alarm in
-            guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return false }
+            guard alarm.isEnabled else { 
+                print("⚪ Alarm \(alarm.time) is disabled, skipping")
+                return false 
+            }
             
-            // Check if the alarm was scheduled within the last 5 minutes
-            // This accounts for the 6 notifications over 3 minutes plus some buffer
-            return scheduledDate >= fiveMinutesAgo && scheduledDate <= now
+            // Parse the alarm time for today
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            
+            guard let alarmTime = formatter.date(from: alarm.time) else {
+                print("❌ Could not parse alarm time: \(alarm.time)")
+                return false
+            }
+            
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: now)
+            let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+            
+            // Create today's alarm time
+            let todayAlarmComponents = calendar.dateComponents([.hour, .minute], from: alarmTime)
+            let todayAlarmTime = calendar.date(bySettingHour: todayAlarmComponents.hour!, 
+                                              minute: todayAlarmComponents.minute!, 
+                                              second: 0, 
+                                              of: today)!
+            
+            // Create yesterday's alarm time (in case alarm was set yesterday evening)
+            let yesterdayAlarmTime = calendar.date(bySettingHour: todayAlarmComponents.hour!, 
+                                                  minute: todayAlarmComponents.minute!, 
+                                                  second: 0, 
+                                                  of: yesterday)!
+            
+            // Check if either today's or yesterday's alarm time is within the active window
+            let todayInWindow = todayAlarmTime >= fiveMinutesAgo && todayAlarmTime <= now
+            let yesterdayInWindow = yesterdayAlarmTime >= fiveMinutesAgo && yesterdayAlarmTime <= now
+            
+            let isActive = todayInWindow || yesterdayInWindow
+            
+            if isActive {
+                print("🔴 Found active alarm: \(alarm.time) (today: \(todayInWindow), yesterday: \(yesterdayInWindow))")
+            } else {
+                print("⚪ Alarm \(alarm.time) not in active window")
+            }
+            
+            return isActive
         }
         
         if !activeAlarms.isEmpty {
@@ -392,6 +434,39 @@ class AlarmManager: NSObject, ObservableObject {
             
             // Also clear any notification badges
             UNUserNotificationCenter.current().setBadgeCount(0)
+        } else {
+            print("⚪ No active alarms found to dismiss")
+            
+            // Fallback: Also check for any enabled alarms and toggle them off if they have pending notifications
+            checkAndToggleOffAlarmsWithPendingNotifications()
+        }
+    }
+    
+    private func checkAndToggleOffAlarmsWithPendingNotifications() {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let alarmNotificationIds = requests.compactMap { request -> String? in
+                let id = request.identifier
+                if id.contains("-repeat-") {
+                    return String(id.prefix(while: { $0 != "-" }))
+                }
+                return id
+            }
+            
+            DispatchQueue.main.async {
+                let uniqueAlarmIds = Set(alarmNotificationIds)
+                print("🔍 Found \(uniqueAlarmIds.count) alarms with pending notifications")
+                
+                for alarmIdString in uniqueAlarmIds {
+                    if let alarmId = UUID(uuidString: alarmIdString),
+                       let alarm = self.alarms.first(where: { $0.id == alarmId && $0.isEnabled }) {
+                        
+                        print("🔴 Found alarm with pending notifications, toggling off: \(alarm.time)")
+                        self.cancelNotification(for: alarm)
+                        self.toggleOffAlarm(with: alarmId)
+                        self.dismissLiveActivity(for: alarmIdString)
+                    }
+                }
+            }
         }
     }
     
