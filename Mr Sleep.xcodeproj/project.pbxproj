@@ -12,6 +12,15 @@
 		1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC42E52405D003DCB88 /* Assets.xcassets */; };
 		1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */; };
 		1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */; };
+		1DB00CD02E5240B8003DCB88 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240B8003DCB88 /* MainTabView.swift */; };
+		1DB00CD22E5240B8003DCB88 /* SleepNowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */; };
+		1DB00CD42E5240B8003DCB88 /* AlarmsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD52E5240B8003DCB88 /* AlarmsView.swift */; };
+		1DB00CD62E5240B8003DCB88 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD72E5240B8003DCB88 /* SettingsView.swift */; };
+		1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */; };
+		1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */; };
+		1DB00CDC2E5240B8003DCB88 /* LoadingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDD2E5240B8003DCB88 /* LoadingViews.swift */; };
+		1DB00CDE2E5240B8003DCB88 /* AlarmInstructionsModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDF2E5240B8003DCB88 /* AlarmInstructionsModal.swift */; };
+		1DB00CE02E5240B8003DCB88 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CE12E5240B8003DCB88 /* OnboardingView.swift */; };
 		1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
@@ -22,6 +31,15 @@
 		1DB00CC42E52405D003DCB88 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCalculator.swift; sourceTree = "<group>"; };
+		1DB00CD12E5240B8003DCB88 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepNowView.swift; sourceTree = "<group>"; };
+		1DB00CD52E5240B8003DCB88 /* AlarmsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsView.swift; sourceTree = "<group>"; };
+		1DB00CD72E5240B8003DCB88 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepGuideView.swift; sourceTree = "<group>"; };
+		1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeUpTimeButton.swift; sourceTree = "<group>"; };
+		1DB00CDD2E5240B8003DCB88 /* LoadingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingViews.swift; sourceTree = "<group>"; };
+		1DB00CDF2E5240B8003DCB88 /* AlarmInstructionsModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmInstructionsModal.swift; sourceTree = "<group>"; };
+		1DB00CE12E5240B8003DCB88 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -60,6 +78,15 @@
 				1DB00CC42E52405D003DCB88 /* Assets.xcassets */,
 				1DB00CC62E52405D003DCB88 /* Preview Content */,
 				1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */,
+				1DB00CD12E5240B8003DCB88 /* MainTabView.swift */,
+				1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */,
+				1DB00CD52E5240B8003DCB88 /* AlarmsView.swift */,
+				1DB00CD72E5240B8003DCB88 /* SettingsView.swift */,
+				1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */,
+				1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */,
+				1DB00CDD2E5240B8003DCB88 /* LoadingViews.swift */,
+				1DB00CDF2E5240B8003DCB88 /* AlarmInstructionsModal.swift */,
+				1DB00CE12E5240B8003DCB88 /* OnboardingView.swift */,
 				1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */,
 			);
 			path = "Mr Sleep";
@@ -147,6 +174,15 @@
 				1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */,
 				1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */,
 				1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */,
+				1DB00CD02E5240B8003DCB88 /* MainTabView.swift in Sources */,
+				1DB00CD22E5240B8003DCB88 /* SleepNowView.swift in Sources */,
+				1DB00CD42E5240B8003DCB88 /* AlarmsView.swift in Sources */,
+				1DB00CD62E5240B8003DCB88 /* SettingsView.swift in Sources */,
+				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
+				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
+				1DB00CDC2E5240B8003DCB88 /* LoadingViews.swift in Sources */,
+				1DB00CDE2E5240B8003DCB88 /* AlarmInstructionsModal.swift in Sources */,
+				1DB00CE02E5240B8003DCB88 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
