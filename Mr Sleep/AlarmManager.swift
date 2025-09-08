@@ -249,13 +249,14 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Notifications
+    // MARK: - Enhanced Alarm Notifications
     private func scheduleNotification(for alarm: AlarmItem) {
         guard alarm.isEnabled, let scheduledDate = alarm.scheduledDate else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = "⏰ Wake Up Time"
-        content.body = "Time to wake up! \(alarm.label)"
+        content.title = "🚨 WAKE UP! 🚨"
+        content.subtitle = "💗 It's time to wake up!"
+        content.body = alarm.label
         
         // Set custom sound based on alarm's sound selection
         content.sound = getNotificationSound(for: alarm.soundName)
@@ -265,12 +266,24 @@ class AlarmManager: NSObject, ObservableObject {
         content.interruptionLevel = .critical
         content.relevanceScore = 1.0
         
+        // Add badge to make it more noticeable
+        content.badge = 1
+        
+        // Add user info for enhanced handling
+        content.userInfo = [
+            "isAlarm": true,
+            "alarmId": alarm.id.uuidString,
+            "alarmTime": alarm.time,
+            "alarmLabel": alarm.label
+        ]
+        
         let calendar = Calendar.current
         let components = calendar.dateComponents([.hour, .minute], from: scheduledDate)
         
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(identifier: alarm.id.uuidString, content: content, trigger: trigger)
         
+        // Schedule the main alarm
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")
@@ -278,10 +291,53 @@ class AlarmManager: NSObject, ObservableObject {
                 print("Notification scheduled for \(alarm.time)")
             }
         }
+        
+        // Schedule backup notifications (every minute for 5 minutes) to ensure wake up
+        scheduleBackupNotifications(for: alarm, originalDate: scheduledDate)
+    }
+    
+    private func scheduleBackupNotifications(for alarm: AlarmItem, originalDate: Date) {
+        // Schedule backup notifications every minute for 5 minutes
+        for i in 1...5 {
+            let backupDate = originalDate.addingTimeInterval(TimeInterval(i * 60)) // +1, +2, +3, +4, +5 minutes
+            
+            let content = UNMutableNotificationContent()
+            content.title = "🔥 WAKE UP NOW! 🔥"
+            content.subtitle = "Backup Alarm #\(i)"
+            content.body = "You need to wake up! \(alarm.label)"
+            content.sound = .defaultCritical
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            content.badge = NSNumber(value: i + 1)
+            
+            let backupTrigger = UNTimeIntervalNotificationTrigger(timeInterval: backupDate.timeIntervalSinceNow, repeats: false)
+            let backupRequest = UNNotificationRequest(
+                identifier: "\(alarm.id.uuidString)_backup_\(i)",
+                content: content,
+                trigger: backupTrigger
+            )
+            
+            UNUserNotificationCenter.current().add(backupRequest) { error in
+                if let error = error {
+                    print("Error scheduling backup notification \(i): \(error.localizedDescription)")
+                } else {
+                    print("Backup notification \(i) scheduled")
+                }
+            }
+        }
     }
     
     private func cancelNotification(for alarm: AlarmItem) {
+        // Cancel main notification
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [alarm.id.uuidString])
+        
+        // Cancel backup notifications
+        var backupIds: [String] = []
+        for i in 1...5 {
+            backupIds.append("\(alarm.id.uuidString)_backup_\(i)")
+        }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: backupIds)
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -409,14 +465,35 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Live Activity Management
+    // MARK: - Enhanced Alarm Experience
     private func startLiveActivity(for alarm: AlarmItem) {
-        // For now, just enhance the notification experience
-        // Live Activities will be added when ActivityKit framework is properly configured
         print("🚨 Enhanced alarm notification for: \(alarm.label)")
         
-        // Future: Add proper Live Activities implementation here
-        // This requires proper ActivityKit framework setup in Xcode project
+        // Start intense haptic feedback pattern
+        startAlarmHaptics()
+        
+        // Continue audio playback
+        // The audio session is already configured in startAlarmSound()
+    }
+    
+    private func startAlarmHaptics() {
+        // Create intense haptic feedback pattern for waking up
+        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+        
+        // Create a repeating timer for haptic feedback
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
+            if !self.isAlarmSounding {
+                timer.invalidate()
+                return
+            }
+            
+            // Trigger heavy impact feedback
+            impactFeedback.impactOccurred()
+            
+            // Add notification feedback as well
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.error)
+        }
     }
     
     private func stopLiveActivity() {

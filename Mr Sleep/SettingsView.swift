@@ -42,30 +42,23 @@ struct SettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         
-                        // Live Activity Testing
-                        #if DEBUG && canImport(ActivityKit)
-                        if #available(iOS 16.1, *) {
-                            SettingsSectionView(title: "🧪 Test Live Activities", icon: "bell.fill") {
-                                VStack(spacing: 12) {
-                                    Button("🚨 Test Live Activity") {
-                                        testLiveActivity()
-                                    }
-                                    .buttonStyle(TestButtonStyle(color: .red))
-                                    
-                                    Button("❌ Stop Live Activity") {
-                                        stopTestLiveActivity()
-                                    }
-                                    .buttonStyle(TestButtonStyle(color: .gray))
-                                    
-                                    Text("⚠️ Tap test button then immediately lock your phone")
-                                        .font(.caption)
-                                        .foregroundColor(.yellow)
-                                        .multilineTextAlignment(.center)
+                        // Enhanced Alarm Testing
+                        #if DEBUG
+                        SettingsSectionView(title: "🧪 Test Enhanced Alarms", icon: "bell.fill") {
+                            VStack(spacing: 12) {
+                                Button("🚨 Test Enhanced Alarm") {
+                                    testEnhancedAlarm()
                                 }
-                                .padding(16)
+                                .buttonStyle(TestButtonStyle(color: .red))
+                                
+                                Text("⚠️ This will trigger multiple loud notifications + haptics")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                                    .multilineTextAlignment(.center)
                             }
-                            .padding(.horizontal, 20)
+                            .padding(16)
                         }
+                        .padding(.horizontal, 20)
                         #endif
                     
                     // Sleep Settings Section
@@ -292,17 +285,58 @@ struct SettingsInfoView: View {
 }
 
 extension SettingsView {
-    // MARK: - Live Activity Testing Functions
-    #if DEBUG && canImport(ActivityKit)
-    @available(iOS 16.1, *)
-    private func testLiveActivity() {
-        print("🧪 Live Activity testing not yet implemented")
-        print("🔧 Requires proper ActivityKit framework setup")
-    }
-    
-    @available(iOS 16.1, *)
-    private func stopTestLiveActivity() {
-        print("🛑 Live Activity testing stopped")
+    // MARK: - Enhanced Alarm Testing Functions
+    #if DEBUG
+    private func testEnhancedAlarm() {
+        // Create a test alarm that fires in 5 seconds
+        let testAlarm = AlarmItem(
+            time: "Test Alarm",
+            isEnabled: true,
+            label: "💗 Enhanced Test Alarm",
+            category: "Test",
+            cycles: 5,
+            createdFromSleepNow: true,
+            snoozeEnabled: true,
+            soundName: "alarm-clock",
+            shouldAutoReset: false
+        )
+        
+        // Schedule immediate test notification
+        let content = UNMutableNotificationContent()
+        content.title = "🚨 TEST ALARM 🚨"
+        content.subtitle = "💗 Enhanced Alarm Test"
+        content.body = "This is your enhanced alarm experience!"
+        content.sound = .defaultCritical
+        content.categoryIdentifier = "ALARM_CATEGORY"
+        content.interruptionLevel = .critical
+        content.relevanceScore = 1.0
+        content.badge = 1
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
+        let request = UNNotificationRequest(identifier: "test_alarm", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling test alarm: \(error)")
+            } else {
+                print("🧪 Test alarm scheduled for 3 seconds from now")
+            }
+        }
+        
+        // Schedule backup test notifications
+        for i in 1...3 {
+            let backupContent = UNMutableNotificationContent()
+            backupContent.title = "🔥 BACKUP TEST #\(i) 🔥"
+            backupContent.body = "Enhanced alarm backup notification"
+            backupContent.sound = .defaultCritical
+            backupContent.interruptionLevel = .critical
+            backupContent.badge = NSNumber(value: i + 1)
+            
+            let backupTrigger = UNTimeIntervalNotificationTrigger(timeInterval: 3 + Double(i * 15), repeats: false)
+            let backupRequest = UNNotificationRequest(identifier: "test_alarm_backup_\(i)", content: backupContent, trigger: backupTrigger)
+            
+            UNUserNotificationCenter.current().add(backupRequest)
+        }
     }
     #endif
 }
