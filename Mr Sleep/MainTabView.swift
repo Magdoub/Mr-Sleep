@@ -16,11 +16,11 @@ struct MainTabView: View {
         Group {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
-                SleepNowView(alarmManager: alarmManager)
+                SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
             } else {
                 // Show full TabView after onboarding
                 TabView(selection: $selectedTab) {
-                    SleepNowView(alarmManager: alarmManager)
+                    SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
                         .tabItem {
                             Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
                             Text("Sleep Now")

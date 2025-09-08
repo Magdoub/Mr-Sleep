@@ -11,6 +11,7 @@ import AudioToolbox
 
 struct SleepNowView: View {
     @ObservedObject var alarmManager: AlarmManager
+    @Binding var selectedTab: Int
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
@@ -202,6 +203,11 @@ struct SleepNowView: View {
                                                     )
                                                     selectedWakeUpTime = wakeUpTimeString
                                                     showAlarmInstructions = true
+                                                    
+                                                    // Navigate to Alarms tab after creating alarm
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                        selectedTab = 1
+                                                    }
                                                 }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
@@ -590,5 +596,5 @@ struct SleepNowView: View {
 }
 
 #Preview {
-    SleepNowView(alarmManager: AlarmManager())
+    SleepNowView(alarmManager: AlarmManager(), selectedTab: .constant(0))
 }
