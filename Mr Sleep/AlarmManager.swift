@@ -334,11 +334,7 @@ class AlarmManager: NSObject, ObservableObject {
         startAlarmSound()
         
         // Start Live Activity on supported devices
-        #if canImport(ActivityKit)
-        if #available(iOS 16.1, *) {
-            AlarmLiveActivity.start(for: alarm)
-        }
-        #endif
+        startLiveActivity(for: alarm)
     }
     
     func dismissLiveActivity(for alarmId: String) {
@@ -347,11 +343,7 @@ class AlarmManager: NSObject, ObservableObject {
         stopAlarmSound()
         
         // Stop Live Activity
-        #if canImport(ActivityKit)
-        if #available(iOS 16.1, *) {
-            AlarmLiveActivity.stop()
-        }
-        #endif
+        stopLiveActivity()
     }
     
     // MARK: - Direct Alarm Sound Management
@@ -415,6 +407,74 @@ class AlarmManager: NSObject, ObservableObject {
             }
             AudioServicesPlaySystemSound(1005)
         }
+    }
+    
+    // MARK: - Live Activity Management
+    private func startLiveActivity(for alarm: AlarmItem) {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+                print("Live Activities not authorized")
+                return
+            }
+            
+            // Stop any existing activities first
+            Task {
+                for activity in Activity<AlarmActivityAttributes>.activities {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                }
+            }
+            
+            let attributes = AlarmActivityAttributes(
+                alarmId: alarm.id.uuidString,
+                originalAlarmTime: alarm.time,
+                alarmLabel: alarm.label
+            )
+            
+            let contentState = AlarmActivityAttributes.ContentState(
+                alarmTime: alarm.time,
+                alarmLabel: alarm.label,
+                isActive: true,
+                timeRemaining: "Now",
+                currentTime: getCurrentTimeFormatted(),
+                alarmId: alarm.id.uuidString
+            )
+            
+            do {
+                let activity = try Activity<AlarmActivityAttributes>.request(
+                    attributes: attributes,
+                    contentState: contentState,
+                    pushType: nil
+                )
+                print("✅ Live Activity started: \(activity.id)")
+            } catch {
+                print("❌ Failed to start Live Activity: \(error)")
+            }
+        } else {
+            print("Live Activities not available on iOS < 16.1")
+        }
+        #else
+        print("ActivityKit not available")
+        #endif
+    }
+    
+    private func stopLiveActivity() {
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                for activity in Activity<AlarmActivityAttributes>.activities {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                    print("🛑 Live Activity ended: \(activity.id)")
+                }
+            }
+        }
+        #endif
+    }
+    
+    private func getCurrentTimeFormatted() -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: Date())
     }
 }
 
