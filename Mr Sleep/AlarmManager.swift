@@ -315,11 +315,16 @@ class AlarmManager: NSObject, ObservableObject {
         let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
         
         // Schedule this notification
+        print("📅 About to schedule notification \(repetition + 1)/6:")
+        print("   Notification ID: \(notificationId)")
+        print("   Scheduled for: \(notificationTime)")
+        print("   Base time: \(baseTime)")
+        
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling notification repetition \(repetition + 1): \(error.localizedDescription)")
+                print("❌ Error scheduling notification repetition \(repetition + 1): \(error.localizedDescription)")
             } else {
-                print("Scheduled alarm repetition \(repetition + 1)/6 for \(alarm.time)")
+                print("✅ Successfully scheduled notification \(repetition + 1)/6 for \(alarm.time)")
             }
         }
     }
@@ -495,31 +500,39 @@ class AlarmManager: NSObject, ObservableObject {
         // We use heuristics based on app state and user activity
         
         let appState = UIApplication.shared.applicationState
-        
-        // If app is active, phone is definitely unlocked
-        if appState == .active {
-            print("🔓 Phone is unlocked (app is active)")
-            return false
-        }
-        
-        // Check if app was recently active (within last 10 seconds)
         let lastActiveTime = UserDefaults.standard.object(forKey: "lastAppActiveTime") as? Date ?? Date.distantPast
         let timeSinceLastActive = Date().timeIntervalSince(lastActiveTime)
         
-        if timeSinceLastActive < 10 {
-            print("🔓 Phone is likely unlocked (app was active \(Int(timeSinceLastActive))s ago)")
+        print("🔍 Lock Detection Debug:")
+        print("   App State: \(appState.rawValue) (0=active, 1=inactive, 2=background)")
+        print("   Last Active: \(lastActiveTime)")
+        print("   Time Since Active: \(Int(timeSinceLastActive))s")
+        
+        // If app is active, phone is definitely unlocked
+        if appState == .active {
+            print("🔓 RESULT: Phone is unlocked (app is active)")
             return false
         }
         
-        // Check if there are any other indicators of user activity
-        // If app is in background but was recently active, phone might be unlocked
-        if appState == .background && timeSinceLastActive < 30 {
-            print("🔓 Phone is likely unlocked (recent background activity)")
+        // For notifications firing while phone is locked, app will typically be in background
+        // and there should be no recent activity
+        
+        // If app was very recently active (within 5 seconds), phone might still be unlocked
+        if timeSinceLastActive < 5 {
+            print("🔓 RESULT: Phone is likely unlocked (very recent activity: \(Int(timeSinceLastActive))s)")
             return false
         }
         
-        // Default assumption: if we can't determine otherwise, assume phone is locked
-        print("🔒 Phone is likely locked (no recent activity)")
+        // If app is inactive (transitioning) and was recently active, might be unlocking
+        if appState == .inactive && timeSinceLastActive < 15 {
+            print("🔓 RESULT: Phone is likely unlocked (inactive state with recent activity)")
+            return false
+        }
+        
+        // For alarm notifications, if we're here with background state and no recent activity,
+        // the phone is very likely locked
+        print("🔒 RESULT: Phone is likely locked")
+        print("   Reason: App in background (\(appState.rawValue)) with no recent activity (\(Int(timeSinceLastActive))s)")
         return true
     }
     
@@ -869,14 +882,18 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let baseTime = Date(timeIntervalSince1970: baseTimeInterval)
                 
                 // Check if phone is locked
+                print("🔔 Notification \(currentRepetition + 1)/6 is presenting for alarm: \(alarm.time)")
+                
                 if isPhoneLocked() {
                     print("📱 Phone is locked, scheduling next notification (current: \(currentRepetition + 1)/6)")
                     
                     // Schedule the next notification
                     let nextRepetition = currentRepetition + 1
                     if nextRepetition < 6 {
+                        print("⏰ Scheduling notification \(nextRepetition + 1)/6 for 30 seconds from now")
                         scheduleNextNotification(for: alarm, repetition: nextRepetition, baseTime: baseTime)
                     } else {
+                        print("🏁 This was the last notification (6/6), scheduling auto-toggle-off in 30s")
                         // This was the last notification, schedule auto-toggle-off
                         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
                             if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
