@@ -296,26 +296,13 @@ extension SettingsView {
     #if DEBUG && canImport(ActivityKit)
     @available(iOS 16.1, *)
     private func testLiveActivity() {
-        let testAlarm = AlarmItem(
-            time: "12:28 PM",
-            isEnabled: true,
-            label: "💗 It's Monday afternoon",
-            category: "Test",
-            cycles: 5,
-            createdFromSleepNow: true,
-            snoozeEnabled: true,
-            soundName: "alarm-clock",
-            shouldAutoReset: false
-        )
-        
-        AlarmLiveActivity.start(for: testAlarm)
-        print("🧪 Test Live Activity started - lock your phone now!")
+        print("🧪 Live Activity testing not yet implemented")
+        print("🔧 Requires proper ActivityKit framework setup")
     }
     
     @available(iOS 16.1, *)
     private func stopTestLiveActivity() {
-        AlarmLiveActivity.stop()
-        print("🛑 Test Live Activity stopped")
+        print("🛑 Live Activity testing stopped")
     }
     #endif
 }
