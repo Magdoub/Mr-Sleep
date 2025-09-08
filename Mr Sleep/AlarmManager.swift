@@ -327,23 +327,13 @@ class AlarmManager: ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        #if canImport(ActivityKit)
-        if #available(iOS 16.1, *) {
-            let liveActivityManager = AlarmLiveActivityManager.shared
-            liveActivityManager.startAlarmActivity(for: alarm)
-        }
-        #endif
+        // Live Activities temporarily disabled for build compatibility
+        print("Live Activity would start for alarm: \(alarm.label)")
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        #if canImport(ActivityKit)
-        if #available(iOS 16.1, *) {
-            Task {
-                let liveActivityManager = AlarmLiveActivityManager.shared
-                await liveActivityManager.endActivity(for: alarmId)
-            }
-        }
-        #endif
+        // Live Activities temporarily disabled for build compatibility  
+        print("Live Activity would end for alarm: \(alarmId)")
     }
 }
 
@@ -356,11 +346,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
         if let alarmId = UUID(uuidString: notification.request.identifier),
            let alarm = alarms.first(where: { $0.id == alarmId }) {
             
-            #if canImport(ActivityKit)
-            if #available(iOS 16.1, *) {
-                startLiveActivityForAlarm(alarm)
-            }
-            #endif
+            // Live Activities call temporarily disabled
+            startLiveActivityForAlarm(alarm)
             
             // Also disable the alarm if it's set to auto-reset
             if alarm.shouldAutoReset {
@@ -389,11 +376,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate, @unchecked Sendable {
             
         case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
             // Handle dismiss - end Live Activity
-            #if canImport(ActivityKit)
-            if #available(iOS 16.1, *) {
-                dismissLiveActivity(for: alarmId)
-            }
-            #endif
+            dismissLiveActivity(for: alarmId)
             
         default:
             break
