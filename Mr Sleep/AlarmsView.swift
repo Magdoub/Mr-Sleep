@@ -34,6 +34,16 @@ struct AlarmsView: View {
                         
                         Spacer()
                         
+                        // Temporary clear all button for development
+                        Button(action: {
+                            alarmManager.clearAllAlarms()
+                        }) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
+                        }
+                        .accessibilityLabel("Clear all alarms")
+                        
                         Button(action: {
                             // Add new alarm action
                         }) {

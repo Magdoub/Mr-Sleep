@@ -55,6 +55,16 @@ class AlarmManager: ObservableObject {
         requestNotificationPermission()
     }
     
+    // MARK: - Development Helper
+    func clearAllAlarms() {
+        alarms.removeAll()
+        UserDefaults.standard.removeObject(forKey: "SavedAlarms")
+        
+        // Cancel all pending notifications
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        print("All alarms and notifications cleared")
+    }
+    
     // MARK: - Notification Permissions
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
