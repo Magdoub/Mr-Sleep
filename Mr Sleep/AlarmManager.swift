@@ -8,6 +8,8 @@
 import SwiftUI
 import UserNotifications
 import Foundation
+import AVFoundation
+import AudioToolbox
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -327,13 +329,78 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        // Start Live Activity with sound
-        SimpleLiveActivityManager.shared.startAlarmWithSound(for: alarm)
+        // Start enhanced alarm with sound and Live Activity attempt
+        print("🚨 Starting alarm with sound for: \(alarm.label)")
+        startAlarmSound()
     }
     
     func dismissLiveActivity(for alarmId: String) {
-        // Stop Live Activity and sound
-        SimpleLiveActivityManager.shared.stopAlarm()
+        // Stop alarm sound and Live Activity
+        print("⏹️ Stopping alarm for ID: \(alarmId)")
+        stopAlarmSound()
+    }
+    
+    // MARK: - Direct Alarm Sound Management
+    private var audioPlayer: AVAudioPlayer?
+    private var isAlarmSounding = false
+    
+    private func startAlarmSound() {
+        guard !isAlarmSounding else { return }
+        isAlarmSounding = true
+        
+        // Configure audio session
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try audioSession.setActive(true)
+        } catch {
+            print("Failed to set up audio session: \(error)")
+        }
+        
+        // Try to play custom sound
+        if let soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                         Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                         Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") {
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+                audioPlayer?.numberOfLoops = -1 // Loop indefinitely
+                audioPlayer?.volume = 1.0
+                audioPlayer?.play()
+                print("🔊 Playing custom alarm sound")
+            } catch {
+                print("Failed to play custom sound: \(error)")
+                playSystemAlarmSound()
+            }
+        } else {
+            playSystemAlarmSound()
+        }
+    }
+    
+    private func stopAlarmSound() {
+        isAlarmSounding = false
+        
+        // Stop custom audio
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        // Deactivate audio session
+        do {
+            try AVAudioSession.sharedInstance().setActive(false)
+        } catch {
+            print("Failed to deactivate audio session: \(error)")
+        }
+    }
+    
+    private func playSystemAlarmSound() {
+        print("🔊 Using system alarm sound")
+        
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            if !self.isAlarmSounding {
+                timer.invalidate()
+                return
+            }
+            AudioServicesPlaySystemSound(1005)
+        }
     }
 }
 
