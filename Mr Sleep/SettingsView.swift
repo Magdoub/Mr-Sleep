@@ -15,19 +15,32 @@ struct SettingsView: View {
     @State private var darkMode: Bool = true
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    HStack {
-                        Text("Settings")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+        GeometryReader { geometry in
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.25, blue: 0.5),
+                        Color(red: 0.06, green: 0.15, blue: 0.35),
+                        Color(red: 0.03, green: 0.08, blue: 0.2)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea(.all)
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header
+                        HStack {
+                            Text("Settings")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
                     
                     // Sleep Settings Section
                     SettingsSectionView(title: "Sleep Settings", icon: "moon.fill") {
@@ -127,23 +140,12 @@ struct SettingsView: View {
                         }
                     }
                     
-                    Spacer(minLength: 30)
+                        Spacer(minLength: 30)
+                    }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
             }
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.1, green: 0.25, blue: 0.5),
-                    Color(red: 0.06, green: 0.15, blue: 0.35),
-                    Color(red: 0.03, green: 0.08, blue: 0.2)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .ignoresSafeArea()
     }
 }
 
@@ -262,3 +264,4 @@ struct SettingsInfoView: View {
 #Preview {
     SettingsView()
 }
+

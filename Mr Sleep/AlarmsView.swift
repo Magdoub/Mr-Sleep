@@ -15,71 +15,73 @@ struct AlarmsView: View {
     ]
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Alarms")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+        GeometryReader { geometry in
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.25, blue: 0.5),
+                        Color(red: 0.06, green: 0.15, blue: 0.35),
+                        Color(red: 0.03, green: 0.08, blue: 0.2)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea(.all)
+                
+                VStack(spacing: 0) {
+                    // Header
+                    HStack {
+                        Text("Alarms")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            // Add new alarm action
+                        }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        }
+                        .accessibilityLabel("Add new alarm")
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    
+                    // Alarms List
+                    if alarms.isEmpty {
+                        VStack(spacing: 20) {
+                            Image(systemName: "alarm")
+                                .font(.system(size: 60))
+                                .foregroundColor(Color(red: 0.6, green: 0.6, blue: 0.7))
+                            
+                            Text("No Alarms Set")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                            
+                            Text("Tap + to add your first alarm")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(red: 0.6, green: 0.6, blue: 0.7))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(alarms.indices, id: \.self) { index in
+                                    AlarmRowView(alarm: $alarms[index])
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                        }
+                    }
                     
                     Spacer()
-                    
-                    Button(action: {
-                        // Add new alarm action
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                    }
-                    .accessibilityLabel("Add new alarm")
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                // Alarms List
-                if alarms.isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "alarm")
-                            .font(.system(size: 60))
-                            .foregroundColor(Color(red: 0.6, green: 0.6, blue: 0.7))
-                        
-                        Text("No Alarms Set")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
-                        
-                        Text("Tap + to add your first alarm")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(red: 0.6, green: 0.6, blue: 0.7))
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(alarms.indices, id: \.self) { index in
-                                AlarmRowView(alarm: $alarms[index])
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                    }
-                }
-                
-                Spacer()
             }
         }
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.1, green: 0.25, blue: 0.5),
-                    Color(red: 0.06, green: 0.15, blue: 0.35),
-                    Color(red: 0.03, green: 0.08, blue: 0.2)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .ignoresSafeArea()
     }
 }
 
@@ -130,3 +132,4 @@ struct AlarmRowView: View {
 #Preview {
     AlarmsView()
 }
+
