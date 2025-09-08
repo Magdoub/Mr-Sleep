@@ -377,7 +377,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var isAlarmSounding = false
     
-    private func startAlarmSound() {
+    private func startAlarmSound(for alarm: AlarmItem? = nil) {
         guard !isAlarmSounding else { return }
         isAlarmSounding = true
         
@@ -390,21 +390,50 @@ class AlarmManager: NSObject, ObservableObject {
             print("Failed to set up audio session: \(error)")
         }
         
-        // Try to play custom sound
-        if let soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                         Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                         Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") {
+        // Try to play custom sound based on alarm's sound selection
+        var soundURL: URL?
+        
+        if let alarm = alarm {
+            let soundName = alarm.soundName.lowercased()
+            
+            if soundName.contains("smooth") {
+                // Try smooth-alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a")
+                print("🔊 Attempting to play smooth-alarm-clock sound")
+            } else if soundName.contains("classic") || soundName.contains("alarm-clock") {
+                // Try original alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
+                print("🔊 Attempting to play alarm-clock sound")
+            }
+        }
+        
+        // Fallback to default sounds if no specific alarm or sound not found
+        if soundURL == nil {
+            soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
+        }
+        
+        if let soundURL = soundURL {
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely
                 audioPlayer?.volume = 1.0
                 audioPlayer?.play()
-                print("🔊 Playing custom alarm sound")
+                print("🔊 Playing custom alarm sound: \(soundURL.lastPathComponent)")
             } catch {
                 print("Failed to play custom sound: \(error)")
                 playSystemAlarmSound()
             }
         } else {
+            print("No custom alarm sound files found, using system sound")
             playSystemAlarmSound()
         }
     }
@@ -443,8 +472,8 @@ class AlarmManager: NSObject, ObservableObject {
         // Start intense haptic feedback pattern
         startAlarmHaptics()
         
-        // Continue audio playback
-        // The audio session is already configured in startAlarmSound()
+        // Start alarm sound with the specific alarm's sound selection
+        startAlarmSound(for: alarm)
     }
     
     private func startAlarmHaptics() {

@@ -54,8 +54,8 @@ class AlarmLiveActivityManager: ObservableObject {
             
             self.currentActivity = activity
             
-            // Start playing alarm sound continuously
-            startAlarmSound()
+            // Start playing alarm sound continuously with the specific alarm's sound selection
+            startAlarmSound(for: alarm)
             
             print("Live Activity started for alarm: \(alarm.label)")
             
@@ -126,15 +126,46 @@ class AlarmLiveActivityManager: ObservableObject {
     
     // MARK: - Alarm Sound Management
     
-    private func startAlarmSound() {
+    private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // Configure audio session for critical alarm sound
         configureAudioSession()
         
-        // First try to play custom alarm sound
-        if let soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                         Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                         Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
-                         Bundle.main.url(forResource: "alarm-clock", withExtension: "caf") {
+        // Try to play custom sound based on alarm's sound selection
+        var soundURL: URL?
+        
+        if let alarm = alarm {
+            let soundName = alarm.soundName.lowercased()
+            
+            if soundName.contains("smooth") {
+                // Try smooth-alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
+                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "caf")
+                print("🔊 Live Activity attempting to play smooth-alarm-clock sound")
+            } else if soundName.contains("classic") || soundName.contains("alarm-clock") {
+                // Try original alarm-clock sound
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
+                          Bundle.main.url(forResource: "alarm-clock", withExtension: "caf")
+                print("🔊 Live Activity attempting to play alarm-clock sound")
+            }
+        }
+        
+        // Fallback to default sounds if no specific alarm or sound not found
+        if soundURL == nil {
+            soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a") ??
+                      Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "caf") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
+                      Bundle.main.url(forResource: "alarm-clock", withExtension: "caf")
+        }
+        
+        if let soundURL = soundURL {
             playCustomAlarmSound(url: soundURL)
         } else {
             // Fallback to system sound pattern
