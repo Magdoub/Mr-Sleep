@@ -299,12 +299,64 @@ class AlarmManager: NSObject, ObservableObject {
                 print("Notification scheduled for \(alarm.time)")
             }
         }
+        
+        // Schedule additional notifications to simulate continuous ringing when phone is locked
+        scheduleRepeatingAlarmNotifications(for: alarm, originalDate: scheduledDate)
     }
     
+    private func scheduleRepeatingAlarmNotifications(for alarm: AlarmItem, originalDate: Date) {
+        // Schedule follow-up notifications every 30 seconds for 10 minutes to simulate continuous ringing
+        // This ensures the alarm keeps making noise even when the phone is locked
+        
+        for i in 1...20 { // 20 notifications over 10 minutes (every 30 seconds)
+            let followUpDate = originalDate.addingTimeInterval(TimeInterval(i * 30)) // +30s, +60s, +90s, etc.
+            
+            let content = UNMutableNotificationContent()
+            content.title = "🚨 WAKE UP! 🚨"
+            content.subtitle = "💗 Alarm Still Ringing"
+            content.body = alarm.label
+            content.sound = getNotificationSound(for: alarm.soundName)
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            content.badge = NSNumber(value: i + 1)
+            
+            content.userInfo = [
+                "isAlarm": true,
+                "alarmId": alarm.id.uuidString,
+                "alarmTime": alarm.time,
+                "alarmLabel": alarm.label,
+                "isFollowUp": true
+            ]
+            
+            let followUpTrigger = UNTimeIntervalNotificationTrigger(timeInterval: followUpDate.timeIntervalSinceNow, repeats: false)
+            let followUpRequest = UNNotificationRequest(
+                identifier: "\(alarm.id.uuidString)_repeat_\(i)",
+                content: content,
+                trigger: followUpTrigger
+            )
+            
+            UNUserNotificationCenter.current().add(followUpRequest) { error in
+                if let error = error {
+                    print("Error scheduling repeat notification \(i): \(error.localizedDescription)")
+                } else {
+                    print("Repeat notification \(i) scheduled for +\(i * 30)s")
+                }
+            }
+        }
+    }
     
     private func cancelNotification(for alarm: AlarmItem) {
         // Cancel main notification
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [alarm.id.uuidString])
+        
+        // Cancel all repeating notifications
+        var repeatIds: [String] = []
+        for i in 1...20 {
+            repeatIds.append("\(alarm.id.uuidString)_repeat_\(i)")
+        }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: repeatIds)
+        print("Cancelled alarm and \(repeatIds.count) repeat notifications")
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -375,6 +427,16 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Dismiss alarm overlay (this will stop the sound too)
         AlarmOverlayManager.shared.dismissAlarm()
+        
+        // Cancel all pending repeat notifications for this alarm
+        if let alarmUUID = UUID(uuidString: alarmId) {
+            var repeatIds: [String] = []
+            for i in 1...20 {
+                repeatIds.append("\(alarmUUID.uuidString)_repeat_\(i)")
+            }
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: repeatIds)
+            print("🔇 Cancelled \(repeatIds.count) pending repeat notifications")
+        }
         
         // Stop Live Activity
         stopLiveActivity()

@@ -162,12 +162,13 @@ struct AlarmRingingView: View {
     private func startAlarmSound() {
         print("🔊 Starting alarm sound for: \(alarm.soundName)")
         
-        // Configure audio session for alarm
+        // Configure audio session for alarm - must work when locked
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            // Use playback category with options to continue playing when locked
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth, .allowBluetoothA2DP])
             try audioSession.setActive(true)
-            print("✅ Audio session configured successfully")
+            print("✅ Audio session configured for background playback")
         } catch {
             print("❌ Failed to set up audio session: \(error)")
         }
