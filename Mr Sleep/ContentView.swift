@@ -219,7 +219,8 @@ struct ContentView: View {
                 if showAlarmInstructions {
                     AlarmInstructionsModal(
                         wakeUpTime: selectedWakeUpTime,
-                        showModal: $showAlarmInstructions
+                        showModal: $showAlarmInstructions,
+                        onDismiss: nil
                     )
                 }
             }
@@ -747,6 +748,7 @@ struct FinishingUpView: View {
 struct AlarmInstructionsModal: View {
     let wakeUpTime: String
     @Binding var showModal: Bool
+    let onDismiss: (() -> Void)?
     
     var body: some View {
         ZStack {
@@ -757,6 +759,7 @@ struct AlarmInstructionsModal: View {
                     withAnimation(.easeOut(duration: 0.3)) {
                         showModal = false
                     }
+                    onDismiss?()
                 }
             
             // Modal content
@@ -839,6 +842,7 @@ struct AlarmInstructionsModal: View {
                     withAnimation(.easeOut(duration: 0.3)) {
                         showModal = false
                     }
+                    onDismiss?()
                 }) {
                     Text("Got it!")
                         .font(.system(size: 16, weight: .semibold))

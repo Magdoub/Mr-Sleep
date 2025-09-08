@@ -203,11 +203,6 @@ struct SleepNowView: View {
                                                     )
                                                     selectedWakeUpTime = wakeUpTimeString
                                                     showAlarmInstructions = true
-                                                    
-                                                    // Navigate to Alarms tab after creating alarm
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                        selectedTab = 1
-                                                    }
                                                 }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
@@ -240,7 +235,11 @@ struct SleepNowView: View {
                 if showAlarmInstructions {
                     AlarmInstructionsModal(
                         wakeUpTime: selectedWakeUpTime,
-                        showModal: $showAlarmInstructions
+                        showModal: $showAlarmInstructions,
+                        onDismiss: {
+                            // Navigate to Alarms tab after dismissing popup
+                            selectedTab = 1
+                        }
                     )
                 }
             }
