@@ -8,6 +8,7 @@
 import SwiftUI
 import UserNotifications
 import Foundation
+import ActivityKit
 
 // Enhanced AlarmItem with more properties
 struct AlarmItem: Identifiable, Codable {
@@ -52,11 +53,13 @@ struct AlarmItem: Identifiable, Codable {
 
 class AlarmManager: ObservableObject {
     @Published var alarms: [AlarmItem] = []
+    private let liveActivityManager = AlarmLiveActivityManager.shared
     
     init() {
         loadAlarms()
         requestNotificationPermission()
         checkAndResetExpiredAlarms()
+        setupNotificationHandling()
     }
     
     // MARK: - Development Helper
@@ -101,6 +104,11 @@ class AlarmManager: ObservableObject {
                 }
             }
         }
+    }
+    
+    private func setupNotificationHandling() {
+        // Set up notification delegate to handle when alarms fire
+        UNUserNotificationCenter.current().delegate = self
     }
     
     private func setupNotificationCategories() {
@@ -311,6 +319,91 @@ class AlarmManager: ObservableObject {
         } else {
             // Start with empty alarms array
             alarms = []
+        }
+    }
+    
+    // MARK: - Live Activities Integration
+    
+    func startLiveActivityForAlarm(_ alarm: AlarmItem) {
+        Task { @MainActor in
+            await liveActivityManager.startAlarmActivity(for: alarm)
+        }
+    }
+    
+    func dismissLiveActivity(for alarmId: String) {
+        Task { @MainActor in
+            await liveActivityManager.endActivity(for: alarmId)
+        }
+    }
+}
+
+// MARK: - UNUserNotificationCenterDelegate
+extension AlarmManager: UNUserNotificationCenterDelegate {
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        
+        // When alarm notification is about to be presented, start Live Activity
+        if let alarmId = UUID(uuidString: notification.request.identifier),
+           let alarm = alarms.first(where: { $0.id == alarmId }) {
+            
+            startLiveActivityForAlarm(alarm)
+            
+            // Also disable the alarm if it's set to auto-reset
+            if alarm.shouldAutoReset {
+                if let index = alarms.firstIndex(where: { $0.id == alarmId }) {
+                    alarms[index].isEnabled = false
+                    saveAlarms()
+                }
+            }
+        }
+        
+        // Show the notification with sound and alert
+        completionHandler([.alert, .sound, .badge])
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        
+        let alarmId = response.notification.request.identifier
+        
+        switch response.actionIdentifier {
+        case "SNOOZE_ACTION":
+            // Handle snooze - reschedule for 9 minutes later
+            if let alarmUUID = UUID(uuidString: alarmId),
+               let alarm = alarms.first(where: { $0.id == alarmUUID }) {
+                snoozeAlarm(alarm)
+            }
+            
+        case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
+            // Handle dismiss - end Live Activity
+            dismissLiveActivity(for: alarmId)
+            
+        default:
+            break
+        }
+        
+        completionHandler()
+    }
+    
+    private func snoozeAlarm(_ alarm: AlarmItem) {
+        // Create a new notification 9 minutes from now
+        let content = UNMutableNotificationContent()
+        content.title = "⏰ Wake Up Time (Snoozed)"
+        content.body = "Time to wake up! \(alarm.label)"
+        content.sound = getNotificationSound(for: alarm.soundName)
+        content.categoryIdentifier = "ALARM_CATEGORY"
+        content.interruptionLevel = .critical
+        content.relevanceScore = 1.0
+        
+        // Schedule for 9 minutes from now
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 540, repeats: false) // 9 minutes
+        let request = UNNotificationRequest(identifier: "\(alarm.id.uuidString)_snooze_\(Date().timeIntervalSince1970)", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling snooze notification: \(error.localizedDescription)")
+            } else {
+                print("Snooze notification scheduled")
+            }
         }
     }
 }
