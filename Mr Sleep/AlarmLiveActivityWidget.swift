@@ -174,7 +174,10 @@ struct AlarmLiveActivityView: View {
     }
     
     private func playAlarmSoundFile() {
-        guard let soundURL = Bundle.main.url(forResource: "alarm_sound", withExtension: "mp3") else {
+        guard let soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                             Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                             Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
+                             Bundle.main.url(forResource: "alarm-clock", withExtension: "caf") else {
             // Fallback to system sound
             AudioServicesPlaySystemSound(1005) // Long beep sound
             return

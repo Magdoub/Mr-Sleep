@@ -7,22 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */; };
 		1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */; };
 		1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC22E52405C003DCB88 /* ContentView.swift */; };
 		1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC42E52405D003DCB88 /* Assets.xcassets */; };
 		1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */; };
 		1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */; };
 		1DB00CD02E5240B8003DCB88 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240B8003DCB88 /* MainTabView.swift */; };
+		1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */; };
 		1DB00CD22E5240B8003DCB88 /* SleepNowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */; };
 		1DB00CD42E5240B8003DCB88 /* AlarmsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD52E5240B8003DCB88 /* AlarmsView.swift */; };
 		1DB00CD62E5240B8003DCB88 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD72E5240B8003DCB88 /* SettingsView.swift */; };
 		1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */; };
 		1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */; };
 		1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CDD2E5240B8003DCB88 /* AlarmManager.swift */; };
-		1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "alarm-clock.mp3"; sourceTree = "<group>"; };
+		1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mr Sleep.entitlements"; sourceTree = "<group>"; };
 		1DB00CBD2E52405C003DCB88 /* Mr Sleep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mr Sleep.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mr_SleepApp.swift; sourceTree = "<group>"; };
 		1DB00CC22E52405C003DCB88 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -30,13 +33,13 @@
 		1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCalculator.swift; sourceTree = "<group>"; };
 		1DB00CD12E5240B8003DCB88 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepNowView.swift; sourceTree = "<group>"; };
 		1DB00CD52E5240B8003DCB88 /* AlarmsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsView.swift; sourceTree = "<group>"; };
 		1DB00CD72E5240B8003DCB88 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepGuideView.swift; sourceTree = "<group>"; };
 		1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeUpTimeButton.swift; sourceTree = "<group>"; };
 		1DB00CDD2E5240B8003DCB88 /* AlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmManager.swift; sourceTree = "<group>"; };
-		1DB00CD12E5240C0003DCB88 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +72,8 @@
 		1DB00CBF2E52405C003DCB88 /* Mr Sleep */ = {
 			isa = PBXGroup;
 			children = (
+				1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */,
+				1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */,
 				1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */,
 				1DB00CC22E52405C003DCB88 /* ContentView.swift */,
 				1DB00CC42E52405D003DCB88 /* Assets.xcassets */,
@@ -155,6 +160,7 @@
 				1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */,
 				1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */,
 				1DB00CD02E5240C0003DCB88 /* LaunchScreen.storyboard in Resources */,
+				1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,6 +311,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Mr Sleep/Mr Sleep.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
@@ -316,7 +323,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -339,6 +346,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Mr Sleep/Mr Sleep.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
@@ -350,7 +358,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

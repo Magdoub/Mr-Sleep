@@ -128,7 +128,10 @@ class AlarmLiveActivityManager: ObservableObject {
         configureAudioSession()
         
         // First try to play custom alarm sound
-        if let soundURL = Bundle.main.url(forResource: "alarm_sound", withExtension: "mp3") {
+        if let soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
+                         Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
+                         Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") ??
+                         Bundle.main.url(forResource: "alarm-clock", withExtension: "caf") {
             playCustomAlarmSound(url: soundURL)
         } else {
             // Fallback to system sound pattern
