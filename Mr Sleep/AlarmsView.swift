@@ -110,10 +110,11 @@ struct AlarmsView: View {
         .sheet(isPresented: $showingAddAlarm) {
             AddAlarmView(alarmManager: alarmManager, selectedTime: $selectedTime)
         }
-        .sheet(isPresented: $showingEditAlarm) {
-            if let alarmToEdit = alarmToEdit {
-                EditAlarmView(alarmManager: alarmManager, alarm: alarmToEdit)
-            }
+        .sheet(item: Binding<AlarmItem?>(
+            get: { showingEditAlarm ? alarmToEdit : nil },
+            set: { _ in showingEditAlarm = false }
+        )) { alarm in
+            EditAlarmView(alarmManager: alarmManager, alarm: alarm)
         }
     }
 }
@@ -252,7 +253,7 @@ struct AddAlarmView: View {
                                     Text(sound)
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(selectedSound == sound ? .black : .white)
-                                        .padding(.horizontal, 16)
+                                        .frame(maxWidth: .infinity)
                                         .padding(.vertical, 8)
                                         .background(
                                             RoundedRectangle(cornerRadius: 16)
@@ -263,7 +264,6 @@ struct AddAlarmView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
-                            Spacer()
                         }
                     }
                     .padding(.vertical, 8)
@@ -378,7 +378,7 @@ struct EditAlarmView: View {
                                         Text(sound)
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(selectedSound == sound ? .black : .white)
-                                            .padding(.horizontal, 16)
+                                            .frame(maxWidth: .infinity)
                                             .padding(.vertical, 8)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16)
@@ -389,7 +389,6 @@ struct EditAlarmView: View {
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
-                                Spacer()
                             }
                         }
                     }
