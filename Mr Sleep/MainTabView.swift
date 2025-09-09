@@ -10,6 +10,8 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @State private var tabBarOffset: CGFloat = 100
+    @State private var showTabBarAnimation = false
     @EnvironmentObject var alarmManager: AlarmManager
     @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
     
@@ -43,6 +45,8 @@ struct MainTabView: View {
                         .tag(2)
                 }
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                .offset(y: showTabBarAnimation ? 0 : tabBarOffset)
+                .animation(.easeOut(duration: 0.6), value: showTabBarAnimation)
             }
         }
         .fullScreenCover(isPresented: $alarmOverlayManager.isShowingAlarm) {
@@ -62,6 +66,21 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
             // Update showOnboarding state when onboarding is completed
             showOnboarding = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Reset animation state when app comes from background
+            if !showOnboarding {
+                showTabBarAnimation = false
+                tabBarOffset = 100
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Trigger slide-up animation when app becomes active
+            if !showOnboarding {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showTabBarAnimation = true
+                }
+            }
         }
         .onAppear {
             // Configure tab bar appearance
@@ -88,6 +107,13 @@ struct MainTabView: View {
             
             // Increase the height of the tab bar for more top padding
             UITabBar.appearance().frame.size.height = 140
+            
+            // Trigger slide-up animation after a short delay
+            if !showOnboarding {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showTabBarAnimation = true
+                }
+            }
         }
     }
 }
