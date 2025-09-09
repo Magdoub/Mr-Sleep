@@ -450,11 +450,54 @@ class AlarmManager: NSObject, ObservableObject {
     
     private func dismissActiveAlarmsOnUserInteraction() {
         let now = Date()
-        let fiveMinutesAgo = now.addingTimeInterval(-5 * 60) // 5 minutes ago
         
         print("🔍 Checking for active alarms at \(now)")
         
-        // Find alarms that should be active right now
+        // First, check for alarms with pending notifications (most reliable method)
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let alarmNotificationIds = requests.compactMap { request -> String? in
+                let identifier = request.identifier
+                if identifier.contains("-repeat-") {
+                    return String(identifier.prefix(while: { $0 != "-" }))
+                }
+                return nil
+            }
+            
+            DispatchQueue.main.async {
+                let alarmsWithPendingNotifications = self.alarms.filter { alarm in
+                    alarm.isEnabled && alarmNotificationIds.contains(alarm.id.uuidString)
+                }
+                
+                if !alarmsWithPendingNotifications.isEmpty {
+                    print("🔴 Found \(alarmsWithPendingNotifications.count) alarms with pending notifications - dismissing due to user interaction")
+                    
+                    for alarm in alarmsWithPendingNotifications {
+                        // Cancel all notifications for this alarm
+                        self.cancelNotification(for: alarm)
+                        
+                        // Toggle off the alarm
+                        self.toggleOffAlarm(with: alarm.id)
+                        
+                        // Dismiss any live activities
+                        self.dismissLiveActivity(for: alarm.id.uuidString)
+                        
+                        print("✅ Dismissed active alarm with pending notifications: \(alarm.time)")
+                    }
+                    
+                    // Also clear any notification badges
+                    UNUserNotificationCenter.current().setBadgeCount(0)
+                } else {
+                    // Fallback: Use time-based detection for alarms that have fired but might not have pending notifications
+                    self.dismissActiveAlarmsByTime()
+                }
+            }
+        }
+    }
+    
+    private func dismissActiveAlarmsByTime() {
+        let now = Date()
+        
+        // Find alarms that should be active right now (time-based fallback)
         let activeAlarms = alarms.filter { alarm in
             guard alarm.isEnabled else { 
                 print("⚪ Alarm \(alarm.time) is disabled, skipping")
@@ -498,7 +541,7 @@ class AlarmManager: NSObject, ObservableObject {
             if isActive {
                 let activeTime = todayInWindow ? todayAlarmTime : yesterdayAlarmTime
                 let minutesAfter = Int(now.timeIntervalSince(activeTime) / 60)
-                print("🔴 Found active alarm: \(alarm.time) (fired \(minutesAfter) minutes ago)")
+                print("🔴 Found active alarm by time: \(alarm.time) (fired \(minutesAfter) minutes ago)")
             } else {
                 // Check if alarm is in the future
                 if todayAlarmTime > now {
@@ -531,10 +574,7 @@ class AlarmManager: NSObject, ObservableObject {
             // Also clear any notification badges
             UNUserNotificationCenter.current().setBadgeCount(0)
         } else {
-            print("⚪ No active alarms found to dismiss")
-            
-            // Fallback: Also check for any enabled alarms and toggle them off if they have pending notifications
-            checkAndToggleOffAlarmsWithPendingNotifications()
+            print("⚪ No active alarms found by time-based detection")
         }
     }
     
