@@ -654,6 +654,53 @@ class AlarmManager: NSObject, ObservableObject {
         return true
     }
     
+    // MARK: - User Interaction Detection
+    private func scheduleUserInteractionCheck(for alarm: AlarmItem, afterNotification repetition: Int) {
+        // Check multiple times after each notification to see if user has interacted
+        let checkIntervals: [TimeInterval] = [5, 10, 15, 20, 25] // Check every 5 seconds for 25 seconds
+        
+        for interval in checkIntervals {
+            DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
+                self.checkForUserInteractionAfterNotification(alarmId: alarm.id, repetition: repetition)
+            }
+        }
+    }
+    
+    private func checkForUserInteractionAfterNotification(alarmId: UUID, repetition: Int) {
+        // Check if the alarm is still enabled
+        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
+            return // Alarm already disabled
+        }
+        
+        // Check if there are fewer pending notifications than expected
+        // This indicates user interaction (dismissal, clearing, etc.)
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let alarmNotifications = requests.filter { request in
+                request.identifier.contains(alarmId.uuidString) && request.identifier.contains("-repeat-")
+            }
+            
+            // Calculate how many notifications should still be pending
+            let expectedRemaining = max(0, 6 - repetition - 1) // Total 6, minus current repetition, minus 1 for 0-based
+            let actualPending = alarmNotifications.count
+            
+            DispatchQueue.main.async {
+                print("🔍 Interaction check: Expected \(expectedRemaining) notifications, found \(actualPending)")
+                
+                // If we have significantly fewer notifications than expected, user likely interacted
+                if actualPending < expectedRemaining {
+                    print("🎯 Detected user interaction - fewer notifications than expected")
+                    
+                    // Cancel remaining notifications and toggle off alarm
+                    self.cancelNotification(for: alarm)
+                    self.toggleOffAlarm(with: alarmId)
+                    self.dismissLiveActivity(for: alarmId.uuidString)
+                    
+                    print("✅ Stopped alarm due to detected user interaction: \(alarm.time)")
+                }
+            }
+        }
+    }
+    
     // MARK: - Unlock Detection
     private func scheduleUnlockDetection(for alarm: AlarmItem) {
         // Schedule periodic checks to see if user has unlocked phone
@@ -997,9 +1044,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/6 is presenting for alarm: \(alarm.time)")
                 
-                // Since we pre-schedule all notifications, we just need to handle the first one
-                // for starting Live Activity. The app lifecycle events will handle cancellation
-                // if the phone gets unlocked.
+                // Schedule a check to see if user has interacted with phone after this notification
+                scheduleUserInteractionCheck(for: alarm, afterNotification: currentRepetition)
                 
                 // Also disable the alarm if it's set to auto-reset (only for regular alarms)
                 if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {
@@ -1034,23 +1080,16 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             alarmIdString = notificationId
         }
         
-        switch response.actionIdentifier {
-        case "DISMISS_ACTION", UNNotificationDefaultActionIdentifier:
-            // Handle dismiss - end Live Activity and cancel remaining repetitions
-            dismissLiveActivity(for: alarmIdString)
+        print("🔔 User interacted with alarm notification: \(response.actionIdentifier)")
+        
+        // ANY interaction with an alarm notification should cancel remaining notifications
+        // This includes tapping, dismissing, or any other interaction
+        if let alarmId = UUID(uuidString: alarmIdString),
+           let alarm = alarms.first(where: { $0.id == alarmId }) {
             
-            // Cancel all remaining repetitions and toggle off the alarm
-            if let alarmId = UUID(uuidString: alarmIdString),
-               let alarm = alarms.first(where: { $0.id == alarmId }) {
-                cancelNotification(for: alarm)
-                toggleOffAlarm(with: alarmId)
-                print("Cancelled remaining repetitions and toggled off alarm: \(alarm.time)")
-            }
-            
-        case "SNOOZE_ACTION":
-            // Handle snooze - schedule a new alarm 5 minutes from now
-            if let alarmId = UUID(uuidString: alarmIdString),
-               let alarm = alarms.first(where: { $0.id == alarmId }) {
+            switch response.actionIdentifier {
+            case "SNOOZE_ACTION":
+                // Handle snooze - schedule a new alarm 5 minutes from now
                 cancelNotification(for: alarm) // Cancel remaining repetitions
                 toggleOffAlarm(with: alarmId) // Toggle off the current alarm
                 
@@ -1061,11 +1100,15 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let snoozeTimeString = formatter.string(from: snoozeTime)
                 
                 addManualAlarm(time: snoozeTimeString, soundName: alarm.soundName)
-                print("Snoozed alarm for 5 minutes: \(snoozeTimeString)")
+                print("🔄 Snoozed alarm for 5 minutes: \(snoozeTimeString)")
+                
+            default:
+                // For ALL other interactions (dismiss, tap, etc.) - stop the alarm
+                cancelNotification(for: alarm)
+                toggleOffAlarm(with: alarmId)
+                dismissLiveActivity(for: alarmIdString)
+                print("✅ User interacted with notification - cancelled remaining repetitions and toggled off alarm: \(alarm.time)")
             }
-            
-        default:
-            break
         }
         
         completionHandler()
