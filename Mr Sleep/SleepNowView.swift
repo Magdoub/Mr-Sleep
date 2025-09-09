@@ -9,6 +9,10 @@ import SwiftUI
 import AVFoundation
 import AudioToolbox
 
+extension Notification.Name {
+    static let onboardingCompleted = Notification.Name("onboardingCompleted")
+}
+
 struct SleepNowView: View {
     @ObservedObject var alarmManager: AlarmManager
     @Binding var selectedTab: Int
@@ -490,6 +494,9 @@ struct SleepNowView: View {
     }
     
     private func startPostOnboardingLoading() {
+        // Post notification to update MainTabView state
+        NotificationCenter.default.post(name: .onboardingCompleted, object: nil)
+        
         // IMMEDIATELY reset ALL states to prevent card flash
         wakeUpTimeVisibility = [false, false, false, false, false, false]
         categoryHeadersVisible = false

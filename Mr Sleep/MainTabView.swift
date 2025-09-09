@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+extension Notification.Name {
+    static let onboardingCompleted = Notification.Name("onboardingCompleted")
+}
+
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
@@ -58,6 +62,10 @@ struct MainTabView: View {
         .onChange(of: showOnboarding) { isOnboarding in
             // Update onboarding state when it changes
             showOnboarding = isOnboarding
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
+            // Update showOnboarding state when onboarding is completed
+            showOnboarding = false
         }
         .onAppear {
             // Configure tab bar appearance
