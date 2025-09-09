@@ -293,7 +293,7 @@ class AlarmManager: NSObject, ObservableObject {
             content.relevanceScore = 1.0
             
             // Enable mutable content so notification service extension can process it
-            content.mutableContent = true
+            // Note: UNMutableNotificationContent is already mutable by default
             
             // Add badge to make it more noticeable
             content.badge = NSNumber(value: repetition + 1)
