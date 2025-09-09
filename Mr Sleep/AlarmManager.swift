@@ -654,16 +654,77 @@ class AlarmManager: NSObject, ObservableObject {
         return true
     }
     
-    // MARK: - User Interaction Detection
-    private func scheduleUserInteractionCheck(for alarm: AlarmItem, afterNotification repetition: Int) {
-        // Use a simpler approach: if this is not the last notification, 
-        // schedule a check right before the next notification should fire
-        if repetition < 5 { // 0-based, so 5 means this is the 6th (last) notification
-            // Next notification should fire in 30 seconds, check at 25 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
-                self.checkIfNextNotificationShouldFire(alarmId: alarm.id, currentRepetition: repetition)
+    // MARK: - Background Unlock Detection
+    private func scheduleBackgroundUnlockCheck(for alarm: AlarmItem, afterNotification repetition: Int) {
+        // Schedule multiple aggressive checks to detect phone unlock
+        // Check every 3 seconds for the next 27 seconds (before next notification)
+        for seconds in stride(from: 3, through: 27, by: 3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(seconds)) {
+                self.checkForPhoneUnlock(alarmId: alarm.id, repetition: repetition, checkNumber: seconds / 3)
             }
         }
+    }
+    
+    private func checkForPhoneUnlock(alarmId: UUID, repetition: Int, checkNumber: Int) {
+        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
+            return // Alarm already disabled
+        }
+        
+        print("🔍 Background unlock check #\(checkNumber) for alarm \(alarm.time)")
+        
+        // Multiple heuristics to detect phone unlock
+        let appState = UIApplication.shared.applicationState
+        
+        // Check 1: App state changed to inactive (transitioning from background)
+        if appState == .inactive {
+            print("📱 App state is inactive - phone likely being unlocked")
+            self.stopAlarmDueToUnlock(alarm: alarm, reason: "App state inactive")
+            return
+        }
+        
+        // Check 2: Check if notifications are being delivered vs pending
+        UNUserNotificationCenter.current().getPendingNotificationRequests { pendingRequests in
+            UNUserNotificationCenter.current().getDeliveredNotifications { deliveredNotifications in
+                
+                let alarmPending = pendingRequests.filter { $0.identifier.contains(alarmId.uuidString) }.count
+                let alarmDelivered = deliveredNotifications.filter { $0.request.identifier.contains(alarmId.uuidString) }.count
+                
+                DispatchQueue.main.async {
+                    print("   Pending: \(alarmPending), Delivered: \(alarmDelivered)")
+                    
+                    // If we have delivered notifications but fewer pending than expected, user saw them
+                    let expectedPending = max(0, 6 - repetition - 1)
+                    
+                    if alarmDelivered > 0 && alarmPending < expectedPending {
+                        print("📱 Notifications delivered but some missing - phone unlocked")
+                        self.stopAlarmDueToUnlock(alarm: alarm, reason: "Notifications delivered and cleared")
+                        return
+                    }
+                    
+                    // Check 3: Try to access device orientation (fails when locked on some devices)
+                    let orientation = UIDevice.current.orientation
+                    if orientation != .unknown {
+                        print("📱 Device orientation accessible - phone likely unlocked")
+                        self.stopAlarmDueToUnlock(alarm: alarm, reason: "Device orientation accessible")
+                        return
+                    }
+                    
+                    print("   No unlock detected in check #\(checkNumber)")
+                }
+            }
+        }
+    }
+    
+    private func stopAlarmDueToUnlock(alarm: AlarmItem, reason: String) {
+        print("🔓 Phone unlock detected: \(reason)")
+        print("✅ Stopping alarm due to phone unlock: \(alarm.time)")
+        
+        cancelNotification(for: alarm)
+        toggleOffAlarm(with: alarm.id)
+        dismissLiveActivity(for: alarm.id.uuidString)
+        
+        // Clear badge
+        UNUserNotificationCenter.current().setBadgeCount(0)
     }
     
     private func checkIfNextNotificationShouldFire(alarmId: UUID, currentRepetition: Int) {
@@ -1045,8 +1106,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/6 is presenting for alarm: \(alarm.time)")
                 
-                // Schedule a check to see if user has interacted with phone after this notification
-                scheduleUserInteractionCheck(for: alarm, afterNotification: currentRepetition)
+                // Schedule a background task to check if phone gets unlocked
+                scheduleBackgroundUnlockCheck(for: alarm, afterNotification: currentRepetition)
                 
                 // Also disable the alarm if it's set to auto-reset (only for regular alarms)
                 if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {
