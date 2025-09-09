@@ -264,96 +264,74 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func scheduleAllNotifications(for alarm: AlarmItem, baseTime: Date) {
-        print("📅 Using sequential notification scheduling for better unlock detection")
+        print("📅 Pre-scheduling all 6 notifications for alarm: \(alarm.time)")
         
-        // Start with just the first notification
-        scheduleNextNotificationInSequence(for: alarm, repetition: 0, baseTime: baseTime)
+        // Schedule all 6 notifications at once (this is more reliable)
+        for repetition in 0..<6 {
+            let notificationTime = baseTime.addingTimeInterval(TimeInterval(repetition * 30))
+            let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
+            
+            let content = UNMutableNotificationContent()
+            
+            // Customize title based on repetition
+            if repetition == 0 {
+                content.title = "🚨 WAKE UP! 🚨"
+                content.subtitle = "💗 Tap to continue alarm!"
+                content.body = "\(alarm.label) - Sound will loop when opened"
+            } else {
+                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/6)"
+                content.subtitle = "💗 Still sleeping? Time to wake up!"
+                content.body = "\(alarm.label) - Tap to stop repeating"
+            }
+            
+            // Set custom sound based on alarm's sound selection
+            content.sound = getNotificationSound(for: alarm.soundName)
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            
+            // Make notification critical to bypass Do Not Disturb and volume settings
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            
+            // Add badge to make it more noticeable
+            content.badge = NSNumber(value: repetition + 1)
+            
+            // Add user info for enhanced handling
+            content.userInfo = [
+                "isAlarm": true,
+                "alarmId": alarm.id.uuidString,
+                "alarmTime": alarm.time,
+                "alarmLabel": alarm.label,
+                "repetition": repetition,
+                "totalRepetitions": 6,
+                "baseTime": baseTime.timeIntervalSince1970
+            ]
+            
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: notificationTime)
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+            
+            // Schedule this notification
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Error scheduling notification \(repetition + 1)/6: \(error.localizedDescription)")
+                } else {
+                    print("✅ Scheduled notification \(repetition + 1)/6 for \(notificationTime)")
+                }
+            }
+        }
+        
+        // Schedule automatic cleanup after all notifications
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(6 * 30)) {
+            if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
+                self.alarms[alarmIndex].isEnabled = false
+                self.saveAlarms()
+                print("🏁 Automatically toggled off alarm after all 6 notifications: \(alarm.time)")
+            }
+        }
     }
     
-    private func scheduleNextNotificationInSequence(for alarm: AlarmItem, repetition: Int, baseTime: Date) {
-        guard repetition < 6 else {
-            print("🏁 All 6 notifications completed for alarm: \(alarm.time)")
-            return
-        }
-        
-        let notificationTime = baseTime.addingTimeInterval(TimeInterval(repetition * 30))
-        let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
-        
-        let content = UNMutableNotificationContent()
-        
-        // Customize title based on repetition
-        if repetition == 0 {
-            content.title = "🚨 WAKE UP! 🚨"
-            content.subtitle = "💗 Tap to continue alarm!"
-            content.body = "\(alarm.label) - Sound will loop when opened"
-        } else {
-            content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/6)"
-            content.subtitle = "💗 Still sleeping? Time to wake up!"
-            content.body = "\(alarm.label) - Tap to stop repeating"
-        }
-        
-        // Set custom sound based on alarm's sound selection
-        content.sound = getNotificationSound(for: alarm.soundName)
-        content.categoryIdentifier = "ALARM_CATEGORY"
-        
-        // Make notification critical to bypass Do Not Disturb and volume settings
-        content.interruptionLevel = .critical
-        content.relevanceScore = 1.0
-        
-        // Add badge to make it more noticeable
-        content.badge = NSNumber(value: repetition + 1)
-        
-        // Add user info for enhanced handling
-        content.userInfo = [
-            "isAlarm": true,
-            "alarmId": alarm.id.uuidString,
-            "alarmTime": alarm.time,
-            "alarmLabel": alarm.label,
-            "repetition": repetition,
-            "totalRepetitions": 6,
-            "baseTime": baseTime.timeIntervalSince1970,
-            "scheduleNext": repetition < 5 // Should we schedule the next notification?
-        ]
-        
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: notificationTime)
-        
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
-        
-        // Schedule this notification
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ Error scheduling notification \(repetition + 1)/6: \(error.localizedDescription)")
-            } else {
-                print("✅ Scheduled notification \(repetition + 1)/6 for \(notificationTime)")
-                
-                // Schedule the next notification after a delay (if not the last one)
-                if repetition < 5 {
-                    let nextNotificationDelay = TimeInterval(30) // 30 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + nextNotificationDelay + 1) {
-                        // Check if alarm is still enabled before scheduling next
-                        if let currentAlarm = self.alarms.first(where: { $0.id == alarm.id && $0.isEnabled }) {
-                            print("⏰ Scheduling next notification (\(repetition + 2)/6) for alarm: \(currentAlarm.time)")
-                            self.scheduleNextNotificationInSequence(for: currentAlarm, repetition: repetition + 1, baseTime: baseTime)
-                        } else {
-                            print("🛑 Alarm disabled - not scheduling next notification")
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Also schedule a check to see if alarm should be disabled (unlock detection)
-        if repetition == 0 {
-            // After first notification, start checking for unlock every 10 seconds
-            for checkDelay in stride(from: 10, through: 180, by: 10) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(checkDelay)) {
-                    self.checkIfAlarmShouldContinue(alarmId: alarm.id)
-                }
-            }
-        }
-    }
     
     private func scheduleNextNotification(for alarm: AlarmItem, repetition: Int, baseTime: Date) {
         guard repetition < 6 else {
