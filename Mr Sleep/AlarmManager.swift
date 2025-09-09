@@ -488,16 +488,25 @@ class AlarmManager: NSObject, ObservableObject {
                                                   second: 0, 
                                                   of: yesterday)!
             
-            // Check if either today's or yesterday's alarm time is within the active window
-            let todayInWindow = todayAlarmTime >= fiveMinutesAgo && todayAlarmTime <= now
-            let yesterdayInWindow = yesterdayAlarmTime >= fiveMinutesAgo && yesterdayAlarmTime <= now
+            // Check if alarm time has PASSED and is within 5 minutes after (not before)
+            // Only consider alarms "active" if they've already fired
+            let todayInWindow = todayAlarmTime <= now && now.timeIntervalSince(todayAlarmTime) <= 300 // 0 to 5 minutes AFTER alarm
+            let yesterdayInWindow = yesterdayAlarmTime <= now && now.timeIntervalSince(yesterdayAlarmTime) <= 300 // 0 to 5 minutes AFTER alarm
             
             let isActive = todayInWindow || yesterdayInWindow
             
             if isActive {
-                print("🔴 Found active alarm: \(alarm.time) (today: \(todayInWindow), yesterday: \(yesterdayInWindow))")
+                let activeTime = todayInWindow ? todayAlarmTime : yesterdayAlarmTime
+                let minutesAfter = Int(now.timeIntervalSince(activeTime) / 60)
+                print("🔴 Found active alarm: \(alarm.time) (fired \(minutesAfter) minutes ago)")
             } else {
-                print("⚪ Alarm \(alarm.time) not in active window")
+                // Check if alarm is in the future
+                if todayAlarmTime > now {
+                    let minutesUntil = Int(todayAlarmTime.timeIntervalSince(now) / 60)
+                    print("⚪ Alarm \(alarm.time) is scheduled for future (\(minutesUntil) minutes from now) - NOT dismissing")
+                } else {
+                    print("⚪ Alarm \(alarm.time) not in active window (too old)")
+                }
             }
             
             return isActive
