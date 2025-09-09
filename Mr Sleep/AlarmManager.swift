@@ -656,46 +656,47 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - User Interaction Detection
     private func scheduleUserInteractionCheck(for alarm: AlarmItem, afterNotification repetition: Int) {
-        // Check multiple times after each notification to see if user has interacted
-        let checkIntervals: [TimeInterval] = [5, 10, 15, 20, 25] // Check every 5 seconds for 25 seconds
-        
-        for interval in checkIntervals {
-            DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
-                self.checkForUserInteractionAfterNotification(alarmId: alarm.id, repetition: repetition)
+        // Use a simpler approach: if this is not the last notification, 
+        // schedule a check right before the next notification should fire
+        if repetition < 5 { // 0-based, so 5 means this is the 6th (last) notification
+            // Next notification should fire in 30 seconds, check at 25 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+                self.checkIfNextNotificationShouldFire(alarmId: alarm.id, currentRepetition: repetition)
             }
         }
     }
     
-    private func checkForUserInteractionAfterNotification(alarmId: UUID, repetition: Int) {
+    private func checkIfNextNotificationShouldFire(alarmId: UUID, currentRepetition: Int) {
         // Check if the alarm is still enabled
         guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
             return // Alarm already disabled
         }
         
-        // Check if there are fewer pending notifications than expected
-        // This indicates user interaction (dismissal, clearing, etc.)
+        // Check if the next notification is still pending
+        let nextRepetition = currentRepetition + 1
+        let nextNotificationId = "\(alarmId.uuidString)-repeat-\(nextRepetition)"
+        
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let alarmNotifications = requests.filter { request in
-                request.identifier.contains(alarmId.uuidString) && request.identifier.contains("-repeat-")
+            let nextNotificationExists = requests.contains { request in
+                request.identifier == nextNotificationId
             }
             
-            // Calculate how many notifications should still be pending
-            let expectedRemaining = max(0, 6 - repetition - 1) // Total 6, minus current repetition, minus 1 for 0-based
-            let actualPending = alarmNotifications.count
-            
             DispatchQueue.main.async {
-                print("🔍 Interaction check: Expected \(expectedRemaining) notifications, found \(actualPending)")
+                print("🔍 Checking if next notification (\(nextRepetition + 1)/6) should fire...")
+                print("   Next notification ID: \(nextNotificationId)")
+                print("   Still pending: \(nextNotificationExists)")
                 
-                // If we have significantly fewer notifications than expected, user likely interacted
-                if actualPending < expectedRemaining {
-                    print("🎯 Detected user interaction - fewer notifications than expected")
+                if !nextNotificationExists {
+                    // Next notification was cancelled/cleared - user interacted
+                    print("🎯 Next notification missing - user interaction detected")
                     
-                    // Cancel remaining notifications and toggle off alarm
                     self.cancelNotification(for: alarm)
                     self.toggleOffAlarm(with: alarmId)
                     self.dismissLiveActivity(for: alarmId.uuidString)
                     
-                    print("✅ Stopped alarm due to detected user interaction: \(alarm.time)")
+                    print("✅ Stopped alarm due to missing next notification: \(alarm.time)")
+                } else {
+                    print("⏰ Next notification still pending - alarm continues")
                 }
             }
         }
