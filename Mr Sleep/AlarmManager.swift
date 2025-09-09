@@ -292,6 +292,9 @@ class AlarmManager: NSObject, ObservableObject {
             content.interruptionLevel = .critical
             content.relevanceScore = 1.0
             
+            // Enable mutable content so notification service extension can process it
+            content.mutableContent = true
+            
             // Add badge to make it more noticeable
             content.badge = NSNumber(value: repetition + 1)
             
@@ -429,6 +432,7 @@ class AlarmManager: NSObject, ObservableObject {
     func handleAppForeground() {
         // Called when app enters foreground (phone unlocked or app opened)
         trackAppActivity()
+        checkNotificationServiceActivity()
         dismissActiveAlarmsOnUserInteraction()
     }
     
@@ -447,6 +451,36 @@ class AlarmManager: NSObject, ObservableObject {
         // Track when the app becomes active for unlock detection
         UserDefaults.standard.set(Date(), forKey: "lastAppActiveTime")
         print("📱 App activity tracked at \(Date())")
+    }
+    
+    private func checkNotificationServiceActivity() {
+        // Check if notification service extension has detected user interaction
+        let defaults = UserDefaults(suiteName: "group.com.magdoub.mrsleep")
+        
+        if let lastExtensionActivity = defaults?.object(forKey: "lastNotificationServiceActivity") as? Date,
+           let cancelledAlarmId = defaults?.string(forKey: "cancelledAlarmId"),
+           let alarmId = UUID(uuidString: cancelledAlarmId) {
+            
+            let timeSinceExtensionActivity = Date().timeIntervalSince(lastExtensionActivity)
+            
+            // If extension was active within last 60 seconds, it detected user interaction
+            if timeSinceExtensionActivity < 60 {
+                print("🔔 Notification service detected user interaction \(Int(timeSinceExtensionActivity))s ago")
+                
+                // Find and disable the alarm
+                if let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) {
+                    cancelNotification(for: alarm)
+                    toggleOffAlarm(with: alarmId)
+                    dismissLiveActivity(for: alarmId.uuidString)
+                    
+                    print("✅ Disabled alarm based on notification service detection: \(alarm.time)")
+                }
+                
+                // Clear the extension activity markers
+                defaults?.removeObject(forKey: "lastNotificationServiceActivity")
+                defaults?.removeObject(forKey: "cancelledAlarmId")
+            }
+        }
     }
     
     private func dismissActiveAlarmsOnUserInteraction() {
