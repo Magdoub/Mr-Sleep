@@ -67,8 +67,8 @@ struct MainTabView: View {
                     alarm: alarm,
                     onDismiss: {
                         print("🔔 DEBUG: AlarmDismissalView onDismiss called")
-                        // Dismiss the alarm properly
-                        alarmManager.dismissLiveActivity(for: alarm.id.uuidString)
+                        // Stop sound, remove notifications, delete alarm
+                        alarmManager.dismissAlarmCompletely(alarm)
                         alarmDismissalManager.dismissAlarm()
                     }
                 )

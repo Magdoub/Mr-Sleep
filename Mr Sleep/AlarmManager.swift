@@ -1103,6 +1103,36 @@ class AlarmManager: NSObject, ObservableObject {
         // Stop Live Activity
         stopLiveActivity()
     }
+
+    // MARK: - Public dismissal from UI
+    func dismissAlarmCompletely(_ alarm: AlarmItem) {
+        print("🧹 Dismissing alarm completely: \(alarm.time)")
+        
+        // Remove pending notifications for this alarm
+        cancelNotification(for: alarm)
+        
+        // Remove delivered notifications for this alarm
+        UNUserNotificationCenter.current().getDeliveredNotifications { delivered in
+            let ids = delivered
+                .map { $0.request.identifier }
+                .filter { $0.contains(alarm.id.uuidString) }
+            if !ids.isEmpty {
+                UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+                print("🧹 Removed delivered notifications: \(ids.count)")
+            }
+        }
+        
+        // Remove alarm from lists and persist
+        alarms.removeAll { $0.id == alarm.id }
+        testAlarms.removeAll { $0.id == alarm.id }
+        saveAlarms()
+        
+        // Stop sound/overlay/activities
+        dismissLiveActivity(for: alarm.id.uuidString)
+        
+        // Clear badge
+        UNUserNotificationCenter.current().setBadgeCount(0)
+    }
     
     // MARK: - Direct Alarm Sound Management
     private var audioPlayer: AVAudioPlayer?
