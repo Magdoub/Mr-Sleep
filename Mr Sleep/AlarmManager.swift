@@ -336,18 +336,8 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Use the alarm's selected sound for the notification itself
-            let selectedSoundName = alarm.soundName.lowercased()
-            if selectedSoundName.contains("morning") {
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                print("🔊 Using morning-alarm-clock.mp3 for notification")
-            } else if selectedSoundName.contains("smooth") {
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                print("🔊 Using smooth-alarm-clock.mp3 for notification")
-            } else {
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                print("🔊 Using alarm-clock.mp3 for notification")
-            }
+            // No sound for notifications - music will be handled separately in background
+            content.sound = nil
             content.categoryIdentifier = "ALARM_CATEGORY"
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
@@ -1051,26 +1041,32 @@ class AlarmManager: NSObject, ObservableObject {
         
         print("🔊 Starting alarm sound with full volume configuration")
         
-        // Configure audio session for maximum audibility - especially when phone is locked
+        // Configure audio session for background playback when phone is locked
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Use .playback category with options to play even when phone is locked/silent
-            try audioSession.setCategory(.playback, mode: .default, options: [
-                .duckOthers,  // Lower other audio
-                .allowBluetooth,  // Allow Bluetooth
-                .defaultToSpeaker  // Use speaker by default
+            
+            // CRITICAL: Use .playAndRecord category which allows background audio
+            // This is the only category that reliably works when phone is locked
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                .defaultToSpeaker,  // Use speaker by default (not earpiece)
+                .allowBluetooth,    // Allow Bluetooth audio
+                .overrideMutedMicrophoneInterruption  // Override mute switch
             ])
-            try audioSession.setActive(true, options: [])
+            
+            // Activate with option to notify other apps
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             
             // Check audio session properties
-            print("✅ Audio session configured for locked phone playback:")
-            print("   - Category: \(audioSession.category)")
+            print("✅ Audio session configured for BACKGROUND PLAYBACK:")
+            print("   - Category: \(audioSession.category.rawValue)")
             print("   - Category options: \(audioSession.categoryOptions)")
             print("   - Output volume: \(audioSession.outputVolume)")
             print("   - Is other audio playing: \(audioSession.isOtherAudioPlaying)")
+            print("   - Current route: \(audioSession.currentRoute.outputs.first?.portType.rawValue ?? "unknown")")
             
         } catch {
-            print("❌ Failed to set up audio session: \(error)")
+            print("❌ Failed to set up audio session for background: \(error)")
+            print("   - This might prevent audio from playing when phone is locked")
         }
         
         // List all available sound files for debugging
@@ -1305,8 +1301,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // Sound is now handled by notifications themselves, not separate audio player
-                    print("🎵 Sound will be handled by notifications every 3 seconds")
+                    // Start continuous alarm music in background
+                    print("🎵 Starting continuous alarm music for background playback")
+                    startAlarmSound(for: alarm)
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)

@@ -9,10 +9,16 @@ import SwiftUI
 import StoreKit
 import ActivityKit
 import WidgetKit
+import AVFoundation
 
 @main
 struct Mr_SleepApp: App {
     @StateObject private var alarmManager = AlarmManager()
+    
+    init() {
+        // Configure audio session for background audio capability on app launch
+        configureBackgroundAudio()
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -75,6 +81,23 @@ struct Mr_SleepApp: App {
                     SKStoreReviewController.requestReview(in: windowScene)
                 }
             }
+        }
+    }
+    
+    private func configureBackgroundAudio() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            
+            // Configure audio session to allow background playback
+            try audioSession.setCategory(.playback, mode: .default, options: [
+                .mixWithOthers,
+                .allowBluetooth,
+                .defaultToSpeaker
+            ])
+            
+            print("✅ App-level audio session configured for background playback")
+        } catch {
+            print("❌ Failed to configure app-level audio session: \(error)")
         }
     }
 }
