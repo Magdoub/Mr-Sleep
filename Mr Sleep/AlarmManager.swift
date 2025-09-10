@@ -90,6 +90,7 @@ class AlarmManager: NSObject, ObservableObject {
     
     @Published var alarms: [AlarmItem] = []
     private var testAlarms: [AlarmItem] = [] // Temporary storage for test alarms
+    private var isProcessingNotificationResponse = false // Flag to prevent race conditions
     
     private override init() {
         super.init()
@@ -523,12 +524,12 @@ class AlarmManager: NSObject, ObservableObject {
         trackAppActivity()
         checkNotificationServiceActivity()
         
-        // Only dismiss alarms if we're not showing the dismissal page
+        // Only dismiss alarms if we're not showing the dismissal page or processing notification response
         // This prevents conflicts with notification tap handling
-        if !AlarmDismissalManager.shared.isShowingDismissalPage {
+        if !AlarmDismissalManager.shared.isShowingDismissalPage && !isProcessingNotificationResponse {
             dismissActiveAlarmsOnUserInteraction()
         } else {
-            print("🔔 App entered foreground but dismissal page is showing - not dismissing alarms")
+            print("🔔 App entered foreground but dismissal page is showing or processing notification - not dismissing alarms")
         }
         
         // Clear badge count when app comes to foreground
@@ -539,12 +540,12 @@ class AlarmManager: NSObject, ObservableObject {
         // Called when app becomes active (additional check for user interaction)
         trackAppActivity()
         
-        // Only dismiss alarms if we're not showing the dismissal page
+        // Only dismiss alarms if we're not showing the dismissal page or processing notification response
         // This prevents conflicts with notification tap handling
-        if !AlarmDismissalManager.shared.isShowingDismissalPage {
+        if !AlarmDismissalManager.shared.isShowingDismissalPage && !isProcessingNotificationResponse {
             dismissActiveAlarmsOnUserInteraction()
         } else {
-            print("🔔 App became active but dismissal page is showing - not dismissing alarms")
+            print("🔔 App became active but dismissal page is showing or processing notification - not dismissing alarms")
         }
     }
     
@@ -1427,6 +1428,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         print("🔔 DEBUG: Action identifier: \(response.actionIdentifier)")
         print("🔔 DEBUG: User info: \(response.notification.request.content.userInfo)")
         
+        // Set flag to prevent app lifecycle handlers from interfering
+        isProcessingNotificationResponse = true
+        
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier
         let alarmIdString: String
@@ -1451,7 +1455,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 
                 // Show the new dismissal page
                 DispatchQueue.main.async {
+                    print("🔔 About to show dismissal page for alarm: \(alarm.label)")
                     AlarmDismissalManager.shared.showDismissalPage(for: alarm)
+                    print("🔔 Dismissal page show request completed")
                 }
                 
                 // IMPORTANT: Don't stop the alarm sound yet - let the dismissal page handle it
@@ -1486,6 +1492,12 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                 }
             }
+        }
+        
+        // Clear the flag after a delay to give dismissal page time to show
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.isProcessingNotificationResponse = false
+            print("🔔 Cleared notification response processing flag")
         }
         
         completionHandler()
