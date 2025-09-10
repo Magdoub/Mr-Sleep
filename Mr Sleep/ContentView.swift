@@ -40,7 +40,7 @@ struct ContentView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .ignoresSafeArea(.all) // Ensure it covers the entire screen including safe areas
+                .ignoresSafeArea(.container, edges: .all) // Ensure it covers the entire screen including safe areas
                 
                 if showOnboarding {
                     OnboardingView(showOnboarding: $showOnboarding, onComplete: startPostOnboardingLoading)
