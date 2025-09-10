@@ -1469,10 +1469,14 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         
         if notificationId.contains("-repeat-") {
             // New format: "UUID-repeat-0", "UUID-repeat-1", etc.
-            alarmIdString = String(notificationId.prefix(while: { $0 != "-" }))
+            // Extract the full UUID part (everything before "-repeat-")
+            let components = notificationId.components(separatedBy: "-repeat-")
+            alarmIdString = components.first ?? notificationId
+            print("🔔 DEBUG: Extracted alarm ID from notification: '\(alarmIdString)' (from '\(notificationId)')")
         } else {
             // Legacy format: just the UUID
             alarmIdString = notificationId
+            print("🔔 DEBUG: Using legacy alarm ID: '\(alarmIdString)'")
         }
         
         print("🔔 User interacted with alarm notification: \(response.actionIdentifier)")
