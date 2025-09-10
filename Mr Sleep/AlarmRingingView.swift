@@ -39,7 +39,7 @@ struct AlarmRingingView: View {
                 VStack(spacing: 0) {
                     Spacer()
                     
-                    // Current time display
+                    // Current time display - exactly like the reference image
                     VStack(spacing: 8) {
                         Text(DateFormatter.dayFormatter.string(from: currentTime))
                             .font(.title2)
@@ -47,12 +47,12 @@ struct AlarmRingingView: View {
                             .foregroundColor(.white.opacity(0.9))
                         
                         Text(DateFormatter.timeFormatter.string(from: currentTime))
-                            .font(.system(size: 72, weight: .thin, design: .default))
+                            .font(.system(size: 80, weight: .thin, design: .default))
                             .foregroundColor(.white)
                             .scaleEffect(isAnimating ? 1.02 : 1.0)
                             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isAnimating)
                     }
-                    .padding(.bottom, 60)
+                    .padding(.bottom, 100)
                     
                     // Alarm info card (like your reference image)
                     VStack(spacing: 16) {
@@ -87,19 +87,22 @@ struct AlarmRingingView: View {
                             Spacer()
                         }
                         
-                        // Dismiss button (matching your reference design)
+                        // Dismiss button (exactly matching reference design)
                         Button(action: onDismiss) {
                             Text("Dismiss")
-                                .font(.title3)
-                                .fontWeight(.medium)
+                                .font(.title2)
+                                .fontWeight(.semibold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 50)
+                                .frame(height: 56)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 25)
+                                    RoundedRectangle(cornerRadius: 28)
                                         .fill(
                                             LinearGradient(
-                                                colors: [Color.red, Color.red.opacity(0.8)],
+                                                colors: [
+                                                    Color(red: 0.9, green: 0.3, blue: 0.3),
+                                                    Color(red: 0.8, green: 0.2, blue: 0.2)
+                                                ],
                                                 startPoint: .top,
                                                 endPoint: .bottom
                                             )
@@ -107,8 +110,8 @@ struct AlarmRingingView: View {
                                 )
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .scaleEffect(isAnimating ? 1.02 : 1.0)
-                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isAnimating)
+                        .scaleEffect(isAnimating ? 1.03 : 1.0)
+                        .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isAnimating)
                     }
                     .padding(20)
                     .background(

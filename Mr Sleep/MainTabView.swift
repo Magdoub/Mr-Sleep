@@ -82,6 +82,9 @@ struct MainTabView: View {
                     showTabBarAnimation = true
                 }
             }
+            
+            // Handle app lifecycle in alarm manager
+            alarmManager.handleAppBecameActive()
         }
         .onAppear {
             // Configure tab bar appearance

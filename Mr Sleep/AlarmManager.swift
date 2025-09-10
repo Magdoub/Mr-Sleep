@@ -65,6 +65,9 @@ class AlarmManager: NSObject, ObservableObject {
         requestNotificationPermission()
         checkAndResetExpiredAlarms()
         setupNotificationHandling()
+        
+        // Always clear badge count on app start
+        UNUserNotificationCenter.current().setBadgeCount(0)
     }
     
     // MARK: - Development Helper
@@ -106,11 +109,13 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Notification Permissions
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .criticalAlert]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
                     print("Notification permission granted")
                     self.setupNotificationCategories()
+                    // Clear any existing badge count
+                    UNUserNotificationCenter.current().setBadgeCount(0)
                 } else {
                     print("Notification permission denied: \(error?.localizedDescription ?? "Unknown error")")
                 }
@@ -427,6 +432,9 @@ class AlarmManager: NSObject, ObservableObject {
         trackAppActivity()
         checkNotificationServiceActivity()
         dismissActiveAlarmsOnUserInteraction()
+        
+        // Clear badge count when app comes to foreground
+        UNUserNotificationCenter.current().setBadgeCount(0)
     }
     
     func handleAppBecameActive() {
