@@ -336,8 +336,37 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // No sound for notifications - music will be handled separately in background
-            content.sound = nil
+            // ONLY first notification gets sound - others are silent with vibration only
+            if repetition == 0 {
+                // Use notification sound like test alarm - this works even when phone is locked
+                let selectedSoundName = alarm.soundName.lowercased()
+                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                        print("🔊 First notification: Using morning-alarm-clock.mp3")
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                        print("🔊 First notification: Using smooth-alarm-clock.mp3")
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                } else {
+                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                        print("🔊 First notification: Using alarm-clock.mp3")
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                }
+            } else {
+                // Subsequent notifications are silent (vibration only)
+                content.sound = nil
+                print("📳 Notification \(repetition + 1): Silent with vibration only")
+            }
             content.categoryIdentifier = "ALARM_CATEGORY"
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
@@ -1301,9 +1330,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // Start continuous alarm music in background
-                    print("🎵 Starting continuous alarm music for background playback")
-                    startAlarmSound(for: alarm)
+                    // Music is now handled by first notification sound (not separate audio player)
+                    print("🎵 Music handled by first notification sound (works when locked)")
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)

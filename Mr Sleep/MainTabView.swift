@@ -14,6 +14,7 @@ struct MainTabView: View {
     @State private var showTabBarAnimation = false
     @EnvironmentObject var alarmManager: AlarmManager
     @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
+    @ObservedObject private var alarmDismissalManager = AlarmDismissalManager.shared
     
     var body: some View {
         Group {
@@ -60,7 +61,18 @@ struct MainTabView: View {
                 )
             }
         }
-        // TODO: Add dismissal view here once AlarmDismissalView is properly accessible
+        .fullScreenCover(isPresented: $alarmDismissalManager.isShowingDismissalPage) {
+            if let alarm = alarmDismissalManager.currentAlarm {
+                AlarmDismissalView(
+                    alarm: alarm,
+                    onDismiss: {
+                        // Dismiss the alarm properly
+                        alarmManager.dismissLiveActivity(for: alarm.id.uuidString)
+                        alarmDismissalManager.dismissAlarm()
+                    }
+                )
+            }
+        }
         .onChange(of: showOnboarding) { isOnboarding in
             // Update onboarding state when it changes
             showOnboarding = isOnboarding
