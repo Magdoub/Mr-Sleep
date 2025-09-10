@@ -832,6 +832,11 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkForPhoneUnlock(alarmId: UUID, repetition: Int, checkNumber: Int) {
+        // Do not auto-stop while the explicit dismissal UI is visible
+        if AlarmDismissalManager.shared.isShowingDismissalPage {
+            print("⏸️ Background unlock check #\(checkNumber) skipped — dismissal page visible")
+            return
+        }
         guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
             return // Alarm already disabled
         }
@@ -882,6 +887,11 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkIfAlarmShouldContinue(alarmId: UUID) {
+        // Do not auto-stop while the explicit dismissal UI is visible
+        if AlarmDismissalManager.shared.isShowingDismissalPage {
+            print("⏸️ Skipping continue-check while dismissal page is visible")
+            return
+        }
         guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
             return // Alarm already disabled
         }
@@ -900,6 +910,11 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func stopAlarmDueToUnlock(alarm: AlarmItem, reason: String) {
+        // Do not auto-stop if the explicit dismissal UI is visible
+        if AlarmDismissalManager.shared.isShowingDismissalPage {
+            print("⏸️ Unlock detected (\(reason)) but dismissal page is visible — keeping alarm sound ON until user taps Dismiss")
+            return
+        }
         print("🔓 Phone unlock detected: \(reason)")
         print("✅ Stopping alarm due to phone unlock: \(alarm.time)")
         
@@ -912,6 +927,11 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkIfNextNotificationShouldFire(alarmId: UUID, currentRepetition: Int) {
+        // Do not interfere while dismissal page is visible
+        if AlarmDismissalManager.shared.isShowingDismissalPage {
+            print("⏸️ Skipping next-notification check while dismissal page is visible")
+            return
+        }
         // Check if the alarm is still enabled
         guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
             return // Alarm already disabled
@@ -960,6 +980,11 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkForUserActivity(alarmId: UUID) {
+        // Do not auto-dismiss while dismissal page is shown
+        if AlarmDismissalManager.shared.isShowingDismissalPage {
+            print("⏸️ Skipping user-activity auto-dismiss while dismissal page is visible")
+            return
+        }
         // Check if the alarm is still enabled and active
         guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
             return // Alarm already disabled
