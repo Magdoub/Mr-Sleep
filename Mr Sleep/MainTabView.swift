@@ -14,7 +14,7 @@ struct MainTabView: View {
     @State private var showTabBarAnimation = false
     @EnvironmentObject var alarmManager: AlarmManager
     @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
-    @StateObject private var alarmDismissalManager = AlarmDismissalManager.shared
+    @ObservedObject private var alarmDismissalManager = AlarmDismissalManager.shared
     
     var body: some View {
         Group {

@@ -15,6 +15,32 @@ import UIKit
 import ActivityKit
 #endif
 
+// MARK: - Alarm Dismissal Manager
+class AlarmDismissalManager: ObservableObject {
+    static let shared = AlarmDismissalManager()
+    
+    @Published var isShowingDismissalPage = false
+    @Published var currentAlarm: AlarmItem?
+    
+    private init() {}
+    
+    func showDismissalPage(for alarm: AlarmItem) {
+        DispatchQueue.main.async {
+            print("📱 Showing dismissal page for alarm: \(alarm.label)")
+            self.currentAlarm = alarm
+            self.isShowingDismissalPage = true
+        }
+    }
+    
+    func dismissAlarm() {
+        DispatchQueue.main.async {
+            print("✅ Dismissal page closed")
+            self.isShowingDismissalPage = false
+            self.currentAlarm = nil
+        }
+    }
+}
+
 // Enhanced AlarmItem with more properties
 struct AlarmItem: Identifiable, Codable {
     let id = UUID()
@@ -286,7 +312,7 @@ class AlarmManager: NSObject, ObservableObject {
             content.body = "\(alarm.label)"
             
             // Explicitly set NO sound at all
-            content.sound = UNNotificationSound.none
+            content.sound = nil
             content.categoryIdentifier = "ALARM_CATEGORY"
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
@@ -1230,8 +1256,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show the notification with alert only (no sound since music is handled separately)
-        completionHandler([.alert])
+        // Show the notification with banner only (no sound since music is handled separately)
+        completionHandler([.banner])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
