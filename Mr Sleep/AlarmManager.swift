@@ -1174,6 +1174,14 @@ class AlarmManager: NSObject, ObservableObject {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             
+            // Add interruption observer to handle audio session interruptions
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleAudioSessionInterruption),
+                name: AVAudioSession.interruptionNotification,
+                object: audioSession
+            )
+            
             // CRITICAL: Use .playAndRecord category which allows background audio
             // This is the only category that reliably works when phone is locked
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
@@ -1303,11 +1311,73 @@ class AlarmManager: NSObject, ObservableObject {
         // Stop vibration
         stopContinuousVibration()
         
+        // Remove audio session interruption observer
+        NotificationCenter.default.removeObserver(
+            self,
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+        
         // Deactivate audio session
         do {
             try AVAudioSession.sharedInstance().setActive(false)
         } catch {
             print("Failed to deactivate audio session: \(error)")
+        }
+    }
+    
+    @objc private func handleAudioSessionInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            print("🔇 Audio session interruption BEGAN - pausing alarm sound")
+            // Don't stop isAlarmSounding flag, just pause the audio player
+            audioPlayer?.pause()
+            
+        case .ended:
+            print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
+            
+            // Only resume if we're still supposed to be sounding and dismissal page is showing
+            if isAlarmSounding && AlarmDismissalManager.shared.isShowingDismissalPage {
+                do {
+                    // Reactivate audio session
+                    try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+                    
+                    // Resume playback
+                    audioPlayer?.play()
+                    print("✅ Successfully resumed alarm sound after interruption")
+                } catch {
+                    print("❌ Failed to resume audio session after interruption: \(error)")
+                    // Try to restart the alarm sound completely
+                    restartAlarmSoundAfterInterruption()
+                }
+            } else {
+                print("⏸️ Not resuming alarm - either not sounding or dismissal page not visible")
+            }
+            
+        @unknown default:
+            print("🔇 Unknown audio session interruption type: \(typeValue)")
+        }
+    }
+    
+    private func restartAlarmSoundAfterInterruption() {
+        print("🔄 Restarting alarm sound after interruption")
+        
+        // Reset state
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        // Restart if we should still be sounding
+        if isAlarmSounding && AlarmDismissalManager.shared.isShowingDismissalPage {
+            // Find the current alarm to restart with proper sound
+            if let currentAlarm = AlarmDismissalManager.shared.currentAlarm {
+                startAlarmSound(for: currentAlarm)
+            }
         }
     }
     
