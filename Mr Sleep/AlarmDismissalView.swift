@@ -54,7 +54,10 @@ struct AlarmDismissalView: View {
                     Spacer()
                     
                     // Dismiss button (exactly matching reference design)
-                    Button(action: onDismiss) {
+                    Button(action: {
+                        print("🔔 Dismiss button tapped - stopping alarm sound")
+                        onDismiss()
+                    }) {
                         Text("Dismiss")
                             .font(.title2)
                             .fontWeight(.semibold)

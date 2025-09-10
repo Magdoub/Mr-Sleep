@@ -32,6 +32,7 @@ class AlarmDismissalManager: ObservableObject {
             self.currentAlarm = alarm
             self.isShowingDismissalPage = true
             print("🔔 DEBUG: isShowingDismissalPage is now: \(self.isShowingDismissalPage)")
+            print("🔔 DEBUG: currentAlarm is now: \(self.currentAlarm?.label ?? "nil")")
         }
     }
     
@@ -521,7 +522,14 @@ class AlarmManager: NSObject, ObservableObject {
         // Called when app enters foreground (phone unlocked or app opened)
         trackAppActivity()
         checkNotificationServiceActivity()
-        dismissActiveAlarmsOnUserInteraction()
+        
+        // Only dismiss alarms if we're not showing the dismissal page
+        // This prevents conflicts with notification tap handling
+        if !AlarmDismissalManager.shared.isShowingDismissalPage {
+            dismissActiveAlarmsOnUserInteraction()
+        } else {
+            print("🔔 App entered foreground but dismissal page is showing - not dismissing alarms")
+        }
         
         // Clear badge count when app comes to foreground
         UNUserNotificationCenter.current().setBadgeCount(0)
@@ -530,7 +538,14 @@ class AlarmManager: NSObject, ObservableObject {
     func handleAppBecameActive() {
         // Called when app becomes active (additional check for user interaction)
         trackAppActivity()
-        dismissActiveAlarmsOnUserInteraction()
+        
+        // Only dismiss alarms if we're not showing the dismissal page
+        // This prevents conflicts with notification tap handling
+        if !AlarmDismissalManager.shared.isShowingDismissalPage {
+            dismissActiveAlarmsOnUserInteraction()
+        } else {
+            print("🔔 App became active but dismissal page is showing - not dismissing alarms")
+        }
     }
     
     func handleAppEnteredBackground() {
@@ -1410,6 +1425,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         print("🔔 DEBUG: userNotificationCenter didReceive response called!")
         print("🔔 DEBUG: Notification ID: \(response.notification.request.identifier)")
         print("🔔 DEBUG: Action identifier: \(response.actionIdentifier)")
+        print("🔔 DEBUG: User info: \(response.notification.request.content.userInfo)")
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier
@@ -1438,7 +1454,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                 }
                 
-                // Don't stop the alarm yet - let the dismissal page handle it
+                // IMPORTANT: Don't stop the alarm sound yet - let the dismissal page handle it
+                // The sound should continue until the user explicitly dismisses it
                 
             case "DISMISS_ACTION":
                 // User explicitly dismissed via action button
