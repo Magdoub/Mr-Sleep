@@ -1006,6 +1006,7 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Direct Alarm Sound Management
     private var audioPlayer: AVAudioPlayer?
     private var isAlarmSounding = false
+    private var vibrationTimer: Timer?
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         guard !isAlarmSounding else { return }
@@ -1126,12 +1127,50 @@ class AlarmManager: NSObject, ObservableObject {
         audioPlayer?.stop()
         audioPlayer = nil
         
+        // Stop vibration
+        stopContinuousVibration()
+        
         // Deactivate audio session
         do {
             try AVAudioSession.sharedInstance().setActive(false)
         } catch {
             print("Failed to deactivate audio session: \(error)")
         }
+    }
+    
+    private func startContinuousVibration() {
+        print("📳 Starting continuous vibration pattern")
+        
+        // Stop any existing vibration timer
+        vibrationTimer?.invalidate()
+        
+        // Immediate vibration
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+        impactFeedback.impactOccurred()
+        
+        // Continue vibrating every 3 seconds to match notification frequency
+        vibrationTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            guard self?.isAlarmSounding == true else {
+                self?.stopContinuousVibration()
+                return
+            }
+            
+            // Trigger vibration
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+            
+            // Also trigger haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+            impactFeedback.impactOccurred()
+            
+            print("📳 Continuous vibration triggered")
+        }
+    }
+    
+    private func stopContinuousVibration() {
+        print("📳 Stopping continuous vibration")
+        vibrationTimer?.invalidate()
+        vibrationTimer = nil
     }
     
     private func playSystemAlarmSound() {
@@ -1224,6 +1263,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
+                    
+                    // Start continuous vibration pattern
+                    startContinuousVibration()
                 }
                 
                 // Trigger vibration for each notification using system sound with vibration
