@@ -190,6 +190,15 @@ class AlarmManager: NSObject, ObservableObject {
         // Set up notification delegate to handle when alarms fire
         UNUserNotificationCenter.current().delegate = self
         print("🔔 DEBUG: Notification delegate set to AlarmManager")
+        
+        // Verify the delegate was set correctly
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if UNUserNotificationCenter.current().delegate === self {
+                print("🔔 DEBUG: Notification delegate verification: SUCCESS")
+            } else {
+                print("🔔 DEBUG: Notification delegate verification: FAILED - delegate is not AlarmManager")
+            }
+        }
     }
     
     private func setupNotificationCategories() {
@@ -381,6 +390,7 @@ class AlarmManager: NSObject, ObservableObject {
                 print("📳 Notification \(repetition + 1): Silent with vibration only")
             }
             content.categoryIdentifier = "ALARM_CATEGORY"
+            print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
             content.interruptionLevel = .critical
@@ -1438,6 +1448,17 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         // Set flag to prevent app lifecycle handlers from interfering
         isProcessingNotificationResponse = true
         print("🔔 DEBUG: Set isProcessingNotificationResponse to true")
+        
+        // SIMPLE TEST: Just show a basic alert to verify this method is called
+        DispatchQueue.main.async {
+            print("🔔 DEBUG: About to show test alert")
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                let alert = UIAlertController(title: "Notification Tapped", message: "Response handler called!", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                window.rootViewController?.present(alert, animated: true)
+            }
+        }
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier
