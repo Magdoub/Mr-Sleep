@@ -1246,6 +1246,15 @@ class AlarmManager: NSObject, ObservableObject {
         vibrationTimer = nil
     }
     
+    private func startContinuousAlarmLoop(for alarm: AlarmItem) {
+        print("🔂 Starting continuous alarm loop for: \(alarm.soundName)")
+        
+        // Delay the loop start by 2 seconds to let the notification sound play first
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.startAlarmSound(for: alarm)
+        }
+    }
+    
     private func playSystemAlarmSound() {
         print("🔊 Using system alarm sound")
         
@@ -1330,8 +1339,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // Music is now handled by first notification sound (not separate audio player)
-                    print("🎵 Music handled by first notification sound (works when locked)")
+                    // First notification plays initial sound, then start continuous looping
+                    print("🎵 First notification plays initial sound, starting continuous loop")
+                    
+                    // Start continuous looping audio player for background
+                    startContinuousAlarmLoop(for: alarm)
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
