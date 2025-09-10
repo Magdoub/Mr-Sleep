@@ -63,7 +63,6 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $alarmDismissalManager.isShowingDismissalPage) {
             if let alarm = alarmDismissalManager.currentAlarm {
-                print("🔔 DEBUG: fullScreenCover showing AlarmDismissalView for alarm: \(alarm.label)")
                 AlarmDismissalView(
                     alarm: alarm,
                     onDismiss: {
@@ -73,6 +72,9 @@ struct MainTabView: View {
                         alarmDismissalManager.dismissAlarm()
                     }
                 )
+                .onAppear {
+                    print("🔔 DEBUG: fullScreenCover showing AlarmDismissalView for alarm: \(alarm.label)")
+                }
             } else {
                 // This should not happen but let's log it
                 Text("No alarm data")
