@@ -7,7 +7,6 @@
 
 import SwiftUI
 import UserNotifications
-import UserNotifications
 
 struct SettingsView: View {
     @State private var sleepCycleDuration: Double = 90

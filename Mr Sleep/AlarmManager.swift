@@ -135,15 +135,40 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Notification Permissions
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .criticalAlert]) { granted, error in
+        // Request critical alert permission which might be needed for proper vibration
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .criticalAlert, .sound]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
-                    print("Notification permission granted")
+                    print("✅ Notification permission granted (including critical alerts)")
                     self.setupNotificationCategories()
                     // Clear any existing badge count
                     UNUserNotificationCenter.current().setBadgeCount(0)
+                    
+                    // Also check current notification settings
+                    self.checkNotificationSettings()
                 } else {
-                    print("Notification permission denied: \(error?.localizedDescription ?? "Unknown error")")
+                    print("❌ Notification permission denied: \(error?.localizedDescription ?? "Unknown error")")
+                }
+            }
+        }
+    }
+    
+    private func checkNotificationSettings() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                print("📱 Current notification settings:")
+                print("   - Authorization Status: \(settings.authorizationStatus.rawValue)")
+                print("   - Alert Setting: \(settings.alertSetting.rawValue)")
+                print("   - Sound Setting: \(settings.soundSetting.rawValue)")
+                print("   - Critical Alert Setting: \(settings.criticalAlertSetting.rawValue)")
+                print("   - Notification Center Setting: \(settings.notificationCenterSetting.rawValue)")
+                print("   - Lock Screen Setting: \(settings.lockScreenSetting.rawValue)")
+                
+                if settings.criticalAlertSetting == .disabled {
+                    print("⚠️  Critical alerts are DISABLED - this might prevent vibration")
+                }
+                if settings.soundSetting == .disabled {
+                    print("⚠️  Sound is DISABLED - this might prevent vibration")
                 }
             }
         }
@@ -319,8 +344,10 @@ class AlarmManager: NSObject, ObservableObject {
             content.interruptionLevel = .critical
             content.relevanceScore = 1.0
             
-            // Add custom user info to trigger vibration
+            // Add extensive custom user info to trigger vibration
             content.userInfo["shouldVibrate"] = true
+            content.userInfo["vibrationPattern"] = "alarm"
+            content.userInfo["forceVibration"] = true
             
             // No badge numbers to avoid red circles on app icon
             content.badge = nil
@@ -1268,16 +1295,31 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     startContinuousVibration()
                 }
                 
-                // Trigger vibration for each notification using system sound with vibration
+                // Trigger vibration for each notification using multiple methods
                 DispatchQueue.main.async {
-                    // Use AudioServicesPlaySystemSound with vibration ID
+                    print("🔔 Attempting to trigger vibration for notification \(currentRepetition + 1)/20")
+                    
+                    // Method 1: System vibration sound
                     AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+                    print("   ✓ Called AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)")
                     
-                    // Also try impact feedback
+                    // Method 2: Impact feedback
                     let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+                    impactFeedback.prepare()
                     impactFeedback.impactOccurred()
+                    print("   ✓ Called UIImpactFeedbackGenerator heavy impact")
                     
-                    print("📳 Triggered vibration for notification \(currentRepetition + 1)/20")
+                    // Method 3: Notification feedback
+                    let notificationFeedback = UINotificationFeedbackGenerator()
+                    notificationFeedback.prepare()
+                    notificationFeedback.notificationOccurred(.error)
+                    print("   ✓ Called UINotificationFeedbackGenerator error")
+                    
+                    // Method 4: Try multiple system sounds
+                    AudioServicesPlaySystemSound(1519) // Actuate system sound
+                    print("   ✓ Called AudioServicesPlaySystemSound(1519)")
+                    
+                    print("📳 All vibration methods triggered for notification \(currentRepetition + 1)/20")
                 }
                 
                 // Schedule a background task to check if phone gets unlocked
