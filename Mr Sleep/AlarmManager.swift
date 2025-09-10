@@ -27,6 +27,11 @@ class AlarmDismissalManager: ObservableObject {
     func showDismissalPage(for alarm: AlarmItem) {
         print("🔔 DEBUG: showDismissalPage called for alarm: \(alarm.label)")
         DispatchQueue.main.async {
+            // Guard against double presentation while a cover is already being shown
+            if self.isShowingDismissalPage {
+                print("🔔 DEBUG: Dismissal page already showing, skipping re-presentation")
+                return
+            }
             print("📱 Showing dismissal page for alarm: \(alarm.label)")
             print("🔔 DEBUG: Setting isShowingDismissalPage to true")
             self.currentAlarm = alarm
@@ -1452,16 +1457,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         isProcessingNotificationResponse = true
         print("🔔 DEBUG: Set isProcessingNotificationResponse to true")
         
-        // SIMPLE TEST: Just show a basic alert to verify this method is called
-        DispatchQueue.main.async {
-            print("🔔 DEBUG: About to show test alert")
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                let alert = UIAlertController(title: "Notification Tapped", message: "Response handler called!", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                window.rootViewController?.present(alert, animated: true)
-            }
-        }
+        // Removed test alert to avoid presentation conflicts with SwiftUI fullScreenCover
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier
