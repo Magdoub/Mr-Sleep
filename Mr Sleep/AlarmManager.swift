@@ -184,6 +184,7 @@ class AlarmManager: NSObject, ObservableObject {
     private func setupNotificationHandling() {
         // Set up notification delegate to handle when alarms fire
         UNUserNotificationCenter.current().delegate = self
+        print("🔔 DEBUG: Notification delegate set to AlarmManager")
     }
     
     private func setupNotificationCategories() {
@@ -1427,9 +1428,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         print("🔔 DEBUG: Notification ID: \(response.notification.request.identifier)")
         print("🔔 DEBUG: Action identifier: \(response.actionIdentifier)")
         print("🔔 DEBUG: User info: \(response.notification.request.content.userInfo)")
+        print("🔔 DEBUG: Current thread: \(Thread.isMainThread ? "Main" : "Background")")
         
         // Set flag to prevent app lifecycle handlers from interfering
         isProcessingNotificationResponse = true
+        print("🔔 DEBUG: Set isProcessingNotificationResponse to true")
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier

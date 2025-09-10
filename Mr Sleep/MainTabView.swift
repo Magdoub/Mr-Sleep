@@ -63,9 +63,11 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $alarmDismissalManager.isShowingDismissalPage) {
             if let alarm = alarmDismissalManager.currentAlarm {
+                print("🔔 DEBUG: fullScreenCover showing AlarmDismissalView for alarm: \(alarm.label)")
                 AlarmDismissalView(
                     alarm: alarm,
                     onDismiss: {
+                        print("🔔 DEBUG: AlarmDismissalView onDismiss called")
                         // Dismiss the alarm properly
                         alarmManager.dismissLiveActivity(for: alarm.id.uuidString)
                         alarmDismissalManager.dismissAlarm()
@@ -81,6 +83,12 @@ struct MainTabView: View {
         }
         .onChange(of: alarmDismissalManager.isShowingDismissalPage) { isShowing in
             print("🔔 DEBUG: MainTabView detected isShowingDismissalPage changed to: \(isShowing)")
+            if isShowing {
+                print("🔔 DEBUG: MainTabView should show fullScreenCover now")
+            }
+        }
+        .onChange(of: alarmDismissalManager.currentAlarm) { alarm in
+            print("🔔 DEBUG: MainTabView detected currentAlarm changed to: \(alarm?.label ?? "nil")")
         }
         .onChange(of: showOnboarding) { isOnboarding in
             // Update onboarding state when it changes
