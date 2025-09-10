@@ -46,7 +46,7 @@ class AlarmDismissalManager: ObservableObject {
 }
 
 // Enhanced AlarmItem with more properties
-struct AlarmItem: Identifiable, Codable {
+struct AlarmItem: Identifiable, Codable, Equatable {
     let id = UUID()
     var time: String
     var isEnabled: Bool
@@ -56,6 +56,11 @@ struct AlarmItem: Identifiable, Codable {
     var createdFromSleepNow: Bool = false
     var soundName: String = "Morning" // Default to morning sound
     var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
+    
+    // Equatable conformance
+    static func == (lhs: AlarmItem, rhs: AlarmItem) -> Bool {
+        return lhs.id == rhs.id
+    }
     
     // Convert time string to Date for scheduling
     var scheduledDate: Date? {
