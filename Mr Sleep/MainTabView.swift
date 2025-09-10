@@ -63,7 +63,7 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $alarmDismissalManager.isShowingDismissalPage) {
             if let alarm = alarmDismissalManager.currentAlarm {
-                DismissalPageView(
+                AlarmDismissalView(
                     alarm: alarm,
                     onDismiss: {
                         // Dismiss the alarm properly
@@ -144,8 +144,9 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Dismissal Page View
-struct DismissalPageView: View {
+
+// MARK: - Alarm Dismissal View
+struct AlarmDismissalView: View {
     let alarm: AlarmItem
     let onDismiss: () -> Void
     
@@ -225,7 +226,7 @@ struct DismissalPageView: View {
             currentTime = Date()
         }
         .onAppear {
-            print("🚨 DismissalPageView appeared - alarm should continue until dismissed")
+            print("🚨 AlarmDismissalView appeared - alarm should continue until dismissed")
             isAnimating = true
         }
     }
