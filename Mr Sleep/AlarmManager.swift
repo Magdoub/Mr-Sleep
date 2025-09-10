@@ -336,8 +336,8 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Explicitly set NO sound at all (vibration should work with critical alert entitlement)
-            content.sound = nil
+            // Try using default sound which should trigger vibration on silent mode
+            content.sound = UNNotificationSound.default
             content.categoryIdentifier = "ALARM_CATEGORY"
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
