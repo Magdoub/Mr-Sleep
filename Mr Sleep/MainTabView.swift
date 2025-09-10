@@ -245,5 +245,5 @@ struct DismissalPageView: View {
 
 #Preview {
     MainTabView()
-        .environmentObject(AlarmManager())
+        .environmentObject(AlarmManager.shared)
 }

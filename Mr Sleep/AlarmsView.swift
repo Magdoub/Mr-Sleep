@@ -526,6 +526,6 @@ struct EditAlarmView: View {
 }
 
 #Preview {
-    AlarmsView(alarmManager: AlarmManager())
+    AlarmsView(alarmManager: AlarmManager.shared)
 }
 

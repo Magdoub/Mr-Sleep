@@ -85,10 +85,12 @@ struct AlarmItem: Identifiable, Codable {
 }
 
 class AlarmManager: NSObject, ObservableObject {
+    static let shared = AlarmManager()
+    
     @Published var alarms: [AlarmItem] = []
     private var testAlarms: [AlarmItem] = [] // Temporary storage for test alarms
     
-    override init() {
+    private override init() {
         super.init()
         loadAlarms()
         requestNotificationPermission()

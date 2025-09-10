@@ -602,5 +602,5 @@ struct SleepNowView: View {
 }
 
 #Preview {
-    SleepNowView(alarmManager: AlarmManager(), selectedTab: .constant(0))
+    SleepNowView(alarmManager: AlarmManager.shared, selectedTab: .constant(0))
 }

@@ -13,7 +13,7 @@ import AVFoundation
 
 @main
 struct Mr_SleepApp: App {
-    @StateObject private var alarmManager = AlarmManager()
+    @StateObject private var alarmManager = AlarmManager.shared
     
     init() {
         // Configure audio session for background audio capability on app launch
