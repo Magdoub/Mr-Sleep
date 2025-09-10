@@ -264,39 +264,32 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func scheduleAllNotifications(for alarm: AlarmItem, baseTime: Date) {
-        print("📅 Pre-scheduling all 6 notifications for alarm: \(alarm.time)")
+        print("📅 Pre-scheduling notifications every 3 seconds for alarm: \(alarm.time)")
         
-        // Schedule all 6 notifications at once (this is more reliable)
-        for repetition in 0..<6 {
-            let notificationTime = baseTime.addingTimeInterval(TimeInterval(repetition * 30))
+        // Schedule notifications every 3 seconds instead of 30 seconds
+        let notificationInterval = 3.0 // 3 seconds
+        let maxNotifications = 20 // More notifications since they're every 3 seconds
+        
+        for repetition in 0..<maxNotifications {
+            let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
             
             let content = UNMutableNotificationContent()
             
-            // Customize title based on repetition
-            if repetition == 0 {
-                content.title = "🚨 WAKE UP! 🚨"
-                content.subtitle = "💗 Tap to continue alarm!"
-                content.body = "\(alarm.label) - Sound will loop when opened"
-            } else {
-                content.title = "⏰ WAKE UP! (Repeat \(repetition + 1)/6)"
-                content.subtitle = "💗 Still sleeping? Time to wake up!"
-                content.body = "\(alarm.label) - Tap to stop repeating"
-            }
+            // Simple "Tap to dismiss" message for all notifications
+            content.title = "Tap to dismiss"
+            content.body = "\(alarm.label)"
             
-            // Set custom sound based on alarm's sound selection
-            content.sound = getNotificationSound(for: alarm.soundName)
+            // NO sound - only vibration
+            content.sound = nil
             content.categoryIdentifier = "ALARM_CATEGORY"
             
-            // Make notification critical to bypass Do Not Disturb and volume settings
+            // Make notification critical to bypass Do Not Disturb
             content.interruptionLevel = .critical
             content.relevanceScore = 1.0
             
-            // Enable mutable content so notification service extension can process it
-            // Note: UNMutableNotificationContent is already mutable by default
-            
-            // Add badge to make it more noticeable
-            content.badge = NSNumber(value: repetition + 1)
+            // No badge numbers to avoid red circles on app icon
+            content.badge = nil
             
             // Add user info for enhanced handling
             content.userInfo = [
@@ -305,7 +298,7 @@ class AlarmManager: NSObject, ObservableObject {
                 "alarmTime": alarm.time,
                 "alarmLabel": alarm.label,
                 "repetition": repetition,
-                "totalRepetitions": 6,
+                "totalRepetitions": maxNotifications,
                 "baseTime": baseTime.timeIntervalSince1970
             ]
             
@@ -318,19 +311,19 @@ class AlarmManager: NSObject, ObservableObject {
             // Schedule this notification
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
-                    print("❌ Error scheduling notification \(repetition + 1)/6: \(error.localizedDescription)")
+                    print("❌ Error scheduling notification \(repetition + 1)/\(maxNotifications): \(error.localizedDescription)")
                 } else {
-                    print("✅ Scheduled notification \(repetition + 1)/6 for \(notificationTime)")
+                    print("✅ Scheduled notification \(repetition + 1)/\(maxNotifications) for \(notificationTime)")
                 }
             }
         }
         
-        // Schedule automatic cleanup after all notifications
-        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(6 * 30)) {
+        // Schedule automatic cleanup after all notifications (60 seconds total)
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(maxNotifications * Int(notificationInterval))) {
             if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
                 self.alarms[alarmIndex].isEnabled = false
                 self.saveAlarms()
-                print("🏁 Automatically toggled off alarm after all 6 notifications: \(alarm.time)")
+                print("🏁 Automatically toggled off alarm after all \(maxNotifications) notifications: \(alarm.time)")
             }
         }
     }
@@ -407,8 +400,8 @@ class AlarmManager: NSObject, ObservableObject {
         // Cancel all repetitions of the alarm
         var identifiersToCancel: [String] = []
         
-        // Add all repetition identifiers
-        for repetition in 0..<6 {
+        // Add all repetition identifiers (now 20 notifications instead of 6)
+        for repetition in 0..<20 {
             identifiersToCancel.append("\(alarm.id.uuidString)-repeat-\(repetition)")
         }
         
