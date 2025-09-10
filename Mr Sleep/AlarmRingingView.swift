@@ -131,12 +131,12 @@ struct AlarmRingingView: View {
             
             // Add slight delay to ensure view is fully loaded
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                startAlarmSound()
+                // Sound is now handled by AlarmManager, not here
                 startHapticFeedback()
             }
         }
         .onDisappear {
-            stopAlarmSound()
+            // Sound is handled by AlarmManager, not here
         }
     }
     

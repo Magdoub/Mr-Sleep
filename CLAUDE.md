@@ -82,7 +82,8 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 ## Git Workflow
 
 ### Repository Information
-- **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep/.git`
+- **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep/.git` (CONFIRMED: Git repo exists)
+- **Working Directory for Git Commands**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep`
 - **Remote Repository**: https://github.com/Magdoub/Mr-Sleep
 - **Automated Commits**: Claude Code automatically commits all changes
 

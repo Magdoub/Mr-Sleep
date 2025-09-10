@@ -54,7 +54,8 @@ struct MainTabView: View {
                 AlarmRingingView(
                     alarm: alarm,
                     onDismiss: {
-                        alarmOverlayManager.dismissAlarm()
+                        // Dismiss through AlarmManager to stop sound properly
+                        alarmManager.dismissLiveActivity(for: alarm.id.uuidString)
                     }
                 )
             }

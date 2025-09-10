@@ -942,10 +942,10 @@ class AlarmManager: NSObject, ObservableObject {
     // MARK: - Live Activities Integration
     
     func startLiveActivityForAlarm(_ alarm: AlarmItem) {
-        // Start enhanced alarm with overlay (sound handled by AlarmRingingView)
+        // Start enhanced alarm with overlay (sound is handled separately by notification system)
         print("🚨 Starting alarm overlay for: \(alarm.label)")
         
-        // Show full-screen alarm overlay (this will handle the sound)
+        // Show full-screen alarm overlay
         AlarmOverlayManager.shared.showAlarm(alarm)
         
         // Start Live Activity on supported devices (if available)
@@ -956,10 +956,11 @@ class AlarmManager: NSObject, ObservableObject {
         // Stop alarm overlay and Live Activity
         print("⏹️ Stopping alarm for ID: \(alarmId)")
         
-        // Dismiss alarm overlay (this will stop the sound too)
-        AlarmOverlayManager.shared.dismissAlarm()
+        // Stop alarm sound
+        stopAlarmSound()
         
-        // No repeat notifications to cancel anymore
+        // Dismiss alarm overlay
+        AlarmOverlayManager.shared.dismissAlarm()
         
         // Stop Live Activity
         stopLiveActivity()
@@ -1082,8 +1083,7 @@ class AlarmManager: NSObject, ObservableObject {
         // Start intense haptic feedback pattern
         startAlarmHaptics()
         
-        // Start alarm sound with the specific alarm's sound selection
-        startAlarmSound(for: alarm)
+        // Note: Alarm sound is now handled by the notification system, not here
     }
     
     private func startAlarmHaptics() {
@@ -1145,12 +1145,16 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             
             if let alarm = alarm {
                 if isFirstNotification {
+                    // Start alarm music when first notification fires
+                    print("🎵 Starting alarm music for first notification")
+                    startAlarmSound(for: alarm)
+                    
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
                 }
                 
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
-                print("🔔 Notification \(currentRepetition + 1)/6 is presenting for alarm: \(alarm.time)")
+                print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 // Schedule a background task to check if phone gets unlocked
                 scheduleBackgroundUnlockCheck(for: alarm, afterNotification: currentRepetition)
@@ -1170,8 +1174,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show the notification with sound and alert
-        completionHandler([.alert, .sound, .badge])
+        // Show the notification with alert only (no sound since music is handled separately)
+        completionHandler([.alert])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
