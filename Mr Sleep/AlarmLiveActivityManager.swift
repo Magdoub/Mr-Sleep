@@ -196,7 +196,8 @@ class AlarmLiveActivityManager: ObservableObject {
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.duckOthers, .interruptSpokenAudioAndMixWithOthers])
+            // Clean playback options to avoid unsupported combinations
+            try audioSession.setCategory(.playback, mode: .default, options: [.duckOthers])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Failed to configure audio session: \(error)")

@@ -562,13 +562,8 @@ class AlarmManager: NSObject, ObservableObject {
         trackAppActivity()
         checkNotificationServiceActivity()
         
-        // Only dismiss alarms if we're not showing the dismissal page or processing notification response
-        // This prevents conflicts with notification tap handling
-        if !AlarmDismissalManager.shared.isShowingDismissalPage && !isProcessingNotificationResponse {
-            dismissActiveAlarmsOnUserInteraction()
-        } else {
-            print("🔔 App entered foreground but dismissal page is showing or processing notification - not dismissing alarms")
-        }
+        // Never auto-dismiss on foreground/unlock; user must explicitly dismiss
+        print("⏸️ Skipping auto-dismiss on foreground; waiting for explicit Dismiss tap")
         
         // Clear badge count when app comes to foreground
         UNUserNotificationCenter.current().setBadgeCount(0)
@@ -578,13 +573,8 @@ class AlarmManager: NSObject, ObservableObject {
         // Called when app becomes active (additional check for user interaction)
         trackAppActivity()
         
-        // Only dismiss alarms if we're not showing the dismissal page or processing notification response
-        // This prevents conflicts with notification tap handling
-        if !AlarmDismissalManager.shared.isShowingDismissalPage && !isProcessingNotificationResponse {
-            dismissActiveAlarmsOnUserInteraction()
-        } else {
-            print("🔔 App became active but dismissal page is showing or processing notification - not dismissing alarms")
-        }
+        // Never auto-dismiss on active; user must explicitly dismiss
+        print("⏸️ Skipping auto-dismiss on active; waiting for explicit Dismiss tap")
     }
     
     func handleAppEnteredBackground() {
@@ -901,26 +891,8 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkIfAlarmShouldContinue(alarmId: UUID) {
-        // Do not auto-stop while the explicit dismissal UI is visible
-        if AlarmDismissalManager.shared.isShowingDismissalPage {
-            print("⏸️ Skipping continue-check while dismissal page is visible")
-            return
-        }
-        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
-            return // Alarm already disabled
-        }
-        
-        // Check if user has interacted with the app or phone
-        let lastActiveTime = UserDefaults.standard.object(forKey: "lastAppActiveTime") as? Date ?? Date.distantPast
-        let timeSinceLastActive = Date().timeIntervalSince(lastActiveTime)
-        
-        // If app was active within last 30 seconds, user unlocked phone
-        if timeSinceLastActive < 30 {
-            print("🔓 Recent app activity detected (\(Int(timeSinceLastActive))s ago) - stopping alarm")
-            stopAlarmDueToUnlock(alarm: alarm, reason: "Recent app activity")
-        } else {
-            print("🔍 Alarm check: No recent activity (\(Int(timeSinceLastActive))s ago)")
-        }
+        // Disabled: we no longer stop due to recent activity; wait for explicit Dismiss
+        print("⏸️ Skipping checkIfAlarmShouldContinue; explicit Dismiss required")
     }
     
     private func stopAlarmDueToUnlock(alarm: AlarmItem, reason: String) {
@@ -941,44 +913,8 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkIfNextNotificationShouldFire(alarmId: UUID, currentRepetition: Int) {
-        // Do not interfere while dismissal page is visible
-        if AlarmDismissalManager.shared.isShowingDismissalPage {
-            print("⏸️ Skipping next-notification check while dismissal page is visible")
-            return
-        }
-        // Check if the alarm is still enabled
-        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
-            return // Alarm already disabled
-        }
-        
-        // Check if the next notification is still pending
-        let nextRepetition = currentRepetition + 1
-        let nextNotificationId = "\(alarmId.uuidString)-repeat-\(nextRepetition)"
-        
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let nextNotificationExists = requests.contains { request in
-                request.identifier == nextNotificationId
-            }
-            
-            DispatchQueue.main.async {
-                print("🔍 Checking if next notification (\(nextRepetition + 1)/6) should fire...")
-                print("   Next notification ID: \(nextNotificationId)")
-                print("   Still pending: \(nextNotificationExists)")
-                
-                if !nextNotificationExists {
-                    // Next notification was cancelled/cleared - user interacted
-                    print("🎯 Next notification missing - user interaction detected")
-                    
-                    self.cancelNotification(for: alarm)
-                    self.toggleOffAlarm(with: alarmId)
-                    self.dismissLiveActivity(for: alarmId.uuidString)
-                    
-                    print("✅ Stopped alarm due to missing next notification: \(alarm.time)")
-                } else {
-                    print("⏰ Next notification still pending - alarm continues")
-                }
-            }
-        }
+        // Disabled: do not auto-stop based on pending/next notification state
+        print("⏸️ Skipping next-notification check; explicit Dismiss required")
     }
     
     // MARK: - Unlock Detection
@@ -994,68 +930,8 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func checkForUserActivity(alarmId: UUID) {
-        // Do not auto-dismiss while dismissal page is shown
-        if AlarmDismissalManager.shared.isShowingDismissalPage {
-            print("⏸️ Skipping user-activity auto-dismiss while dismissal page is visible")
-            return
-        }
-        // Check if the alarm is still enabled and active
-        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
-            return // Alarm already disabled
-        }
-        
-        // Check if the app has become active recently (indicating user interaction)
-        let now = Date()
-        let lastActiveTime = UserDefaults.standard.object(forKey: "lastAppActiveTime") as? Date ?? Date.distantPast
-        let timeSinceLastActive = now.timeIntervalSince(lastActiveTime)
-        
-        // If app was active within the last 30 seconds, consider it user interaction
-        if timeSinceLastActive < 30 {
-            print("🔍 Detected recent user activity (app active \(Int(timeSinceLastActive))s ago), dismissing alarm: \(alarm.time)")
-            cancelNotification(for: alarm)
-            toggleOffAlarm(with: alarmId)
-            dismissLiveActivity(for: alarmId.uuidString)
-            return
-        }
-        
-        // Alternative check: See if there are fewer pending notifications than expected
-        // This could indicate user interaction with notifications
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let alarmNotifications = requests.filter { request in
-                request.identifier.contains(alarmId.uuidString)
-            }
-            
-            DispatchQueue.main.async {
-                // If there are significantly fewer notifications than expected, user likely interacted
-                let expectedNotifications = 6 // We schedule 6 notifications
-                let actualNotifications = alarmNotifications.count
-                
-                if actualNotifications < expectedNotifications - 1 {
-                    print("🔍 Detected notification interaction (\(actualNotifications)/\(expectedNotifications) remaining), dismissing alarm: \(alarm.time)")
-                    self.cancelNotification(for: alarm)
-                    self.toggleOffAlarm(with: alarmId)
-                    self.dismissLiveActivity(for: alarmId.uuidString)
-                }
-            }
-        }
-        
-        // Additional check: Look for any signs of device activity
-        // Check if notification center has been accessed (indicated by delivered notifications being cleared)
-        UNUserNotificationCenter.current().getDeliveredNotifications { deliveredNotifications in
-            let alarmDeliveredCount = deliveredNotifications.filter { notification in
-                notification.request.identifier.contains(alarmId.uuidString)
-            }.count
-            
-            DispatchQueue.main.async {
-                // If user has cleared notifications from notification center, they're likely awake
-                if alarmDeliveredCount == 0 {
-                    print("🔍 Detected notification center interaction (no delivered notifications), dismissing alarm: \(alarm.time)")
-                    self.cancelNotification(for: alarm)
-                    self.toggleOffAlarm(with: alarmId)
-                    self.dismissLiveActivity(for: alarmId.uuidString)
-                }
-            }
-        }
+        // Disabled: do not auto-dismiss based on activity or notification state
+        print("⏸️ Skipping user-activity auto-dismiss; explicit Dismiss required")
     }
     
     private func getNotificationSound(for soundName: String) -> UNNotificationSound {
@@ -1198,10 +1074,10 @@ class AlarmManager: NSObject, ObservableObject {
             
             // CRITICAL: Use .playAndRecord category which allows background audio
             // This is the only category that reliably works when phone is locked
+            // Use playAndRecord only if required for speaker routing; keep options minimal to avoid -50
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                .defaultToSpeaker,  // Use speaker by default (not earpiece)
-                .allowBluetooth,    // Allow Bluetooth audio
-                .overrideMutedMicrophoneInterruption  // Override mute switch
+                .defaultToSpeaker,
+                .allowBluetooth
             ])
             
             // Activate with option to notify other apps

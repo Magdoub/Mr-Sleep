@@ -150,7 +150,8 @@ struct AlarmRingingView: View {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             // Use playback category with options to continue playing when locked
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth, .allowBluetoothA2DP])
+            // Use .playback for this view; remove A2DP option to avoid -50 on some devices
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetooth])
             try audioSession.setActive(true)
             print("✅ Audio session configured for background playback")
         } catch {
