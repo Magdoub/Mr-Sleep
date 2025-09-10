@@ -285,13 +285,16 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // NO sound - only vibration
-            content.sound = nil
+            // Explicitly set NO sound at all
+            content.sound = UNNotificationSound.none
             content.categoryIdentifier = "ALARM_CATEGORY"
             
-            // Make notification critical to bypass Do Not Disturb
+            // Make notification critical to bypass Do Not Disturb and ensure vibration
             content.interruptionLevel = .critical
             content.relevanceScore = 1.0
+            
+            // Add custom user info to trigger vibration
+            content.userInfo["shouldVibrate"] = true
             
             // No badge numbers to avoid red circles on app icon
             content.badge = nil
@@ -987,10 +990,16 @@ class AlarmManager: NSObject, ObservableObject {
         // Configure audio session for maximum audibility
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Use .playback category with options to override silent mode and play at full volume
-            try audioSession.setCategory(.playback, mode: .default, options: [.overrideMutedMicrophoneInterruption])
-            try audioSession.setActive(true)
-            print("✅ Audio session configured for alarm playback")
+            // Use .playback category with options to play even when phone is on silent
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try audioSession.setActive(true, options: [])
+            
+            // Check audio session properties
+            print("✅ Audio session configured:")
+            print("   - Category: \(audioSession.category)")
+            print("   - Output volume: \(audioSession.outputVolume)")
+            print("   - Is other audio playing: \(audioSession.isOtherAudioPlaying)")
+            
         } catch {
             print("❌ Failed to set up audio session: \(error)")
         }
@@ -1042,25 +1051,44 @@ class AlarmManager: NSObject, ObservableObject {
         }
         
         if let soundURL = soundURL {
+            print("🎵 Creating audio player with URL: \(soundURL.absoluteString)")
+            
+            // Check if file exists
+            let fileManager = FileManager.default
+            if fileManager.fileExists(atPath: soundURL.path) {
+                print("✅ Sound file exists at path: \(soundURL.path)")
+            } else {
+                print("❌ Sound file does NOT exist at path: \(soundURL.path)")
+            }
+            
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely
                 audioPlayer?.volume = 1.0
                 audioPlayer?.prepareToPlay()
                 
+                print("🎵 Audio player created successfully:")
+                print("   - Duration: \(audioPlayer?.duration ?? 0) seconds")
+                print("   - Volume: \(audioPlayer?.volume ?? 0)")
+                print("   - Number of loops: \(audioPlayer?.numberOfLoops ?? 0)")
+                
                 let success = audioPlayer?.play() ?? false
                 if success {
-                    print("🔊 SUCCESS: Playing custom alarm sound: \(soundURL.lastPathComponent) at full volume")
+                    print("🔊 SUCCESS: Playing custom alarm sound: \(soundURL.lastPathComponent)")
+                    print("   - Is playing: \(audioPlayer?.isPlaying ?? false)")
+                    print("   - Current time: \(audioPlayer?.currentTime ?? 0)")
                 } else {
                     print("❌ FAILED: Could not start audio playback for \(soundURL.lastPathComponent)")
+                    print("   - Audio player error or audio session issue")
                     playSystemAlarmSound()
                 }
             } catch {
-                print("❌ Failed to create audio player for custom sound: \(error)")
+                print("❌ Failed to create audio player: \(error)")
+                print("   - Error details: \(error.localizedDescription)")
                 playSystemAlarmSound()
             }
         } else {
-            print("❌ No custom alarm sound files found, using system sound")
+            print("❌ No sound URL found - using system sound")
             playSystemAlarmSound()
         }
     }
@@ -1172,16 +1200,14 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     startLiveActivityForAlarm(alarm)
                 }
                 
-                // Trigger vibration for each notification
+                // Trigger vibration for each notification using system sound with vibration
                 DispatchQueue.main.async {
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-                    impactFeedback.prepare()
-                    impactFeedback.impactOccurred()
+                    // Use AudioServicesPlaySystemSound with vibration ID
+                    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
                     
-                    // Also trigger notification haptic
-                    let notificationFeedback = UINotificationFeedbackGenerator()
-                    notificationFeedback.prepare()
-                    notificationFeedback.notificationOccurred(.error)
+                    // Also try impact feedback
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+                    impactFeedback.impactOccurred()
                     
                     print("📳 Triggered vibration for notification \(currentRepetition + 1)/20")
                 }
@@ -1232,9 +1258,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 // User tapped the notification itself (not an action button)
                 print("📱 User tapped notification - showing dismissal page")
                 
-                // Show the dismissal page
+                // Show the new dismissal page
                 DispatchQueue.main.async {
-                    AlarmOverlayManager.shared.showAlarm(alarm)
+                    AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                 }
                 
                 // Don't stop the alarm yet - let the dismissal page handle it
@@ -1265,7 +1291,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("📱 User interacted with notification - showing dismissal page")
                 
                 DispatchQueue.main.async {
-                    AlarmOverlayManager.shared.showAlarm(alarm)
+                    AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                 }
             }
         }
