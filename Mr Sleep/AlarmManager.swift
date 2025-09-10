@@ -336,7 +336,7 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Explicitly set NO sound at all
+            // Explicitly set NO sound at all (vibration should work with critical alert entitlement)
             content.sound = nil
             content.categoryIdentifier = "ALARM_CATEGORY"
             
