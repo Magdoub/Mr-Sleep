@@ -440,12 +440,26 @@ class AlarmManager: NSObject, ObservableObject {
         }
         
         // Schedule automatic cleanup after all notifications (60 seconds total)
+        // BUT only if the user hasn't manually dismissed the alarm
         DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(maxNotifications * Int(notificationInterval))) {
-            if let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) {
-                self.alarms[alarmIndex].isEnabled = false
-                self.saveAlarms()
-                print("🏁 Automatically toggled off alarm after all \(maxNotifications) notifications: \(alarm.time)")
+            // Check if the alarm still exists and is enabled
+            guard let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) else {
+                print("🏁 Alarm already dismissed by user or doesn't exist - skipping auto-cleanup")
+                return
             }
+            
+            // Check if the dismissal page is currently showing for this alarm
+            if AlarmDismissalManager.shared.isShowingDismissalPage,
+               let currentAlarm = AlarmDismissalManager.shared.currentAlarm,
+               currentAlarm.id == alarm.id {
+                print("🏁 Dismissal page is showing - keeping alarm active until user dismisses")
+                return
+            }
+            
+            // If we get here, the alarm completed all notifications and user didn't interact
+            self.alarms[alarmIndex].isEnabled = false
+            self.saveAlarms()
+            print("🏁 Automatically toggled off alarm after all \(maxNotifications) notifications: \(alarm.time)")
         }
     }
     
