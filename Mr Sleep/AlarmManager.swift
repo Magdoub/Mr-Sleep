@@ -1160,6 +1160,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                        testAlarms.first(where: { $0.id == alarmId })
             
             if let alarm = alarm {
+                let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
+                print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
+                
                 if isFirstNotification {
                     // Start alarm music when first notification fires
                     print("🎵 Starting alarm music for first notification")
@@ -1182,9 +1185,6 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     
                     print("📳 Triggered vibration for notification \(currentRepetition + 1)/20")
                 }
-                
-                let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
-                print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 // Schedule a background task to check if phone gets unlocked
                 scheduleBackgroundUnlockCheck(for: alarm, afterNotification: currentRepetition)
