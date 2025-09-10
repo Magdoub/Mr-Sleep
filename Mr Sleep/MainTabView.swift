@@ -71,7 +71,16 @@ struct MainTabView: View {
                         alarmDismissalManager.dismissAlarm()
                     }
                 )
+            } else {
+                // This should not happen but let's log it
+                Text("No alarm data")
+                    .onAppear {
+                        print("🔔 DEBUG: fullScreenCover triggered but no alarm data!")
+                    }
             }
+        }
+        .onChange(of: alarmDismissalManager.isShowingDismissalPage) { isShowing in
+            print("🔔 DEBUG: MainTabView detected isShowingDismissalPage changed to: \(isShowing)")
         }
         .onChange(of: showOnboarding) { isOnboarding in
             // Update onboarding state when it changes

@@ -25,10 +25,13 @@ class AlarmDismissalManager: ObservableObject {
     private init() {}
     
     func showDismissalPage(for alarm: AlarmItem) {
+        print("🔔 DEBUG: showDismissalPage called for alarm: \(alarm.label)")
         DispatchQueue.main.async {
             print("📱 Showing dismissal page for alarm: \(alarm.label)")
+            print("🔔 DEBUG: Setting isShowingDismissalPage to true")
             self.currentAlarm = alarm
             self.isShowingDismissalPage = true
+            print("🔔 DEBUG: isShowingDismissalPage is now: \(self.isShowingDismissalPage)")
         }
     }
     
@@ -1402,6 +1405,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        print("🔔 DEBUG: userNotificationCenter didReceive response called!")
+        print("🔔 DEBUG: Notification ID: \(response.notification.request.identifier)")
+        print("🔔 DEBUG: Action identifier: \(response.actionIdentifier)")
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = response.notification.request.identifier
