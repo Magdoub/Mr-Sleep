@@ -336,8 +336,18 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Try using default sound which should trigger vibration on silent mode
-            content.sound = UNNotificationSound.default
+            // Use the alarm's selected sound for the notification itself
+            let selectedSoundName = alarm.soundName.lowercased()
+            if selectedSoundName.contains("morning") {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                print("🔊 Using morning-alarm-clock.mp3 for notification")
+            } else if selectedSoundName.contains("smooth") {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                print("🔊 Using smooth-alarm-clock.mp3 for notification")
+            } else {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                print("🔊 Using alarm-clock.mp3 for notification")
+            }
             content.categoryIdentifier = "ALARM_CATEGORY"
             
             // Make notification critical to bypass Do Not Disturb and ensure vibration
@@ -1041,16 +1051,21 @@ class AlarmManager: NSObject, ObservableObject {
         
         print("🔊 Starting alarm sound with full volume configuration")
         
-        // Configure audio session for maximum audibility
+        // Configure audio session for maximum audibility - especially when phone is locked
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Use .playback category with options to play even when phone is on silent
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            // Use .playback category with options to play even when phone is locked/silent
+            try audioSession.setCategory(.playback, mode: .default, options: [
+                .duckOthers,  // Lower other audio
+                .allowBluetooth,  // Allow Bluetooth
+                .defaultToSpeaker  // Use speaker by default
+            ])
             try audioSession.setActive(true, options: [])
             
             // Check audio session properties
-            print("✅ Audio session configured:")
+            print("✅ Audio session configured for locked phone playback:")
             print("   - Category: \(audioSession.category)")
+            print("   - Category options: \(audioSession.categoryOptions)")
             print("   - Output volume: \(audioSession.outputVolume)")
             print("   - Is other audio playing: \(audioSession.isOtherAudioPlaying)")
             
@@ -1119,6 +1134,8 @@ class AlarmManager: NSObject, ObservableObject {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely
                 audioPlayer?.volume = 1.0
+                
+                // Enable background playback and lock screen controls
                 audioPlayer?.prepareToPlay()
                 
                 print("🎵 Audio player created successfully:")
@@ -1131,6 +1148,10 @@ class AlarmManager: NSObject, ObservableObject {
                     print("🔊 SUCCESS: Playing custom alarm sound: \(soundURL.lastPathComponent)")
                     print("   - Is playing: \(audioPlayer?.isPlaying ?? false)")
                     print("   - Current time: \(audioPlayer?.currentTime ?? 0)")
+                    
+                    // Keep audio session active to prevent stopping when phone locks
+                    try? AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+                    print("   - Audio session kept active for background playback")
                 } else {
                     print("❌ FAILED: Could not start audio playback for \(soundURL.lastPathComponent)")
                     print("   - Audio player error or audio session issue")
@@ -1284,9 +1305,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // Start alarm music when first notification fires
-                    print("🎵 Starting alarm music for first notification")
-                    startAlarmSound(for: alarm)
+                    // Sound is now handled by notifications themselves, not separate audio player
+                    print("🎵 Sound will be handled by notifications every 3 seconds")
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
