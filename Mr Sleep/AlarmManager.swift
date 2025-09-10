@@ -202,6 +202,8 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func setupNotificationCategories() {
+        print("🔔 DEBUG: Setting up notification categories")
+        
         // Create dismiss action
         let dismissAction = UNNotificationAction(
             identifier: "DISMISS_ACTION",
@@ -226,6 +228,7 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Register the category
         UNUserNotificationCenter.current().setNotificationCategories([alarmCategory])
+        print("🔔 DEBUG: Notification categories registered successfully")
     }
     
     // MARK: - Alarm Management

@@ -18,6 +18,10 @@ struct Mr_SleepApp: App {
     init() {
         // Configure audio session for background audio capability on app launch
         configureBackgroundAudio()
+        
+        // Set notification delegate immediately to ensure it's available for all notifications
+        UNUserNotificationCenter.current().delegate = AlarmManager.shared
+        print("🔔 DEBUG: Notification delegate set in app init")
     }
     
     var body: some Scene {
