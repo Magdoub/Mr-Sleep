@@ -109,7 +109,7 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Notification Permissions
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .criticalAlert]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .criticalAlert]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
                     print("Notification permission granted")
@@ -982,61 +982,62 @@ class AlarmManager: NSObject, ObservableObject {
         guard !isAlarmSounding else { return }
         isAlarmSounding = true
         
-        // Configure audio session
+        print("🔊 Starting alarm sound with full volume configuration")
+        
+        // Configure audio session for maximum audibility
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.duckOthers])
+            // Use .playback category with options to override silent mode and play at full volume
+            try audioSession.setCategory(.playback, mode: .default, options: [.overrideMutedMicrophoneInterruption])
             try audioSession.setActive(true)
+            print("✅ Audio session configured for alarm playback")
         } catch {
-            print("Failed to set up audio session: \(error)")
+            print("❌ Failed to set up audio session: \(error)")
         }
+        
+        // List all available sound files for debugging
+        let availableFiles = ["morning-alarm-clock.mp3", "smooth-alarm-clock.mp3", "alarm-clock.mp3"]
+        print("🔊 Available sound files: \(availableFiles)")
         
         // Try to play custom sound based on alarm's sound selection
         var soundURL: URL?
+        let selectedSoundName = alarm?.soundName ?? "morning"
+        
+        print("🔊 Alarm sound selection: '\(selectedSoundName)'")
         
         if let alarm = alarm {
             let soundName = alarm.soundName.lowercased()
             
-            if soundName.contains("morning") {
-                // Try morning-alarm-clock sound
-                soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
-                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
-                          Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a")
-                print("🔊 Attempting to play morning-alarm-clock sound")
-            } else if soundName.contains("smooth") {
-                // Try smooth-alarm-clock sound
-                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
-                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
-                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a")
-                print("🔊 Attempting to play smooth-alarm-clock sound")
-            } else if soundName.contains("classic") || soundName.contains("alarm-clock") {
-                // Try original alarm-clock sound
-                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
-                print("🔊 Attempting to play alarm-clock sound")
+            if soundName.contains("morning") || soundName == "morning" {
+                soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3")
+                print("🔊 Attempting to play morning-alarm-clock sound - URL: \(soundURL?.absoluteString ?? "nil")")
+            } else if soundName.contains("smooth") || soundName == "smooth" {
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3")
+                print("🔊 Attempting to play smooth-alarm-clock sound - URL: \(soundURL?.absoluteString ?? "nil")")
+            } else if soundName.contains("classic") || soundName.contains("alarm") || soundName == "alarm-clock" {
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3")
+                print("🔊 Attempting to play alarm-clock sound - URL: \(soundURL?.absoluteString ?? "nil")")
             }
         }
         
-        // Fallback to default sounds if no specific alarm or sound not found
+        // Fallback to morning sound as default
         if soundURL == nil {
-            // Try morning alarm first
-            soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
-                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
-                      Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a")
+            print("🔄 No specific sound found, trying fallback to morning-alarm-clock.mp3")
+            soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3")
+            print("🔊 Fallback URL: \(soundURL?.absoluteString ?? "nil")")
             
             // Then try smooth alarm
             if soundURL == nil {
-                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
-                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??
-                          Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "m4a")
+                print("🔄 Morning sound not found, trying smooth-alarm-clock.mp3")
+                soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3")
+                print("🔊 Smooth URL: \(soundURL?.absoluteString ?? "nil")")
             }
             
             // Finally try classic alarm
             if soundURL == nil {
-                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") ??
-                          Bundle.main.url(forResource: "alarm-clock", withExtension: "wav") ??
-                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a")
+                print("🔄 Smooth sound not found, trying alarm-clock.mp3")
+                soundURL = Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3")
+                print("🔊 Classic URL: \(soundURL?.absoluteString ?? "nil")")
             }
         }
         
@@ -1045,14 +1046,21 @@ class AlarmManager: NSObject, ObservableObject {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely
                 audioPlayer?.volume = 1.0
-                audioPlayer?.play()
-                print("🔊 Playing custom alarm sound: \(soundURL.lastPathComponent)")
+                audioPlayer?.prepareToPlay()
+                
+                let success = audioPlayer?.play() ?? false
+                if success {
+                    print("🔊 SUCCESS: Playing custom alarm sound: \(soundURL.lastPathComponent) at full volume")
+                } else {
+                    print("❌ FAILED: Could not start audio playback for \(soundURL.lastPathComponent)")
+                    playSystemAlarmSound()
+                }
             } catch {
-                print("Failed to play custom sound: \(error)")
+                print("❌ Failed to create audio player for custom sound: \(error)")
                 playSystemAlarmSound()
             }
         } else {
-            print("No custom alarm sound files found, using system sound")
+            print("❌ No custom alarm sound files found, using system sound")
             playSystemAlarmSound()
         }
     }
@@ -1161,6 +1169,20 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     startLiveActivityForAlarm(alarm)
                 }
                 
+                // Trigger vibration for each notification
+                DispatchQueue.main.async {
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+                    impactFeedback.prepare()
+                    impactFeedback.impactOccurred()
+                    
+                    // Also trigger notification haptic
+                    let notificationFeedback = UINotificationFeedbackGenerator()
+                    notificationFeedback.prepare()
+                    notificationFeedback.notificationOccurred(.error)
+                    
+                    print("📳 Triggered vibration for notification \(currentRepetition + 1)/20")
+                }
+                
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
@@ -1202,12 +1224,28 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         
         print("🔔 User interacted with alarm notification: \(response.actionIdentifier)")
         
-        // ANY interaction with an alarm notification should cancel remaining notifications
-        // This includes tapping, dismissing, or any other interaction
         if let alarmId = UUID(uuidString: alarmIdString),
            let alarm = alarms.first(where: { $0.id == alarmId }) {
             
             switch response.actionIdentifier {
+            case UNNotificationDefaultActionIdentifier:
+                // User tapped the notification itself (not an action button)
+                print("📱 User tapped notification - showing dismissal page")
+                
+                // Show the dismissal page
+                DispatchQueue.main.async {
+                    AlarmOverlayManager.shared.showAlarm(alarm)
+                }
+                
+                // Don't stop the alarm yet - let the dismissal page handle it
+                
+            case "DISMISS_ACTION":
+                // User explicitly dismissed via action button
+                cancelNotification(for: alarm)
+                toggleOffAlarm(with: alarmId)
+                dismissLiveActivity(for: alarmIdString)
+                print("✅ User dismissed via action button: \(alarm.time)")
+                
             case "SNOOZE_ACTION":
                 // Handle snooze - schedule a new alarm 5 minutes from now
                 cancelNotification(for: alarm) // Cancel remaining repetitions
@@ -1223,11 +1261,12 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔄 Snoozed alarm for 5 minutes: \(snoozeTimeString)")
                 
             default:
-                // For ALL other interactions (dismiss, tap, etc.) - stop the alarm
-                cancelNotification(for: alarm)
-                toggleOffAlarm(with: alarmId)
-                dismissLiveActivity(for: alarmIdString)
-                print("✅ User interacted with notification - cancelled remaining repetitions and toggled off alarm: \(alarm.time)")
+                // For other interactions - show dismissal page
+                print("📱 User interacted with notification - showing dismissal page")
+                
+                DispatchQueue.main.async {
+                    AlarmOverlayManager.shared.showAlarm(alarm)
+                }
             }
         }
         
