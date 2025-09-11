@@ -290,7 +290,7 @@ extension SettingsView {
     // MARK: - Enhanced Alarm Testing Functions
     #if DEBUG
     private func testEnhancedAlarm() {
-        // Create a test alarm that fires in 3 seconds
+        // Create a test alarm that fires in 3 seconds using the EXACT same flow as regular alarms
         let testAlarm = AlarmItem(
             time: "Test Alarm",
             isEnabled: true,
@@ -302,46 +302,82 @@ extension SettingsView {
             shouldAutoReset: false
         )
         
-        // Schedule immediate test notification
-        let content = UNMutableNotificationContent()
-        content.title = "🚨 TEST ALARM 🚨"
-        content.subtitle = "💗 Smooth Test"
-        content.body = "Tap to test full-screen alarm with smooth sound!"
-        // Use the same alarm sound that regular alarms use (prefer smooth)
-        if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "smooth-alarm-clock.mp3"))
-            print("🧪 Test using smooth-alarm-clock.mp3 for notification sound")
-        } else if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-            content.sound = UNNotificationSound(named: UNNotificationSoundName(rawValue: "alarm-clock.mp3"))
-            print("🧪 Test using alarm-clock.mp3 for notification sound")
-        } else {
-            content.sound = .defaultCritical
-            print("🧪 Test using defaultCritical notification sound")
-        }
-        content.categoryIdentifier = "ALARM_CATEGORY"
-        content.interruptionLevel = .critical
-        content.relevanceScore = 1.0
-        content.badge = 1
-        
-        // Add test alarm info for full-screen experience
-        content.userInfo = [
-            "isAlarm": true,
-            "alarmId": testAlarm.id.uuidString,
-            "alarmTime": testAlarm.time,
-            "alarmLabel": testAlarm.label
-        ]
-        
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
-        let request = UNNotificationRequest(identifier: testAlarm.id.uuidString, content: content, trigger: trigger)
-        
-        // Temporarily add test alarm to AlarmManager so it can be found when notification fires
+        // Add test alarm to AlarmManager so it can be found when notifications fire
         alarmManager.addTestAlarm(testAlarm)
         
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling test alarm: \(error)")
+        // Use the exact same notification scheduling as regular alarms
+        let baseTime = Date().addingTimeInterval(3) // Start in 3 seconds
+        scheduleTestAlarmNotifications(for: testAlarm, baseTime: baseTime)
+        
+        print("🧪 Test alarm scheduled using production flow - starts in 3 seconds")
+    }
+    
+    private func scheduleTestAlarmNotifications(for alarm: AlarmItem, baseTime: Date) {
+        print("🧪 Scheduling test alarm notifications every 3 seconds (same as production)")
+        
+        // Use same parameters as production
+        let notificationInterval = 3.0
+        let maxNotifications = 20
+        
+        for repetition in 0..<maxNotifications {
+            let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
+            let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
+            
+            let content = UNMutableNotificationContent()
+            content.title = "Tap to dismiss"
+            content.body = "\(alarm.label)"
+            
+            // Use same sound logic as production
+            let selectedSoundName = alarm.soundName.lowercased()
+            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
+            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
             } else {
-                print("🧪 Test alarm scheduled for 3 seconds from now")
+                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
+            }
+            print("🧪 Test notification \(repetition + 1): Has sound (will start background music)")
+            
+            content.categoryIdentifier = "ALARM_CATEGORY"
+            content.interruptionLevel = .critical
+            content.relevanceScore = 1.0
+            content.badge = nil // Same as production
+            
+            // Same user info as production
+            content.userInfo = [
+                "isAlarm": true,
+                "alarmId": alarm.id.uuidString,
+                "alarmTime": alarm.time,
+                "alarmLabel": alarm.label,
+                "repetition": repetition,
+                "totalRepetitions": maxNotifications,
+                "baseTime": baseTime.timeIntervalSince1970
+            ]
+            
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: notificationTime)
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("🧪 Error scheduling test notification \(repetition + 1)/\(maxNotifications): \(error.localizedDescription)")
+                } else {
+                    print("🧪 Scheduled test notification \(repetition + 1)/\(maxNotifications) for \(notificationTime)")
+                }
             }
         }
     }
