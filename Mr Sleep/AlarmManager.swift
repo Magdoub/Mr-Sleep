@@ -1189,6 +1189,10 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Background Alarm Music Playback
     private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
+        print("🎵 startBackgroundAlarmMusic called for alarm: \(alarm.id.uuidString)")
+        print("   - Current state: isAlarmSounding=\(isAlarmSounding), audioPlayer?.isPlaying=\(audioPlayer?.isPlaying ?? false)")
+        print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
+        
         // Skip if already playing the same alarm - only one alarm can play at a time
         if isAlarmSounding && audioPlayer?.isPlaying == true && currentlyPlayingAlarmId == alarm.id { 
             print("🎵 Background alarm music already playing for this alarm, skipping duplicate start")
@@ -1493,13 +1497,20 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                      print("🎵 First notification presented - starting background alarm music")
                      startBackgroundAlarmMusic(for: alarm)
                 } else {
-                     // Subsequent notifications just ensure music is still playing
-                     print("🎵 Subsequent notification \(currentRepetition + 1) - music should already be playing")
+                     // Subsequent notifications should NOT start new music - just check status
+                     print("🎵 Subsequent notification \(currentRepetition + 1) - checking if music still playing")
+                     print("   - isAlarmSounding: \(isAlarmSounding)")
+                     print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
+                     print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
+                     print("   - alarm.id: \(alarm.id.uuidString)")
+                     
                      if !isAlarmSounding || audioPlayer?.isPlaying != true {
                          print("⚠️ Background music stopped unexpectedly, restarting")
                          startBackgroundAlarmMusic(for: alarm)
+                     } else if currentlyPlayingAlarmId != alarm.id {
+                         print("⚠️ Different alarm is playing, this should not happen - ignoring")
                      } else {
-                         print("✅ Background music still playing from first notification")
+                         print("✅ Background music still playing from first notification for same alarm")
                      }
                 }
                     
