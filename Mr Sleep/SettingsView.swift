@@ -319,8 +319,8 @@ extension SettingsView {
         let notificationInterval = 3.0
         let maxNotifications = 20
         
-        // Add fallback timer for test alarms (same as production)
-        scheduleTestAlarmMusicFallback(for: alarm, at: baseTime)
+        // Don't schedule background timer - iOS doesn't allow background audio session activation
+        // Music will start when first notification presents (willPresent) or when user taps notification
         
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -330,9 +330,13 @@ extension SettingsView {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // SILENT notifications - same as production (no notification sounds)
-            content.sound = nil
-            print("🧪 Test notification \(repetition + 1): Silent - no notification sound")
+            // Use minimal sound to trigger willPresent, but suppress in completion handler
+            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+            } else {
+                content.sound = .default
+            }
+            print("🧪 Test notification \(repetition + 1): Has sound to trigger willPresent (will be suppressed)")
             
             content.categoryIdentifier = "ALARM_CATEGORY"
             content.interruptionLevel = .critical

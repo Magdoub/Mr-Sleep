@@ -357,8 +357,7 @@ class AlarmManager: NSObject, ObservableObject {
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
         // Music will ONLY be triggered by the FIRST notification when it presents (willPresent)
-        // Add fallback timer to ensure music starts even if willPresent isn't called for silent notifications
-        scheduleBackgroundMusicFallback(for: alarm, at: baseTime)
+        // No background timer - iOS restricts background audio session activation
         
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -370,9 +369,13 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // All notifications are SILENT - no notification sounds
-            content.sound = nil
-            print("🔇 Notification \(repetition + 1): Silent - no notification sound")
+            // Use minimal sound to trigger willPresent, but suppress in completion handler
+            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+            } else {
+                content.sound = .default
+            }
+            print("🔇 Notification \(repetition + 1): Has sound to trigger willPresent (will be suppressed)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1592,7 +1595,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show notification with banner only - NO SOUND, music is handled separately
+        // Show notification with banner only - SUPPRESS SOUND, background music handles audio
         completionHandler([.banner])
     }
     
