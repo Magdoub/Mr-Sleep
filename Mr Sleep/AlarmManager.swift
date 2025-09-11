@@ -369,36 +369,29 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // ONLY first notification gets sound - others are silent with vibration only
-            if repetition == 0 {
-                // Use notification sound like test alarm - this works even when phone is locked
-                let selectedSoundName = alarm.soundName.lowercased()
-                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                        print("🔊 First notification: Using morning-alarm-clock.mp3")
-                    } else {
-                        content.sound = .defaultCritical
-                    }
-                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                        print("🔊 First notification: Using smooth-alarm-clock.mp3")
-                    } else {
-                        content.sound = .defaultCritical
-                    }
+            // All notifications play sound to ensure audible alarms when unlocked without tapping
+            let selectedSoundName = alarm.soundName.lowercased()
+            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                    if repetition == 0 { print("🔊 First notification: Using morning-alarm-clock.mp3") }
                 } else {
-                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                        print("🔊 First notification: Using alarm-clock.mp3")
-                    } else {
-                        content.sound = .defaultCritical
-                    }
+                    content.sound = .defaultCritical
+                }
+            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                    if repetition == 0 { print("🔊 First notification: Using smooth-alarm-clock.mp3") }
+                } else {
+                    content.sound = .defaultCritical
                 }
             } else {
-                // Subsequent notifications are silent (vibration only)
-                content.sound = nil
-                print("📳 Notification \(repetition + 1): Silent with vibration only")
+                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                    if repetition == 0 { print("🔊 First notification: Using alarm-clock.mp3") }
+                } else {
+                    content.sound = .defaultCritical
+                }
             }
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
@@ -442,28 +435,7 @@ class AlarmManager: NSObject, ObservableObject {
             }
         }
         
-        // Schedule automatic cleanup after all notifications (60 seconds total)
-        // BUT only if the user hasn't manually dismissed the alarm
-        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(maxNotifications * Int(notificationInterval))) {
-            // Check if the alarm still exists and is enabled
-            guard let alarmIndex = self.alarms.firstIndex(where: { $0.id == alarm.id && $0.isEnabled }) else {
-                print("🏁 Alarm already dismissed by user or doesn't exist - skipping auto-cleanup")
-                return
-            }
-            
-            // Check if the dismissal page is currently showing for this alarm
-            if AlarmDismissalManager.shared.isShowingDismissalPage,
-               let currentAlarm = AlarmDismissalManager.shared.currentAlarm,
-               currentAlarm.id == alarm.id {
-                print("🏁 Dismissal page is showing - keeping alarm active until user dismisses")
-                return
-            }
-            
-            // If we get here, the alarm completed all notifications and user didn't interact
-            self.alarms[alarmIndex].isEnabled = false
-            self.saveAlarms()
-            print("🏁 Automatically toggled off alarm after all \(maxNotifications) notifications: \(alarm.time)")
-        }
+        // Removed auto-cleanup so alarm continues until explicit Dismiss
     }
     
     
