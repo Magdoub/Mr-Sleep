@@ -1260,7 +1260,6 @@ class AlarmManager: NSObject, ObservableObject {
             print("🔇 Audio session interruption BEGAN - pausing alarm sound")
             // Don't stop isAlarmSounding flag, just pause the audio player
             audioPlayer?.pause()
-            keepAlivePlayer?.pause()
             
         case .ended:
             print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
