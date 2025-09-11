@@ -356,7 +356,9 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
-         // Music will be triggered by the first notification when it fires
+        // Music will ONLY be triggered by the FIRST notification when it presents (willPresent)
+        // Add fallback timer to ensure music starts even if willPresent isn't called for silent notifications
+        scheduleBackgroundMusicFallback(for: alarm, at: baseTime)
         
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -368,28 +370,9 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-             // Each notification has sound to trigger willPresent and start background music
-                let selectedSoundName = alarm.soundName.lowercased()
-                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
-                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
-                } else {
-                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
-                }
-             print("🔊 Notification \(repetition + 1): Has sound (will start background music)")
+            // All notifications are SILENT - no notification sounds
+            content.sound = nil
+            print("🔇 Notification \(repetition + 1): Silent - no notification sound")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1194,15 +1177,15 @@ class AlarmManager: NSObject, ObservableObject {
         print("   - Current state: isAlarmSounding=\(isAlarmSounding), audioPlayer?.isPlaying=\(audioPlayer?.isPlaying ?? false)")
         print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
         
-        // Skip if already playing the same alarm - only one alarm can play at a time
-        if isAlarmSounding && audioPlayer?.isPlaying == true && currentlyPlayingAlarmId == alarm.id { 
-            print("🎵 Background alarm music already playing for this alarm, skipping duplicate start")
-            return 
+        // CRITICAL: Prevent any duplicate music - only allow ONE music track at a time
+        if isAlarmSounding && audioPlayer?.isPlaying == true {
+            print("🚫 Music already playing - PREVENTING DUPLICATE MUSIC TRACK")
+            return
         }
         
-        // Double-check: if music was already started for this alarm, don't start again
-        if musicStartedForAlarm.contains(alarm.id) && isAlarmSounding {
-            print("🎵 Music already started for this alarm and is playing, skipping duplicate start")
+        // Additional check: if music was already started for this alarm, don't start again
+        if musicStartedForAlarm.contains(alarm.id) {
+            print("🚫 Music already started for this alarm - PREVENTING DUPLICATE")
             return
         }
         
@@ -1264,6 +1247,37 @@ class AlarmManager: NSObject, ObservableObject {
             
         } catch {
             print("❌ Failed to create background alarm music player: \(error)")
+        }
+    }
+    
+    // MARK: - Background Music Fallback Timer
+    private func scheduleBackgroundMusicFallback(for alarm: AlarmItem, at baseTime: Date) {
+        let now = Date()
+        let timeInterval = baseTime.timeIntervalSince(now)
+        
+        print("🎵 Scheduling background music fallback in \(timeInterval) seconds")
+        
+        if timeInterval <= 0 {
+            // Alarm time is now or already passed - start immediately if not already playing
+            if !musicStartedForAlarm.contains(alarm.id) {
+                print("🎵 Alarm time passed - starting music immediately via fallback")
+                musicStartedForAlarm.insert(alarm.id)
+                startBackgroundAlarmMusic(for: alarm)
+            }
+        } else {
+            // Schedule fallback to start at exact alarm time (in case willPresent doesn't work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
+                guard let self = self else { return }
+                
+                // Only start if willPresent hasn't already started the music
+                if !self.musicStartedForAlarm.contains(alarm.id) {
+                    print("🎵 Fallback timer fired - willPresent didn't start music, starting now")
+                    self.musicStartedForAlarm.insert(alarm.id)
+                    self.startBackgroundAlarmMusic(for: alarm)
+                } else {
+                    print("🎵 Fallback timer fired - music already started by willPresent, skipping")
+                }
+            }
         }
     }
 
@@ -1500,17 +1514,16 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
-                // Check if music has already been started for this alarm
-                if musicStartedForAlarm.contains(alarm.id) {
-                    print("🎵 Music already started for this alarm, skipping - notification \(currentRepetition + 1)")
-                    print("   - isAlarmSounding: \(isAlarmSounding)")
-                    print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
-                    print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
-                } else {
-                    // First time this alarm is firing - start the music
-                    print("🎵 First time this alarm is firing - starting background alarm music")
+                // Only start music for the FIRST notification (repetition 0) and only if not already playing
+                if currentRepetition == 0 && !musicStartedForAlarm.contains(alarm.id) {
+                    print("🎵 FIRST notification (0/20) - starting background alarm music for alarm: \(alarm.id)")
                     musicStartedForAlarm.insert(alarm.id)
                     startBackgroundAlarmMusic(for: alarm)
+                } else {
+                    print("🔇 Notification \(currentRepetition + 1)/20 - music already playing, skipping music start")
+                    print("   - musicStartedForAlarm.contains(\(alarm.id)): \(musicStartedForAlarm.contains(alarm.id))")
+                    print("   - currentRepetition: \(currentRepetition)")
+                    print("   - isAlarmSounding: \(isAlarmSounding)")
                 }
                     
                 if isFirstNotification {
@@ -1564,9 +1577,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-         // Show notification with sound - this triggers willPresent and starts background music
-         // The notification sound will play briefly, then background music takes over
-         completionHandler([.banner, .sound])
+        // Show notification with banner only - NO SOUND, music is handled separately
+        completionHandler([.banner])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
