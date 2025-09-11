@@ -319,6 +319,9 @@ extension SettingsView {
         let notificationInterval = 3.0
         let maxNotifications = 20
         
+        // Add fallback timer for test alarms (same as production)
+        scheduleTestAlarmMusicFallback(for: alarm, at: baseTime)
+        
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
@@ -327,28 +330,9 @@ extension SettingsView {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Use same sound logic as production
-            let selectedSoundName = alarm.soundName.lowercased()
-            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            } else {
-                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            }
-            print("🧪 Test notification \(repetition + 1): Has sound (will start background music)")
+            // SILENT notifications - same as production (no notification sounds)
+            content.sound = nil
+            print("🧪 Test notification \(repetition + 1): Silent - no notification sound")
             
             content.categoryIdentifier = "ALARM_CATEGORY"
             content.interruptionLevel = .critical
@@ -377,6 +361,33 @@ extension SettingsView {
                     print("🧪 Error scheduling test notification \(repetition + 1)/\(maxNotifications): \(error.localizedDescription)")
                 } else {
                     print("🧪 Scheduled test notification \(repetition + 1)/\(maxNotifications) for \(notificationTime)")
+                }
+            }
+        }
+    }
+    
+    private func scheduleTestAlarmMusicFallback(for alarm: AlarmItem, at baseTime: Date) {
+        let now = Date()
+        let timeInterval = baseTime.timeIntervalSince(now)
+        
+        print("🧪 Scheduling test alarm music fallback in \(timeInterval) seconds")
+        
+        if timeInterval <= 0 {
+            // Start immediately if not already playing
+            if !alarmManager.musicStartedForAlarm.contains(alarm.id) {
+                print("🧪 Test alarm time passed - starting music immediately")
+                alarmManager.startTestAlarmMusic(for: alarm)
+            }
+        } else {
+            // Schedule fallback
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
+                guard let self = self else { return }
+                
+                if !self.alarmManager.musicStartedForAlarm.contains(alarm.id) {
+                    print("🧪 Test fallback timer - starting music now")
+                    self.alarmManager.startTestAlarmMusic(for: alarm)
+                } else {
+                    print("🧪 Test fallback timer - music already started")
                 }
             }
         }

@@ -1009,7 +1009,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
-    private var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music
+    var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music (public for test access)
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
@@ -1279,6 +1279,15 @@ class AlarmManager: NSObject, ObservableObject {
                 }
             }
         }
+    }
+    
+    // MARK: - Test Alarm Music Support
+    func startTestAlarmMusic(for alarm: AlarmItem) {
+        print("🧪 Starting test alarm music for: \(alarm.id)")
+        
+        // Use same logic as production but with test prefix
+        musicStartedForAlarm.insert(alarm.id)
+        startBackgroundAlarmMusic(for: alarm)
     }
 
     private func selectedSoundURL(for alarm: AlarmItem) -> URL? {
