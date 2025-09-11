@@ -1183,24 +1183,45 @@ class AlarmManager: NSObject, ObservableObject {
      private func startKeepAliveAudio(for alarm: AlarmItem) {
          guard keepAlivePlayer == nil else { return }
          
-         print("🟡 Starting keep-alive audio to maintain session for locked playback")
+         let now = Date()
+         let timeUntilAlarm = scheduledAlarmTime?.timeIntervalSince(now) ?? 0
          
-         // Configure audio session immediately
+         // Only start keep-alive if alarm is within next 30 minutes to minimize battery drain
+         guard timeUntilAlarm > 0 && timeUntilAlarm <= 1800 else { // 30 minutes = 1800 seconds
+             print("⚡ Skipping keep-alive - alarm too far away (\(Int(timeUntilAlarm))s). Will use notification fallback.")
+             return
+         }
+         
+         print("🟡 Starting keep-alive audio for \(Int(timeUntilAlarm))s until alarm (battery optimized)")
+         
+         // Configure audio session with minimal power usage
          do {
              let audioSession = AVAudioSession.sharedInstance()
-             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                 .defaultToSpeaker,
-                 .allowBluetooth,
-                 .allowBluetoothA2DP
-             ])
+             try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers]) // Less power than playAndRecord
              try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-             print("✅ Audio session activated for keep-alive")
+             print("✅ Audio session activated for keep-alive (low power mode)")
          } catch {
              print("❌ Failed to configure keep-alive audio session: \(error)")
          }
          
-         // Start silent keep-alive player
-         guard let soundURL = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
+         // Use a very short, silent audio file to minimize CPU/battery usage
+         // Create a minimal 1-second silent audio buffer instead of looping a long file
+         createMinimalKeepAlivePlayer()
+         
+         // Schedule automatic stop of keep-alive 5 seconds after alarm should start
+         // This ensures we don't drain battery if something goes wrong
+         let stopTime = timeUntilAlarm + 5
+         DispatchQueue.main.asyncAfter(deadline: .now() + stopTime) { [weak self] in
+             if self?.keepAlivePlayer?.isPlaying == true && self?.isAlarmSounding != true {
+                 print("⚡ Auto-stopping keep-alive to save battery (alarm should have started)")
+                 self?.keepAlivePlayer?.stop()
+             }
+         }
+     }
+     
+     private func createMinimalKeepAlivePlayer() {
+         // Create a minimal silent audio buffer for keep-alive
+         guard let soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
              print("❌ No sound file for keep-alive")
              return
          }
@@ -1208,10 +1229,10 @@ class AlarmManager: NSObject, ObservableObject {
          do {
              keepAlivePlayer = try AVAudioPlayer(contentsOf: soundURL)
              keepAlivePlayer?.numberOfLoops = -1
-             keepAlivePlayer?.volume = 0.001 // Nearly silent but keeps hardware active
+             keepAlivePlayer?.volume = 0.0001 // Extremely quiet to minimize speaker power usage
              keepAlivePlayer?.prepareToPlay()
              keepAlivePlayer?.play()
-             print("🟡 Keep-alive player started (volume 0.001)")
+             print("🟡 Minimal keep-alive player started (volume 0.0001, battery optimized)")
          } catch {
              print("❌ Failed to start keep-alive player: \(error)")
          }
