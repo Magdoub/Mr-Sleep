@@ -1465,19 +1465,26 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                     // First notification triggers continuous background music playback
-                     print("🎵 First notification presented - checking if alarm music is playing")
-                     
-                     // Start background music immediately when first notification fires
-                     print("🎵 First notification fired - starting background alarm music")
+                     // Only the first notification starts the background music
+                     print("🎵 First notification presented - starting background alarm music")
                      startBackgroundAlarmMusic(for: alarm)
+                } else {
+                     // Subsequent notifications just ensure music is still playing
+                     print("🎵 Subsequent notification \(currentRepetition + 1) - music should already be playing")
+                     if !isAlarmSounding || audioPlayer?.isPlaying != true {
+                         print("⚠️ Background music stopped unexpectedly, restarting")
+                         startBackgroundAlarmMusic(for: alarm)
+                     } else {
+                         print("✅ Background music still playing from first notification")
+                     }
+                }
                     
-                    // Start Live Activity when alarm fires (only for first notification)
+                if isFirstNotification {
+                    // Only start Live Activity and vibration for the first notification
                     startLiveActivityForAlarm(alarm)
-                    
-                    // Start continuous vibration pattern
                     startContinuousVibration()
                 }
+            }
                 
                 // Trigger vibration for each notification using multiple methods
                 DispatchQueue.main.async {
