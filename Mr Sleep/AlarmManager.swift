@@ -1195,16 +1195,21 @@ class AlarmManager: NSObject, ObservableObject {
         print("   - Current state: isAlarmSounding=\(isAlarmSounding), audioPlayer?.isPlaying=\(audioPlayer?.isPlaying ?? false)")
         print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
         
-        // CRITICAL: Prevent any duplicate music - only allow ONE music track at a time
+        // BULLETPROOF: If music is already sounding AND actually playing, NEVER start another track
         if isAlarmSounding && audioPlayer?.isPlaying == true {
-            print("🚫 Music already playing - PREVENTING DUPLICATE MUSIC TRACK")
+            print("🚫 BULLETPROOF PREVENTION: Music already sounding and playing, blocking ALL new tracks")
+            print("   - isAlarmSounding: \(isAlarmSounding)")
+            print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
+            print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
             return
         }
         
-        // Additional check: if music was already started for this alarm, don't start again
-        if musicStartedForAlarm.contains(alarm.id) && isAlarmSounding {
-            print("🚫 Music already started for this alarm and playing - PREVENTING DUPLICATE")
-            return
+        // If marked as sounding but not actually playing, allow restart (recovery case)
+        if isAlarmSounding && audioPlayer?.isPlaying != true {
+            print("⚠️ Marked as sounding but not playing - allowing restart for recovery")
+            print("   - isAlarmSounding: \(isAlarmSounding)")
+            print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
+            // Continue to restart the music
         }
         
         // If a different alarm is playing, stop it first
@@ -1548,15 +1553,15 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
-                // Only start music for the FIRST notification (repetition 0) and only if not already playing
-                if currentRepetition == 0 && !isAlarmSounding {
-                    print("🎵 FIRST notification (0/20) - starting background alarm music for alarm: \(alarm.id)")
+                // Only start music if NOT already playing (regardless of notification number)
+                // The FIRST notification that successfully calls willPresent will start music
+                if !isAlarmSounding {
+                    print("🎵 Notification \(currentRepetition + 1)/20 - starting background alarm music (first to present)")
                     startBackgroundAlarmMusic(for: alarm)
                 } else {
-                    print("🔇 Notification \(currentRepetition + 1)/20 - music already playing or not first notification")
-                    print("   - currentRepetition: \(currentRepetition)")
+                    print("🔇 Notification \(currentRepetition + 1)/20 - music already playing, skipping")
                     print("   - isAlarmSounding: \(isAlarmSounding)")
-                    print("   - musicStartedForAlarm.contains(\(alarm.id)): \(musicStartedForAlarm.contains(alarm.id))")
+                    print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
                 }
                     
                 if isFirstNotification {
