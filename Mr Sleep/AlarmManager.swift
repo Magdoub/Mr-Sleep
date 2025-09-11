@@ -1026,6 +1026,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
+    private var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
@@ -1199,6 +1200,12 @@ class AlarmManager: NSObject, ObservableObject {
             return 
         }
         
+        // Double-check: if music was already started for this alarm, don't start again
+        if musicStartedForAlarm.contains(alarm.id) && isAlarmSounding {
+            print("🎵 Music already started for this alarm and is playing, skipping duplicate start")
+            return
+        }
+        
         // If a different alarm is playing, stop it first
         if currentlyPlayingAlarmId != nil && currentlyPlayingAlarmId != alarm.id {
             print("🛑 Different alarm is playing, stopping it first to prevent conflicts")
@@ -1275,6 +1282,7 @@ class AlarmManager: NSObject, ObservableObject {
         print("🔇 Stopping continuous alarm music")
         isAlarmSounding = false
         currentlyPlayingAlarmId = nil
+        musicStartedForAlarm.removeAll() // Clear all alarm music tracking
         
          // Stop continuous alarm music
         audioPlayer?.stop()
@@ -1492,26 +1500,17 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
-                if isFirstNotification {
-                     // Only the first notification starts the background music
-                     print("🎵 First notification presented - starting background alarm music")
-                     startBackgroundAlarmMusic(for: alarm)
+                // Check if music has already been started for this alarm
+                if musicStartedForAlarm.contains(alarm.id) {
+                    print("🎵 Music already started for this alarm, skipping - notification \(currentRepetition + 1)")
+                    print("   - isAlarmSounding: \(isAlarmSounding)")
+                    print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
+                    print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
                 } else {
-                     // Subsequent notifications should NOT start new music - just check status
-                     print("🎵 Subsequent notification \(currentRepetition + 1) - checking if music still playing")
-                     print("   - isAlarmSounding: \(isAlarmSounding)")
-                     print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
-                     print("   - currentlyPlayingAlarmId: \(currentlyPlayingAlarmId?.uuidString ?? "nil")")
-                     print("   - alarm.id: \(alarm.id.uuidString)")
-                     
-                     if !isAlarmSounding || audioPlayer?.isPlaying != true {
-                         print("⚠️ Background music stopped unexpectedly, restarting")
-                         startBackgroundAlarmMusic(for: alarm)
-                     } else if currentlyPlayingAlarmId != alarm.id {
-                         print("⚠️ Different alarm is playing, this should not happen - ignoring")
-                     } else {
-                         print("✅ Background music still playing from first notification for same alarm")
-                     }
+                    // First time this alarm is firing - start the music
+                    print("🎵 First time this alarm is firing - starting background alarm music")
+                    musicStartedForAlarm.insert(alarm.id)
+                    startBackgroundAlarmMusic(for: alarm)
                 }
                     
                 if isFirstNotification {
