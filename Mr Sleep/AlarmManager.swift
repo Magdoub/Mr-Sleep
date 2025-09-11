@@ -357,7 +357,7 @@ class AlarmManager: NSObject, ObservableObject {
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
          // Music will be triggered by the first notification when it fires
-
+        
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
@@ -369,26 +369,26 @@ class AlarmManager: NSObject, ObservableObject {
             content.body = "\(alarm.label)"
             
              // Each notification has sound to trigger willPresent and start background music
-             let selectedSoundName = alarm.soundName.lowercased()
-             if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                 if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                     content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                 } else {
-                     content.sound = .defaultCritical
-                 }
-             } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                 if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                     content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                 } else {
-                     content.sound = .defaultCritical
-                 }
-             } else {
-                 if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                     content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                 } else {
-                     content.sound = .defaultCritical
-                 }
-             }
+                let selectedSoundName = alarm.soundName.lowercased()
+                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                } else {
+                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                }
              print("🔊 Notification \(repetition + 1): Has sound (will start background music)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
@@ -1249,8 +1249,8 @@ class AlarmManager: NSObject, ObservableObject {
         isAlarmSounding = false
         
          // Stop continuous alarm music
-         audioPlayer?.stop()
-         audioPlayer = nil
+        audioPlayer?.stop()
+        audioPlayer = nil
         
         // Stop vibration
         stopContinuousVibration()
@@ -1484,7 +1484,6 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                     startLiveActivityForAlarm(alarm)
                     startContinuousVibration()
                 }
-            }
                 
                 // Trigger vibration for each notification using multiple methods
                 DispatchQueue.main.async {
@@ -1517,7 +1516,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 scheduleBackgroundUnlockCheck(for: alarm, afterNotification: currentRepetition)
                 
                 // Also disable the alarm if it's set to auto-reset (only for regular alarms)
-                if alarm.shouldAutoReset && alarms.contains(where: { $0.id == alarmId }) {
+                if alarm.shouldAutoReset && self.alarms.contains(where: { $0.id == alarmId }) {
                     DispatchQueue.main.async {
                         if let index = self.alarms.firstIndex(where: { $0.id == alarmId }) {
                             self.alarms[index].isEnabled = false
@@ -1527,7 +1526,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 }
                 
                 // Remove test alarm after use
-                testAlarms.removeAll(where: { $0.id == alarmId })
+                self.testAlarms.removeAll(where: { $0.id == alarmId })
             }
         }
         
@@ -1567,63 +1566,57 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         
         print("🔔 User interacted with alarm notification: \(response.actionIdentifier)")
         
-        if let alarmId = UUID(uuidString: alarmIdString) {
-            // Check both regular alarms and test alarms
-            let alarm = alarms.first(where: { $0.id == alarmId }) ?? 
-                       testAlarms.first(where: { $0.id == alarmId })
+        if let alarmId = UUID(uuidString: alarmIdString),
+           let alarm = self.alarms.first(where: { $0.id == alarmId }) ?? 
+                      self.testAlarms.first(where: { $0.id == alarmId }) {
+            print("🔔 Found alarm: \(alarm.label) (ID: \(alarm.id.uuidString))")
             
-            if let alarm = alarm {
-                print("🔔 Found alarm: \(alarm.label) (ID: \(alarm.id.uuidString))")
+            switch response.actionIdentifier {
+            case UNNotificationDefaultActionIdentifier:
+                // User tapped the notification itself (not an action button)
+                print("📱 User tapped notification - showing dismissal page")
                 
-                switch response.actionIdentifier {
-                case UNNotificationDefaultActionIdentifier:
-                    // User tapped the notification itself (not an action button)
-                    print("📱 User tapped notification - showing dismissal page")
-                    
-                    // Show the new dismissal page
-                    DispatchQueue.main.async {
+                // Show the new dismissal page
+                DispatchQueue.main.async {
                         print("🔔 About to show dismissal page for alarm: \(alarm.label)")
-                        AlarmDismissalManager.shared.showDismissalPage(for: alarm)
+                    AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                         print("🔔 Dismissal page show request completed")
-                    }
-                    
+                }
+                
                     // IMPORTANT: Don't stop the alarm sound yet - let the dismissal page handle it
                     // The sound should continue until the user explicitly dismisses it
-                    
-                case "DISMISS_ACTION":
-                    // User explicitly dismissed via action button
-                    cancelNotification(for: alarm)
-                    toggleOffAlarm(with: alarmId)
-                    dismissLiveActivity(for: alarmIdString)
-                    print("✅ User dismissed via action button: \(alarm.time)")
-                    
-                case "SNOOZE_ACTION":
-                    // Handle snooze - schedule a new alarm 5 minutes from now
-                    cancelNotification(for: alarm) // Cancel remaining repetitions
-                    toggleOffAlarm(with: alarmId) // Toggle off the current alarm
-                    
-                    // Schedule a new snooze alarm 5 minutes from now
-                    let snoozeTime = Date().addingTimeInterval(5 * 60) // 5 minutes
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "h:mm a"
-                    let snoozeTimeString = formatter.string(from: snoozeTime)
-                    
-                    addManualAlarm(time: snoozeTimeString, soundName: alarm.soundName)
-                    print("🔄 Snoozed alarm for 5 minutes: \(snoozeTimeString)")
-                    
-                default:
-                    // For other interactions - show dismissal page
-                    print("📱 User interacted with notification - showing dismissal page")
-                    
-                    DispatchQueue.main.async {
-                        AlarmDismissalManager.shared.showDismissalPage(for: alarm)
-                    }
+                
+            case "DISMISS_ACTION":
+                // User explicitly dismissed via action button
+                cancelNotification(for: alarm)
+                toggleOffAlarm(with: alarmId)
+                dismissLiveActivity(for: alarmIdString)
+                print("✅ User dismissed via action button: \(alarm.time)")
+                
+            case "SNOOZE_ACTION":
+                // Handle snooze - schedule a new alarm 5 minutes from now
+                cancelNotification(for: alarm) // Cancel remaining repetitions
+                toggleOffAlarm(with: alarmId) // Toggle off the current alarm
+                
+                // Schedule a new snooze alarm 5 minutes from now
+                let snoozeTime = Date().addingTimeInterval(5 * 60) // 5 minutes
+                let formatter = DateFormatter()
+                formatter.dateFormat = "h:mm a"
+                let snoozeTimeString = formatter.string(from: snoozeTime)
+                
+                addManualAlarm(time: snoozeTimeString, soundName: alarm.soundName)
+                print("🔄 Snoozed alarm for 5 minutes: \(snoozeTimeString)")
+                
+            default:
+                // For other interactions - show dismissal page
+                print("📱 User interacted with notification - showing dismissal page")
+                
+                DispatchQueue.main.async {
+                    AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                 }
-            } else {
-                print("❌ Alarm not found for ID: \(alarmIdString)")
             }
         } else {
-            print("❌ Invalid alarm ID: \(alarmIdString)")
+            print("❌ Alarm not found for ID: \(alarmIdString)")
         }
         
         // Clear the flag after a delay to give dismissal page time to show
