@@ -1014,6 +1014,7 @@ class AlarmManager: NSObject, ObservableObject {
         saveAlarms()
         
         // Stop sound/overlay/activities
+        stopAlarmSound()
         dismissLiveActivity(for: alarm.id.uuidString)
         
         // Clear badge
@@ -1024,6 +1025,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
+    private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
@@ -1139,6 +1141,13 @@ class AlarmManager: NSObject, ObservableObject {
             }
             
             do {
+                // Stop any existing audio player first to prevent conflicts
+                if audioPlayer != nil {
+                    print("🛑 Stopping existing audio player to prevent conflicts")
+                    audioPlayer?.stop()
+                    audioPlayer = nil
+                }
+                
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
                 audioPlayer?.numberOfLoops = -1 // Loop indefinitely
                 audioPlayer?.volume = 1.0
@@ -1180,13 +1189,26 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Background Alarm Music Playback
     private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
-        // Skip if already playing alarm music
-        if isAlarmSounding { 
-            print("🎵 Background alarm music already playing, skipping duplicate start")
+        // Skip if already playing the same alarm - only one alarm can play at a time
+        if isAlarmSounding && audioPlayer?.isPlaying == true && currentlyPlayingAlarmId == alarm.id { 
+            print("🎵 Background alarm music already playing for this alarm, skipping duplicate start")
             return 
         }
         
+        // If a different alarm is playing, stop it first
+        if currentlyPlayingAlarmId != nil && currentlyPlayingAlarmId != alarm.id {
+            print("🛑 Different alarm is playing, stopping it first to prevent conflicts")
+            stopAlarmSound()
+        }
+        
         print("🎵 Starting background alarm music for: \(alarm.soundName)")
+        
+        // Stop any existing audio player first to prevent conflicts
+        if audioPlayer != nil {
+            print("🛑 Stopping existing audio player to prevent conflicts")
+            audioPlayer?.stop()
+            audioPlayer = nil
+        }
         
         // Configure audio session for background playback that works when phone is locked
         do {
@@ -1208,7 +1230,7 @@ class AlarmManager: NSObject, ObservableObject {
             return
         }
         
-        // Create and configure the background music player
+        // Create and configure the SINGLE global background music player
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
             audioPlayer?.numberOfLoops = -1 // Loop indefinitely
@@ -1218,7 +1240,8 @@ class AlarmManager: NSObject, ObservableObject {
             // Start playing immediately since notification just fired
             let success = audioPlayer?.play() ?? false
             isAlarmSounding = success
-            print(success ? "🎵 ✅ Background alarm music started successfully" : "❌ Failed to start background alarm music")
+            currentlyPlayingAlarmId = success ? alarm.id : nil
+            print(success ? "🎵 ✅ Background alarm music started successfully for alarm: \(alarm.id)" : "❌ Failed to start background alarm music")
             
             // Add interruption observer to handle phone unlock/lock cycles
             NotificationCenter.default.addObserver(
@@ -1247,6 +1270,7 @@ class AlarmManager: NSObject, ObservableObject {
     private func stopAlarmSound() {
         print("🔇 Stopping continuous alarm music")
         isAlarmSounding = false
+        currentlyPlayingAlarmId = nil
         
          // Stop continuous alarm music
         audioPlayer?.stop()
