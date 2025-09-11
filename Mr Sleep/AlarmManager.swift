@@ -356,8 +356,8 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
-        // Arm persistent playback so audio keeps running across unlock even without tapping the notification
-        preparePersistentAlarmPlayback(for: alarm, baseTime: baseTime)
+        // Start continuous music playback immediately when first notification is scheduled
+        startContinuousAlarmMusic(for: alarm, at: baseTime)
 
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -369,29 +369,15 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // All notifications play sound to ensure audible alarms when unlocked without tapping
-            let selectedSoundName = alarm.soundName.lowercased()
-            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                    if repetition == 0 { print("🔊 First notification: Using morning-alarm-clock.mp3") }
-                } else {
-                    content.sound = .defaultCritical
-                }
-            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                    if repetition == 0 { print("🔊 First notification: Using smooth-alarm-clock.mp3") }
-                } else {
-                    content.sound = .defaultCritical
-                }
+            // Only the first notification should have sound - continuous music handles the rest
+            if repetition == 0 {
+                // First notification gets a short beep to wake user, then continuous music takes over
+                content.sound = .defaultCritical
+                print("🔊 First notification: Using system alert sound, continuous music will handle playback")
             } else {
-                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                    if repetition == 0 { print("🔊 First notification: Using alarm-clock.mp3") }
-                } else {
-                    content.sound = .defaultCritical
-                }
+                // All other notifications are silent - continuous music is already playing
+                content.sound = nil
+                print("🔇 Notification \(repetition + 1): Silent (continuous music playing)")
             }
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
@@ -575,38 +561,37 @@ class AlarmManager: NSObject, ObservableObject {
             let hasPendingForAnyAlarm = requests.contains { $0.identifier.contains("-repeat-") }
             DispatchQueue.main.async {
                 if dismissalVisible || hasPendingForAnyAlarm {
-                    // Always ensure proper audio session configuration when resuming
+                    print("🔁 Active alarm detected on foreground - ensuring continuous music plays")
+                    
+                    // Always ensure proper audio session configuration for continuous music
                     do {
                         let audioSession = AVAudioSession.sharedInstance()
                         try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                             .defaultToSpeaker,
-                            .allowBluetooth
+                            .allowBluetooth,
+                            .allowBluetoothA2DP
                         ])
                         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                        print("🔁 Audio session configured for alarm on foreground")
+                        print("✅ Audio session configured for continuous alarm music on foreground")
                     } catch {
                         print("❌ Failed to configure audio session on foreground: \(error)")
                     }
                     
-                    if !self.isAlarmSounding {
-                        print("🔁 Resuming/starting alarm sound on foreground due to active alarm state")
+                    // Ensure continuous alarm music is playing
+                    if !self.isAlarmSounding || self.audioPlayer?.isPlaying != true {
+                        print("🎵 Starting/resuming continuous alarm music on foreground")
                         if let alarm = currentAlarm {
                             self.startAlarmSound(for: alarm)
                         } else {
-                            self.startAlarmSound()
-                        }
-                    } else {
-                        // If already marked as sounding, but player isn't playing, restart it
-                        if self.audioPlayer?.isPlaying != true {
-                            print("🔄 Alarm marked as sounding but player not active, restarting")
-                            if let alarm = currentAlarm {
-                                self.startAlarmSound(for: alarm)
+                            // Fallback - find any active alarm and start its sound
+                            if let activeAlarm = self.alarms.first(where: { $0.isEnabled }) {
+                                self.startAlarmSound(for: activeAlarm)
                             } else {
                                 self.startAlarmSound()
                             }
-                        } else {
-                            print("🔁 Alarm already playing on foreground")
                         }
+                    } else {
+                        print("✅ Continuous alarm music already playing on foreground")
                     }
                 } else {
                     print("⏸️ No active alarms found on foreground")
@@ -1023,10 +1008,6 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Direct Alarm Sound Management
     private var audioPlayer: AVAudioPlayer?
-    private var keepAlivePlayer: AVAudioPlayer?
-    private var isPersistentPlaybackArmed = false
-    private var persistentBaseTime: Date?
-    private var persistentAlarmId: UUID?
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
     
@@ -1167,85 +1148,65 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Persistent Background Playback (keeps music across unlock without tapping notification)
-    private func preparePersistentAlarmPlayback(for alarm: AlarmItem, baseTime: Date) {
-        // Skip if already armed for this window
-        if isPersistentPlaybackArmed { return }
-        isPersistentPlaybackArmed = true
-        persistentBaseTime = baseTime
-        persistentAlarmId = alarm.id
+    // MARK: - Continuous Alarm Music Playback
+    private func startContinuousAlarmMusic(for alarm: AlarmItem, at baseTime: Date) {
+        // Skip if already playing alarm music
+        if isAlarmSounding { 
+            print("🎵 Alarm music already playing, skipping duplicate start")
+            return 
+        }
         
-        // 1) Ensure audio session is configured and active
+        print("🎵 Starting continuous alarm music for: \(alarm.soundName)")
+        
+        // Configure audio session for alarm playback that works when locked
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                 .defaultToSpeaker,
-                .allowBluetooth
+                .allowBluetooth,
+                .allowBluetoothA2DP
             ])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            print("✅ Audio session configured for continuous alarm music")
         } catch {
-            print("❌ Failed to prepare persistent playback audio session: \(error)")
+            print("❌ Failed to configure audio session for continuous music: \(error)")
         }
         
-        // 2) Start a keep-alive player at volume 0 to keep the session active in background
-        // Use any bundled file; we set volume 0 so it is inaudible
-        if let url = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") {
-            do {
-                keepAlivePlayer = try AVAudioPlayer(contentsOf: url)
-                keepAlivePlayer?.numberOfLoops = -1
-                keepAlivePlayer?.volume = 0.01 // tiny but non-zero volume to keep hardware active
-                keepAlivePlayer?.prepareToPlay()
-                keepAlivePlayer?.play()
-                print("🟡 Keep-alive audio started (very low volume) to maintain background session")
-            } catch {
-                print("❌ Failed to start keep-alive audio: \(error)")
-            }
-        }
-        
-        // 3) Schedule the main alarm loop player to start exactly at baseTime
-        scheduleAlarmLoopPlayback(for: alarm, baseTime: baseTime)
-    }
-
-    private func scheduleAlarmLoopPlayback(for alarm: AlarmItem, baseTime: Date) {
-        let now = Date()
-        let secondsUntilAlarm = baseTime.timeIntervalSince(now)
-        
-        // Create the main alarm player
-        guard let url = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3") else {
-            print("❌ No URL for alarm sound to schedule loop playback")
+        // Get the sound file URL based on alarm preference
+        guard let soundURL = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
+            print("❌ No sound file found for continuous alarm music")
             return
         }
+        
+        // Create and configure the continuous music player
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.numberOfLoops = -1
+            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer?.numberOfLoops = -1 // Loop indefinitely
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
-        } catch {
-            print("❌ Failed to prepare main alarm loop player: \(error)")
-            return
-        }
-        
-        if secondsUntilAlarm <= 0 {
-            // Alarm time already passed; start immediately
-            audioPlayer?.play()
-            isAlarmSounding = true
-            print("🔁 Alarm time passed/now - starting loop immediately")
-            return
-        }
-        
-        if let kap = keepAlivePlayer {
-            let deviceStart = kap.deviceCurrentTime + secondsUntilAlarm
-            let success = audioPlayer?.play(atTime: deviceStart) ?? false
-            print(success ? "🔁 Scheduled main alarm loop at device time (\(secondsUntilAlarm)s)" : "❌ Failed to schedule main alarm loop at device time")
-            if success { isAlarmSounding = true }
-        } else {
-            // Fallback: schedule on main queue (will only work if app is foregrounded)
-            DispatchQueue.main.asyncAfter(deadline: .now() + secondsUntilAlarm) { [weak self] in
-                guard let self = self else { return }
-                self.audioPlayer?.play()
-                self.isAlarmSounding = true
-                print("🔁 Fallback started main alarm loop after delay (app foreground required)")
+            
+            // Start playing immediately if alarm time has passed or is very close
+            let now = Date()
+            let timeUntilAlarm = baseTime.timeIntervalSince(now)
+            
+            if timeUntilAlarm <= 1.0 {
+                // Start immediately if alarm is now or within 1 second
+                let success = audioPlayer?.play() ?? false
+                isAlarmSounding = success
+                print(success ? "🎵 Started continuous alarm music immediately" : "❌ Failed to start continuous alarm music")
+            } else {
+                // Schedule to start at exact alarm time
+                DispatchQueue.main.asyncAfter(deadline: .now() + timeUntilAlarm) { [weak self] in
+                    guard let self = self else { return }
+                    let success = self.audioPlayer?.play() ?? false
+                    self.isAlarmSounding = success
+                    print(success ? "🎵 Started continuous alarm music at scheduled time" : "❌ Failed to start scheduled continuous alarm music")
+                }
+                print("🎵 Scheduled continuous alarm music to start in \(timeUntilAlarm) seconds")
             }
+            
+        } catch {
+            print("❌ Failed to create continuous alarm music player: \(error)")
         }
     }
 
@@ -1261,14 +1222,12 @@ class AlarmManager: NSObject, ObservableObject {
     }
     
     private func stopAlarmSound() {
+        print("🔇 Stopping continuous alarm music")
         isAlarmSounding = false
         
-        // Stop custom audio
+        // Stop continuous alarm music
         audioPlayer?.stop()
         audioPlayer = nil
-        keepAlivePlayer?.stop()
-        keepAlivePlayer = nil
-        isPersistentPlaybackArmed = false
         
         // Stop vibration
         stopContinuousVibration()
@@ -1283,8 +1242,9 @@ class AlarmManager: NSObject, ObservableObject {
         // Deactivate audio session
         do {
             try AVAudioSession.sharedInstance().setActive(false)
+            print("✅ Audio session deactivated")
         } catch {
-            print("Failed to deactivate audio session: \(error)")
+            print("❌ Failed to deactivate audio session: \(error)")
         }
     }
     
@@ -1307,33 +1267,31 @@ class AlarmManager: NSObject, ObservableObject {
             
             // Always try to resume if we have an alarm that should be sounding
             // This fixes the issue where alarm stops when phone is unlocked
-            if isAlarmSounding || isPersistentPlaybackArmed {
+            if isAlarmSounding {
                 do {
-                    // Reactivate audio session with the same configuration
+                    // Reactivate audio session with alarm configuration
                     let audioSession = AVAudioSession.sharedInstance()
                     try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                         .defaultToSpeaker,
-                        .allowBluetooth
+                        .allowBluetooth,
+                        .allowBluetoothA2DP
                     ])
                     try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                    print("✅ Audio session reactivated after interruption")
+                    print("✅ Audio session reactivated for continuous alarm music after interruption")
                     
-                    // Resume keep-alive if it was running
-                    if isPersistentPlaybackArmed && keepAlivePlayer?.isPlaying != true {
-                        keepAlivePlayer?.play()
-                        print("🟡 Keep-alive resumed after interruption")
-                    }
-                    
-                    // Resume main alarm sound if it should be playing
-                    if isAlarmSounding && audioPlayer?.isPlaying != true {
-                        audioPlayer?.play()
-                        print("✅ Successfully resumed alarm sound after interruption")
-                    }
-                    
-                    // If we don't have an active player but should be sounding, restart completely
-                    if (isAlarmSounding || isPersistentPlaybackArmed) && audioPlayer == nil {
-                        print("🔄 No active player found, restarting alarm sound after interruption")
-                        restartAlarmSoundAfterInterruption()
+                    // Resume continuous alarm music if it should be playing
+                    if audioPlayer?.isPlaying != true {
+                        if audioPlayer != nil {
+                            // Player exists but isn't playing - resume it
+                            audioPlayer?.play()
+                            print("✅ Resumed continuous alarm music after interruption")
+                        } else {
+                            // No player found - restart completely
+                            print("🔄 No active music player found, restarting continuous alarm music")
+                            restartAlarmSoundAfterInterruption()
+                        }
+                    } else {
+                        print("✅ Continuous alarm music already playing after interruption")
                     }
                     
                 } catch {
@@ -1342,7 +1300,7 @@ class AlarmManager: NSObject, ObservableObject {
                     restartAlarmSoundAfterInterruption()
                 }
             } else {
-                print("⏸️ No active alarm to resume after interruption")
+                print("⏸️ No active alarm music to resume after interruption")
             }
             
         @unknown default:
@@ -1399,14 +1357,6 @@ class AlarmManager: NSObject, ObservableObject {
         vibrationTimer = nil
     }
     
-    private func startContinuousAlarmLoop(for alarm: AlarmItem) {
-        print("🔂 Starting continuous alarm loop for: \(alarm.soundName)")
-        
-        // Delay the loop start by 2 seconds to let the notification sound play first
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.startAlarmSound(for: alarm)
-        }
-    }
     
     private func playSystemAlarmSound() {
         print("🔊 Using system alarm sound")
@@ -1492,11 +1442,13 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // First notification plays initial sound, then start continuous looping
-                    print("🎵 First notification plays initial sound, starting continuous loop")
+                    // First notification triggers continuous music playback
+                    print("🎵 First notification fired - ensuring continuous alarm music is playing")
                     
-                    // Start continuous looping audio player for background
-                    startContinuousAlarmLoop(for: alarm)
+                    // Ensure continuous alarm music starts playing
+                    if !isAlarmSounding {
+                        startAlarmSound(for: alarm)
+                    }
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)

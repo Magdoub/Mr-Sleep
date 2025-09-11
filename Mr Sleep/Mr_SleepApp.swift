@@ -92,11 +92,11 @@ struct Mr_SleepApp: App {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             
-            // Configure audio session for app-level playback without invalid options
-            // Remove .defaultToSpeaker here (only valid with .playAndRecord)
+            // Configure audio session for app-level playback
+            // Use .playback category for general app audio, not .playAndRecord
             try audioSession.setCategory(.playback, mode: .default, options: [
-                .mixWithOthers,
-                .allowBluetooth
+                .allowBluetooth,
+                .allowBluetoothA2DP
             ])
             
             print("✅ App-level audio session configured for background playback")
