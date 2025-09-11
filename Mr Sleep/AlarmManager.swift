@@ -1006,6 +1006,8 @@ class AlarmManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var keepAlivePlayer: AVAudioPlayer?
     private var isPersistentPlaybackArmed = false
+    private var persistentBaseTime: Date?
+    private var persistentAlarmId: UUID?
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
     
@@ -1151,6 +1153,8 @@ class AlarmManager: NSObject, ObservableObject {
         // Skip if already armed for this window
         if isPersistentPlaybackArmed { return }
         isPersistentPlaybackArmed = true
+        persistentBaseTime = baseTime
+        persistentAlarmId = alarm.id
         
         // 1) Ensure audio session is configured and active
         do {
@@ -1170,10 +1174,10 @@ class AlarmManager: NSObject, ObservableObject {
             do {
                 keepAlivePlayer = try AVAudioPlayer(contentsOf: url)
                 keepAlivePlayer?.numberOfLoops = -1
-                keepAlivePlayer?.volume = 0.0
+                keepAlivePlayer?.volume = 0.01 // tiny but non-zero volume to keep hardware active
                 keepAlivePlayer?.prepareToPlay()
                 keepAlivePlayer?.play()
-                print("🟡 Keep-alive audio started (volume 0) to maintain background session")
+                print("🟡 Keep-alive audio started (very low volume) to maintain background session")
             } catch {
                 print("❌ Failed to start keep-alive audio: \(error)")
             }
@@ -1277,10 +1281,20 @@ class AlarmManager: NSObject, ObservableObject {
             print("🔇 Audio session interruption BEGAN - pausing alarm sound")
             // Don't stop isAlarmSounding flag, just pause the audio player
             audioPlayer?.pause()
+            keepAlivePlayer?.pause()
             
         case .ended:
             print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
             
+            // Resume keep-alive and main alarm if appropriate
+            if isPersistentPlaybackArmed {
+                // Ensure keep-alive restarts
+                if keepAlivePlayer?.isPlaying != true {
+                    keepAlivePlayer?.play()
+                    print("🟡 Keep-alive resumed after interruption")
+                }
+            }
+
             // Resume if we're still supposed to be sounding (regardless of page visibility)
             if isAlarmSounding {
                 do {
@@ -1296,7 +1310,20 @@ class AlarmManager: NSObject, ObservableObject {
                     restartAlarmSoundAfterInterruption()
                 }
             } else {
-                print("⏸️ Not resuming alarm - not currently sounding")
+                // If we armed persistent playback and alarm time has passed, start main alarm now
+                if let base = persistentBaseTime,
+                   let armedId = persistentAlarmId,
+                   Date() >= base,
+                   (alarms.contains(where: { $0.id == armedId }) || testAlarms.contains(where: { $0.id == armedId })) {
+                    print("🔁 Alarm time passed during interruption — starting main alarm now")
+                    if let alarm = (alarms.first(where: { $0.id == armedId }) ?? testAlarms.first(where: { $0.id == armedId })) {
+                        startAlarmSound(for: alarm)
+                    } else {
+                        startAlarmSound()
+                    }
+                } else {
+                    print("⏸️ Not resuming alarm - not currently sounding and not at alarm time yet")
+                }
             }
             
         @unknown default:
