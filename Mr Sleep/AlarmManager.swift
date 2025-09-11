@@ -369,13 +369,28 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Use minimal sound to trigger willPresent, but suppress in completion handler
-            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+            // Use user's chosen sound to trigger willPresent, but suppress in completion handler
+            let selectedSoundName = alarm.soundName.lowercased()
+            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
+            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
             } else {
-                content.sound = .default
+                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
             }
-            print("🔇 Notification \(repetition + 1): Has sound to trigger willPresent (will be suppressed)")
+            print("🔇 Notification \(repetition + 1): Has \(alarm.soundName) sound to trigger willPresent (will be suppressed)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
