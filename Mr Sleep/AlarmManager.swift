@@ -369,13 +369,9 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Use a minimal sound file to ensure willPresent is called, but we'll suppress it in the delegate
-            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-            } else {
-                content.sound = .default
-            }
-            print("🔇 Notification \(repetition + 1): Has sound (will be suppressed in willPresent)")
+             // Silent notifications - background music handles all audio
+             content.sound = nil
+             print("🔇 Notification \(repetition + 1): Silent (background music handles audio)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1163,23 +1159,33 @@ class AlarmManager: NSObject, ObservableObject {
     }
 
     // MARK: - Background Alarm Music Scheduling and Playback
-    private func scheduleBackgroundMusicStart(for alarm: AlarmItem, at baseTime: Date) {
-        let now = Date()
-        let timeInterval = baseTime.timeIntervalSince(now)
-        
-        print("🎵 Scheduling background music to start in \(timeInterval) seconds")
-        
-        if timeInterval <= 0 {
-            // Alarm time is now or already passed - start immediately
-            startBackgroundAlarmMusic(for: alarm)
-        } else {
-            // Schedule to start at exact alarm time
-            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
-                print("🎵 Scheduled time reached - starting background alarm music")
-                self?.startBackgroundAlarmMusic(for: alarm)
-            }
-        }
-    }
+     private func scheduleBackgroundMusicStart(for alarm: AlarmItem, at baseTime: Date) {
+         let now = Date()
+         let timeInterval = baseTime.timeIntervalSince(now)
+         
+         print("🎵 Scheduling background music to start in \(timeInterval) seconds")
+         
+         if timeInterval <= 0 {
+             // Alarm time is now or already passed - start immediately
+             startBackgroundAlarmMusic(for: alarm)
+         } else {
+             // Use a background task to ensure music starts even when app is backgrounded
+             let taskId = UIApplication.shared.beginBackgroundTask(withName: "AlarmMusicStart") { 
+                 print("⚠️ Background task expired before alarm music could start")
+             }
+             
+             // Schedule to start at exact alarm time
+             DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
+                 print("🎵 Scheduled time reached - starting background alarm music")
+                 self?.startBackgroundAlarmMusic(for: alarm)
+                 
+                 // End background task
+                 if taskId != .invalid {
+                     UIApplication.shared.endBackgroundTask(taskId)
+                 }
+             }
+         }
+     }
     
     // MARK: - Background Alarm Music Playback
     private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
@@ -1531,8 +1537,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show the notification with banner and vibration, but suppress sound since background music handles audio
-        completionHandler([.banner, .badge])
+         // Show the notification with banner only - background music handles all audio
+         completionHandler([.banner])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
