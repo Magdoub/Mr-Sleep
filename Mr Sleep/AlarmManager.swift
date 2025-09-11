@@ -356,9 +356,6 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
-        // Start continuous music playback immediately when first notification is scheduled
-        startContinuousAlarmMusic(for: alarm, at: baseTime)
-
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
@@ -369,16 +366,9 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Only the first notification should have sound - continuous music handles the rest
-            if repetition == 0 {
-                // First notification gets a short beep to wake user, then continuous music takes over
-                content.sound = .defaultCritical
-                print("🔊 First notification: Using system alert sound, continuous music will handle playback")
-            } else {
-                // All other notifications are silent - continuous music is already playing
-                content.sound = nil
-                print("🔇 Notification \(repetition + 1): Silent (continuous music playing)")
-            }
+            // All notifications are silent - background music will handle audio
+            content.sound = nil
+            print("🔇 Notification \(repetition + 1): Silent (background music will play)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -577,21 +567,24 @@ class AlarmManager: NSObject, ObservableObject {
                         print("❌ Failed to configure audio session on foreground: \(error)")
                     }
                     
-                    // Ensure continuous alarm music is playing
+                    // Ensure background alarm music continues playing
                     if !self.isAlarmSounding || self.audioPlayer?.isPlaying != true {
-                        print("🎵 Starting/resuming continuous alarm music on foreground")
+                        print("🎵 Starting/resuming background alarm music on foreground")
                         if let alarm = currentAlarm {
-                            self.startAlarmSound(for: alarm)
+                            self.startBackgroundAlarmMusic(for: alarm)
                         } else {
                             // Fallback - find any active alarm and start its sound
                             if let activeAlarm = self.alarms.first(where: { $0.isEnabled }) {
-                                self.startAlarmSound(for: activeAlarm)
+                                self.startBackgroundAlarmMusic(for: activeAlarm)
                             } else {
-                                self.startAlarmSound()
+                                // Emergency fallback - use any available alarm music
+                                if let anyAlarm = self.alarms.first {
+                                    self.startBackgroundAlarmMusic(for: anyAlarm)
+                                }
                             }
                         }
                     } else {
-                        print("✅ Continuous alarm music already playing on foreground")
+                        print("✅ Background alarm music already playing on foreground")
                     }
                 } else {
                     print("⏸️ No active alarms found on foreground")
@@ -1012,6 +1005,20 @@ class AlarmManager: NSObject, ObservableObject {
     private var vibrationTimer: Timer?
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
+        // If background music is already playing, don't restart it
+        if isAlarmSounding && audioPlayer?.isPlaying == true {
+            print("🎵 Background alarm music already playing, not restarting")
+            return
+        }
+        
+        // If we have an alarm parameter, use the background music method instead
+        if let alarm = alarm {
+            print("🎵 Redirecting to background alarm music for: \(alarm.soundName)")
+            startBackgroundAlarmMusic(for: alarm)
+            return
+        }
+        
+        // Legacy fallback for calls without alarm parameter
         guard !isAlarmSounding else { return }
         isAlarmSounding = true
         
@@ -1148,17 +1155,17 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Continuous Alarm Music Playback
-    private func startContinuousAlarmMusic(for alarm: AlarmItem, at baseTime: Date) {
+    // MARK: - Background Alarm Music Playback
+    private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
         // Skip if already playing alarm music
         if isAlarmSounding { 
-            print("🎵 Alarm music already playing, skipping duplicate start")
+            print("🎵 Background alarm music already playing, skipping duplicate start")
             return 
         }
         
-        print("🎵 Starting continuous alarm music for: \(alarm.soundName)")
+        print("🎵 Starting background alarm music for: \(alarm.soundName)")
         
-        // Configure audio session for alarm playback that works when locked
+        // Configure audio session for background playback that works when phone is locked
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
@@ -1167,46 +1174,39 @@ class AlarmManager: NSObject, ObservableObject {
                 .allowBluetoothA2DP
             ])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            print("✅ Audio session configured for continuous alarm music")
+            print("✅ Audio session configured for background alarm music")
         } catch {
-            print("❌ Failed to configure audio session for continuous music: \(error)")
+            print("❌ Failed to configure audio session for background music: \(error)")
         }
         
         // Get the sound file URL based on alarm preference
         guard let soundURL = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
-            print("❌ No sound file found for continuous alarm music")
+            print("❌ No sound file found for background alarm music")
             return
         }
         
-        // Create and configure the continuous music player
+        // Create and configure the background music player
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
             audioPlayer?.numberOfLoops = -1 // Loop indefinitely
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
             
-            // Start playing immediately if alarm time has passed or is very close
-            let now = Date()
-            let timeUntilAlarm = baseTime.timeIntervalSince(now)
+            // Start playing immediately since notification just fired
+            let success = audioPlayer?.play() ?? false
+            isAlarmSounding = success
+            print(success ? "🎵 ✅ Background alarm music started successfully" : "❌ Failed to start background alarm music")
             
-            if timeUntilAlarm <= 1.0 {
-                // Start immediately if alarm is now or within 1 second
-                let success = audioPlayer?.play() ?? false
-                isAlarmSounding = success
-                print(success ? "🎵 Started continuous alarm music immediately" : "❌ Failed to start continuous alarm music")
-            } else {
-                // Schedule to start at exact alarm time
-                DispatchQueue.main.asyncAfter(deadline: .now() + timeUntilAlarm) { [weak self] in
-                    guard let self = self else { return }
-                    let success = self.audioPlayer?.play() ?? false
-                    self.isAlarmSounding = success
-                    print(success ? "🎵 Started continuous alarm music at scheduled time" : "❌ Failed to start scheduled continuous alarm music")
-                }
-                print("🎵 Scheduled continuous alarm music to start in \(timeUntilAlarm) seconds")
-            }
+            // Add interruption observer to handle phone unlock/lock cycles
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleAudioSessionInterruption),
+                name: AVAudioSession.interruptionNotification,
+                object: audioPlayer
+            )
             
         } catch {
-            print("❌ Failed to create continuous alarm music player: \(error)")
+            print("❌ Failed to create background alarm music player: \(error)")
         }
     }
 
@@ -1441,13 +1441,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
                 if isFirstNotification {
-                    // First notification triggers continuous music playback
-                    print("🎵 First notification fired - ensuring continuous alarm music is playing")
+                    // First notification triggers continuous background music playback
+                    print("🎵 First notification fired - starting continuous alarm music in background")
                     
-                    // Ensure continuous alarm music starts playing
-                    if !isAlarmSounding {
-                        startAlarmSound(for: alarm)
-                    }
+                    // Start continuous alarm music immediately in background
+                    startBackgroundAlarmMusic(for: alarm)
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
