@@ -356,6 +356,9 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
+        // Schedule background music to start at exact alarm time
+        scheduleBackgroundMusicStart(for: alarm, at: baseTime)
+
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
             let notificationId = "\(alarm.id.uuidString)-repeat-\(repetition)"
@@ -366,9 +369,13 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // All notifications are silent - background music will handle audio
-            content.sound = nil
-            print("🔇 Notification \(repetition + 1): Silent (background music will play)")
+            // Use a minimal sound file to ensure willPresent is called, but we'll suppress it in the delegate
+            if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+            } else {
+                content.sound = .default
+            }
+            print("🔇 Notification \(repetition + 1): Has sound (will be suppressed in willPresent)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1155,6 +1162,25 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Background Alarm Music Scheduling and Playback
+    private func scheduleBackgroundMusicStart(for alarm: AlarmItem, at baseTime: Date) {
+        let now = Date()
+        let timeInterval = baseTime.timeIntervalSince(now)
+        
+        print("🎵 Scheduling background music to start in \(timeInterval) seconds")
+        
+        if timeInterval <= 0 {
+            // Alarm time is now or already passed - start immediately
+            startBackgroundAlarmMusic(for: alarm)
+        } else {
+            // Schedule to start at exact alarm time
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
+                print("🎵 Scheduled time reached - starting background alarm music")
+                self?.startBackgroundAlarmMusic(for: alarm)
+            }
+        }
+    }
+    
     // MARK: - Background Alarm Music Playback
     private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
         // Skip if already playing alarm music
@@ -1415,6 +1441,7 @@ class AlarmManager: NSObject, ObservableObject {
 extension AlarmManager: UNUserNotificationCenterDelegate {
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("🔔 DEBUG: willPresent called for notification: \(notification.request.identifier)")
         
         // Extract alarm ID from notification identifier (handle both new format and legacy)
         let notificationId = notification.request.identifier
@@ -1442,10 +1469,15 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 
                 if isFirstNotification {
                     // First notification triggers continuous background music playback
-                    print("🎵 First notification fired - starting continuous alarm music in background")
+                    print("🎵 First notification presented - ensuring background alarm music is playing")
                     
-                    // Start continuous alarm music immediately in background
-                    startBackgroundAlarmMusic(for: alarm)
+                    // Ensure background alarm music is playing (fallback in case scheduled start didn't work)
+                    if !isAlarmSounding {
+                        print("🎵 Music not yet playing, starting now from willPresent")
+                        startBackgroundAlarmMusic(for: alarm)
+                    } else {
+                        print("🎵 Music already playing from scheduled start")
+                    }
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
@@ -1499,8 +1531,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show the notification with banner only (no sound since music is handled separately)
-        completionHandler([.banner])
+        // Show the notification with banner and vibration, but suppress sound since background music handles audio
+        completionHandler([.banner, .badge])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
