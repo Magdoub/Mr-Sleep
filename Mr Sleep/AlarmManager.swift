@@ -573,6 +573,9 @@ class AlarmManager: NSObject, ObservableObject {
         // Called when app becomes active (additional check for user interaction)
         trackAppActivity()
         
+        // Ensure alarm sound continues if an alarm is currently active
+        resumeAlarmIfActiveOnForeground()
+        
         // Never auto-dismiss on active; user must explicitly dismiss
         print("⏸️ Skipping auto-dismiss on active; waiting for explicit Dismiss tap")
     }
@@ -586,6 +589,36 @@ class AlarmManager: NSObject, ObservableObject {
         // Track when the app becomes active for unlock detection
         UserDefaults.standard.set(Date(), forKey: "lastAppActiveTime")
         print("📱 App activity tracked at \(Date())")
+    }
+
+    private func resumeAlarmIfActiveOnForeground() {
+        // If dismissal page is up or any alarm has pending notifications, ensure sound is playing
+        let dismissalVisible = AlarmDismissalManager.shared.isShowingDismissalPage
+        let currentAlarm = AlarmDismissalManager.shared.currentAlarm
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let hasPendingForAnyAlarm = requests.contains { $0.identifier.contains("-repeat-") }
+            DispatchQueue.main.async {
+                if dismissalVisible || hasPendingForAnyAlarm {
+                    if !self.isAlarmSounding {
+                        print("🔁 Resuming/starting alarm sound on foreground due to active alarm state")
+                        if let alarm = currentAlarm {
+                            self.startAlarmSound(for: alarm)
+                        } else {
+                            self.startAlarmSound()
+                        }
+                    } else {
+                        // If already sounding, ensure audio session is active
+                        do {
+                            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+                            print("🔁 Ensured audio session active for ongoing alarm")
+                        } catch {
+                            print("❌ Failed to reactivate audio session on foreground: \(error)")
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private func checkNotificationServiceActivity() {
@@ -826,68 +859,13 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Background Unlock Detection
     private func scheduleBackgroundUnlockCheck(for alarm: AlarmItem, afterNotification repetition: Int) {
-        // Schedule multiple aggressive checks to detect phone unlock
-        // Check every 3 seconds for the next 27 seconds (before next notification)
-        for seconds in stride(from: 3, through: 27, by: 3) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(seconds)) {
-                self.checkForPhoneUnlock(alarmId: alarm.id, repetition: repetition, checkNumber: seconds / 3)
-            }
-        }
+        // Disabled: do not auto-stop based on background unlock detection
+        print("⏸️ Skipping scheduleBackgroundUnlockCheck; explicit Dismiss required")
     }
     
     private func checkForPhoneUnlock(alarmId: UUID, repetition: Int, checkNumber: Int) {
-        // Do not auto-stop while the explicit dismissal UI is visible
-        if AlarmDismissalManager.shared.isShowingDismissalPage {
-            print("⏸️ Background unlock check #\(checkNumber) skipped — dismissal page visible")
-            return
-        }
-        guard let alarm = alarms.first(where: { $0.id == alarmId && $0.isEnabled }) else {
-            return // Alarm already disabled
-        }
-        
-        print("🔍 Background unlock check #\(checkNumber) for alarm \(alarm.time)")
-        
-        // Multiple heuristics to detect phone unlock
-        let appState = UIApplication.shared.applicationState
-        
-        // Check 1: App state changed to inactive (transitioning from background)
-        if appState == .inactive {
-            print("📱 App state is inactive - phone likely being unlocked")
-            self.stopAlarmDueToUnlock(alarm: alarm, reason: "App state inactive")
-            return
-        }
-        
-        // Check 2: Check if notifications are being delivered vs pending
-        UNUserNotificationCenter.current().getPendingNotificationRequests { pendingRequests in
-            UNUserNotificationCenter.current().getDeliveredNotifications { deliveredNotifications in
-                
-                let alarmPending = pendingRequests.filter { $0.identifier.contains(alarmId.uuidString) }.count
-                let alarmDelivered = deliveredNotifications.filter { $0.request.identifier.contains(alarmId.uuidString) }.count
-                
-                DispatchQueue.main.async {
-                    print("   Pending: \(alarmPending), Delivered: \(alarmDelivered)")
-                    
-                    // If we have delivered notifications but fewer pending than expected, user saw them
-                    let expectedPending = max(0, 6 - repetition - 1)
-                    
-                    if alarmDelivered > 0 && alarmPending < expectedPending {
-                        print("📱 Notifications delivered but some missing - phone unlocked")
-                        self.stopAlarmDueToUnlock(alarm: alarm, reason: "Notifications delivered and cleared")
-                        return
-                    }
-                    
-                    // Check 3: Try to access device orientation (fails when locked on some devices)
-                    let orientation = UIDevice.current.orientation
-                    if orientation != .unknown {
-                        print("📱 Device orientation accessible - phone likely unlocked")
-                        self.stopAlarmDueToUnlock(alarm: alarm, reason: "Device orientation accessible")
-                        return
-                    }
-                    
-                    print("   No unlock detected in check #\(checkNumber)")
-                }
-            }
-        }
+        // Disabled: do not stop the alarm when phone unlock is detected
+        print("⏸️ Skipping background unlock check #\(checkNumber); explicit Dismiss required")
     }
     
     private func checkIfAlarmShouldContinue(alarmId: UUID) {
@@ -1232,8 +1210,8 @@ class AlarmManager: NSObject, ObservableObject {
         case .ended:
             print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
             
-            // Only resume if we're still supposed to be sounding and dismissal page is showing
-            if isAlarmSounding && AlarmDismissalManager.shared.isShowingDismissalPage {
+            // Resume if we're still supposed to be sounding (regardless of page visibility)
+            if isAlarmSounding {
                 do {
                     // Reactivate audio session
                     try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
@@ -1247,7 +1225,7 @@ class AlarmManager: NSObject, ObservableObject {
                     restartAlarmSoundAfterInterruption()
                 }
             } else {
-                print("⏸️ Not resuming alarm - either not sounding or dismissal page not visible")
+                print("⏸️ Not resuming alarm - not currently sounding")
             }
             
         @unknown default:
@@ -1263,11 +1241,9 @@ class AlarmManager: NSObject, ObservableObject {
         audioPlayer = nil
         
         // Restart if we should still be sounding
-        if isAlarmSounding && AlarmDismissalManager.shared.isShowingDismissalPage {
+        if isAlarmSounding {
             // Find the current alarm to restart with proper sound
-            if let currentAlarm = AlarmDismissalManager.shared.currentAlarm {
-                startAlarmSound(for: currentAlarm)
-            }
+            startAlarmSound()
         }
     }
     
