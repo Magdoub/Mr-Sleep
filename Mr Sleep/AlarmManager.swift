@@ -356,8 +356,7 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
-        // Schedule background music to start at exact alarm time
-        scheduleBackgroundMusicStart(for: alarm, at: baseTime)
+         // Music will be triggered by the first notification when it fires
 
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -369,9 +368,28 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-             // Silent notifications - background music handles all audio
-             content.sound = nil
-             print("🔇 Notification \(repetition + 1): Silent (background music handles audio)")
+             // Each notification has sound to trigger willPresent and start background music
+             let selectedSoundName = alarm.soundName.lowercased()
+             if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                 if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                     content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                 } else {
+                     content.sound = .defaultCritical
+                 }
+             } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                 if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                     content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                 } else {
+                     content.sound = .defaultCritical
+                 }
+             } else {
+                 if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                     content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                 } else {
+                     content.sound = .defaultCritical
+                 }
+             }
+             print("🔊 Notification \(repetition + 1): Has sound (will start background music)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1004,10 +1022,8 @@ class AlarmManager: NSObject, ObservableObject {
     
     // MARK: - Direct Alarm Sound Management
     private var audioPlayer: AVAudioPlayer?
-    private var keepAlivePlayer: AVAudioPlayer?
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
-    private var scheduledAlarmTime: Date?
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
@@ -1160,110 +1176,7 @@ class AlarmManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Background Alarm Music Scheduling and Playback
-     private func scheduleBackgroundMusicStart(for alarm: AlarmItem, at baseTime: Date) {
-         let now = Date()
-         let timeInterval = baseTime.timeIntervalSince(now)
-         scheduledAlarmTime = baseTime
-         
-         print("🎵 Scheduling background music to start in \(timeInterval) seconds")
-         
-         if timeInterval <= 0 {
-             // Alarm time is now or already passed - start immediately
-             startBackgroundAlarmMusic(for: alarm)
-         } else {
-             // Start keep-alive audio session immediately to keep hardware ready
-             startKeepAliveAudio(for: alarm)
-             
-             // Use AVAudioPlayer's play(atTime:) with device time for precise scheduling
-             prepareScheduledAlarmMusic(for: alarm, at: baseTime)
-         }
-     }
-     
-     private func startKeepAliveAudio(for alarm: AlarmItem) {
-         guard keepAlivePlayer == nil else { return }
-         
-         let now = Date()
-         let timeUntilAlarm = scheduledAlarmTime?.timeIntervalSince(now) ?? 0
-         
-         // Only start keep-alive if alarm is within next 30 minutes to minimize battery drain
-         guard timeUntilAlarm > 0 && timeUntilAlarm <= 1800 else { // 30 minutes = 1800 seconds
-             print("⚡ Skipping keep-alive - alarm too far away (\(Int(timeUntilAlarm))s). Will use notification fallback.")
-             return
-         }
-         
-         print("🟡 Starting keep-alive audio for \(Int(timeUntilAlarm))s until alarm (battery optimized)")
-         
-         // Configure audio session with minimal power usage
-         do {
-             let audioSession = AVAudioSession.sharedInstance()
-             try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers]) // Less power than playAndRecord
-             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-             print("✅ Audio session activated for keep-alive (low power mode)")
-         } catch {
-             print("❌ Failed to configure keep-alive audio session: \(error)")
-         }
-         
-         // Use a very short, silent audio file to minimize CPU/battery usage
-         // Create a minimal 1-second silent audio buffer instead of looping a long file
-         createMinimalKeepAlivePlayer()
-         
-         // Schedule automatic stop of keep-alive 5 seconds after alarm should start
-         // This ensures we don't drain battery if something goes wrong
-         let stopTime = timeUntilAlarm + 5
-         DispatchQueue.main.asyncAfter(deadline: .now() + stopTime) { [weak self] in
-             if self?.keepAlivePlayer?.isPlaying == true && self?.isAlarmSounding != true {
-                 print("⚡ Auto-stopping keep-alive to save battery (alarm should have started)")
-                 self?.keepAlivePlayer?.stop()
-             }
-         }
-     }
-     
-     private func createMinimalKeepAlivePlayer() {
-         // Create a minimal silent audio buffer for keep-alive
-         guard let soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
-             print("❌ No sound file for keep-alive")
-             return
-         }
-         
-         do {
-             keepAlivePlayer = try AVAudioPlayer(contentsOf: soundURL)
-             keepAlivePlayer?.numberOfLoops = -1
-             keepAlivePlayer?.volume = 0.0001 // Extremely quiet to minimize speaker power usage
-             keepAlivePlayer?.prepareToPlay()
-             keepAlivePlayer?.play()
-             print("🟡 Minimal keep-alive player started (volume 0.0001, battery optimized)")
-         } catch {
-             print("❌ Failed to start keep-alive player: \(error)")
-         }
-     }
-     
-     private func prepareScheduledAlarmMusic(for alarm: AlarmItem, at baseTime: Date) {
-         guard let soundURL = selectedSoundURL(for: alarm) ?? Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") else {
-             print("❌ No sound file for scheduled alarm music")
-             return
-         }
-         
-         do {
-             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-             audioPlayer?.numberOfLoops = -1
-             audioPlayer?.volume = 1.0
-             audioPlayer?.prepareToPlay()
-             
-             // Use device time for precise scheduling even when locked
-             if let keepAlive = keepAlivePlayer {
-                 let deviceStartTime = keepAlive.deviceCurrentTime + baseTime.timeIntervalSince(Date())
-                 let success = audioPlayer?.play(atTime: deviceStartTime) ?? false
-                 print(success ? "🎵 Scheduled alarm music at device time" : "❌ Failed to schedule at device time")
-                 if success {
-                     // Don't set isAlarmSounding yet - will be set when it actually starts playing
-                     print("⏰ Alarm music will auto-start at \(baseTime)")
-                 }
-             }
-         } catch {
-             print("❌ Failed to prepare scheduled alarm music: \(error)")
-         }
-     }
+    // MARK: - Background Alarm Music Playback (Notification-Triggered)
     
     // MARK: - Background Alarm Music Playback
     private func startBackgroundAlarmMusic(for alarm: AlarmItem) {
@@ -1338,11 +1251,6 @@ class AlarmManager: NSObject, ObservableObject {
          // Stop continuous alarm music
          audioPlayer?.stop()
          audioPlayer = nil
-         
-         // Stop keep-alive player
-         keepAlivePlayer?.stop()
-         keepAlivePlayer = nil
-         scheduledAlarmTime = nil
         
         // Stop vibration
         stopContinuousVibration()
@@ -1375,14 +1283,13 @@ class AlarmManager: NSObject, ObservableObject {
              print("🔇 Audio session interruption BEGAN - pausing alarm sound")
              // Don't stop isAlarmSounding flag, just pause the audio player
              audioPlayer?.pause()
-             keepAlivePlayer?.pause()
             
         case .ended:
             print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
             
              // Always try to resume if we have an alarm that should be sounding
              // This fixes the issue where alarm stops when phone is unlocked
-             if isAlarmSounding || (scheduledAlarmTime != nil && Date() >= scheduledAlarmTime!) {
+             if isAlarmSounding {
                 do {
                     // Reactivate audio session with alarm configuration
                     let audioSession = AVAudioSession.sharedInstance()
@@ -1394,25 +1301,16 @@ class AlarmManager: NSObject, ObservableObject {
                      try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
                      print("✅ Audio session reactivated for continuous alarm music after interruption")
                      
-                     // Resume keep-alive player first
-                     if keepAlivePlayer?.isPlaying != true {
-                         keepAlivePlayer?.play()
-                         print("🟡 Keep-alive resumed after interruption")
-                     }
-                     
                      // Resume continuous alarm music if it should be playing
                      if audioPlayer?.isPlaying != true {
                          if audioPlayer != nil {
                              // Player exists but isn't playing - resume it
                              audioPlayer?.play()
-                             isAlarmSounding = true
                              print("✅ Resumed continuous alarm music after interruption")
-                         } else if let scheduledTime = scheduledAlarmTime, Date() >= scheduledTime {
-                             // No player found but alarm time has passed - restart completely
-                             print("🔄 Alarm time passed during interruption, starting music now")
-                             if let alarm = alarms.first(where: { $0.isEnabled }) ?? testAlarms.first {
-                                 startBackgroundAlarmMusic(for: alarm)
-                             }
+                         } else {
+                             // No player found - restart completely
+                             print("🔄 No active music player found, restarting continuous alarm music")
+                             restartAlarmSoundAfterInterruption()
                          }
                      } else {
                          print("✅ Continuous alarm music already playing after interruption")
@@ -1570,16 +1468,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                      // First notification triggers continuous background music playback
                      print("🎵 First notification presented - checking if alarm music is playing")
                      
-                     // Check if scheduled music is playing, if not start it now
-                     if audioPlayer?.isPlaying == true {
-                         print("🎵 Scheduled alarm music is already playing")
-                         isAlarmSounding = true
-                     } else if let scheduledTime = scheduledAlarmTime, Date() >= scheduledTime {
-                         print("🎵 Alarm time reached, starting music from willPresent")
-                         startBackgroundAlarmMusic(for: alarm)
-                     } else {
-                         print("🎵 Alarm time not yet reached, music will start automatically")
-                     }
+                     // Start background music immediately when first notification fires
+                     print("🎵 First notification fired - starting background alarm music")
+                     startBackgroundAlarmMusic(for: alarm)
                     
                     // Start Live Activity when alarm fires (only for first notification)
                     startLiveActivityForAlarm(alarm)
@@ -1633,8 +1524,9 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-         // Show the notification with banner only - background music handles all audio
-         completionHandler([.banner])
+         // Show notification with sound - this triggers willPresent and starts background music
+         // The notification sound will play briefly, then background music takes over
+         completionHandler([.banner, .sound])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
