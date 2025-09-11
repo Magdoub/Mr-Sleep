@@ -380,12 +380,10 @@ extension SettingsView {
             }
         } else {
             // Schedule fallback
-            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) { [weak self] in
-                guard let self = self else { return }
-                
-                if !self.alarmManager.musicStartedForAlarm.contains(alarm.id) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) {
+                if !alarmManager.musicStartedForAlarm.contains(alarm.id) {
                     print("🧪 Test fallback timer - starting music now")
-                    self.alarmManager.startTestAlarmMusic(for: alarm)
+                    alarmManager.startTestAlarmMusic(for: alarm)
                 } else {
                     print("🧪 Test fallback timer - music already started")
                 }
