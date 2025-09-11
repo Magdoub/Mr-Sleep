@@ -1556,7 +1556,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 // Only start music if NOT already playing (regardless of notification number)
                 // The FIRST notification that successfully calls willPresent will start music
                 if !isAlarmSounding {
-                    print("🎵 Notification \(currentRepetition + 1)/20 - starting background alarm music (first to present)")
+                    print("🎵 Notification \(currentRepetition + 1)/20 - starting continuous background music immediately")
                     startBackgroundAlarmMusic(for: alarm)
                 } else {
                     print("🔇 Notification \(currentRepetition + 1)/20 - music already playing, skipping")
@@ -1615,8 +1615,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show notification with banner only - SUPPRESS SOUND, background music handles audio
-        completionHandler([.banner])
+        // Show notification with banner AND sound - let notification sound play briefly, then background music takes over
+        completionHandler([.banner, .sound])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
