@@ -575,6 +575,19 @@ class AlarmManager: NSObject, ObservableObject {
             let hasPendingForAnyAlarm = requests.contains { $0.identifier.contains("-repeat-") }
             DispatchQueue.main.async {
                 if dismissalVisible || hasPendingForAnyAlarm {
+                    // Always ensure proper audio session configuration when resuming
+                    do {
+                        let audioSession = AVAudioSession.sharedInstance()
+                        try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                            .defaultToSpeaker,
+                            .allowBluetooth
+                        ])
+                        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                        print("🔁 Audio session configured for alarm on foreground")
+                    } catch {
+                        print("❌ Failed to configure audio session on foreground: \(error)")
+                    }
+                    
                     if !self.isAlarmSounding {
                         print("🔁 Resuming/starting alarm sound on foreground due to active alarm state")
                         if let alarm = currentAlarm {
@@ -583,14 +596,20 @@ class AlarmManager: NSObject, ObservableObject {
                             self.startAlarmSound()
                         }
                     } else {
-                        // If already sounding, ensure audio session is active
-                        do {
-                            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
-                            print("🔁 Ensured audio session active for ongoing alarm")
-                        } catch {
-                            print("❌ Failed to reactivate audio session on foreground: \(error)")
+                        // If already marked as sounding, but player isn't playing, restart it
+                        if self.audioPlayer?.isPlaying != true {
+                            print("🔄 Alarm marked as sounding but player not active, restarting")
+                            if let alarm = currentAlarm {
+                                self.startAlarmSound(for: alarm)
+                            } else {
+                                self.startAlarmSound()
+                            }
+                        } else {
+                            print("🔁 Alarm already playing on foreground")
                         }
                     }
+                } else {
+                    print("⏸️ No active alarms found on foreground")
                 }
             }
         }
@@ -1286,44 +1305,44 @@ class AlarmManager: NSObject, ObservableObject {
         case .ended:
             print("🔊 Audio session interruption ENDED - attempting to resume alarm sound")
             
-            // Resume keep-alive and main alarm if appropriate
-            if isPersistentPlaybackArmed {
-                // Ensure keep-alive restarts
-                if keepAlivePlayer?.isPlaying != true {
-                    keepAlivePlayer?.play()
-                    print("🟡 Keep-alive resumed after interruption")
-                }
-            }
-
-            // Resume if we're still supposed to be sounding (regardless of page visibility)
-            if isAlarmSounding {
+            // Always try to resume if we have an alarm that should be sounding
+            // This fixes the issue where alarm stops when phone is unlocked
+            if isAlarmSounding || isPersistentPlaybackArmed {
                 do {
-                    // Reactivate audio session
-                    try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+                    // Reactivate audio session with the same configuration
+                    let audioSession = AVAudioSession.sharedInstance()
+                    try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                        .defaultToSpeaker,
+                        .allowBluetooth
+                    ])
+                    try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                    print("✅ Audio session reactivated after interruption")
                     
-                    // Resume playback
-                    audioPlayer?.play()
-                    print("✅ Successfully resumed alarm sound after interruption")
+                    // Resume keep-alive if it was running
+                    if isPersistentPlaybackArmed && keepAlivePlayer?.isPlaying != true {
+                        keepAlivePlayer?.play()
+                        print("🟡 Keep-alive resumed after interruption")
+                    }
+                    
+                    // Resume main alarm sound if it should be playing
+                    if isAlarmSounding && audioPlayer?.isPlaying != true {
+                        audioPlayer?.play()
+                        print("✅ Successfully resumed alarm sound after interruption")
+                    }
+                    
+                    // If we don't have an active player but should be sounding, restart completely
+                    if (isAlarmSounding || isPersistentPlaybackArmed) && audioPlayer == nil {
+                        print("🔄 No active player found, restarting alarm sound after interruption")
+                        restartAlarmSoundAfterInterruption()
+                    }
+                    
                 } catch {
                     print("❌ Failed to resume audio session after interruption: \(error)")
                     // Try to restart the alarm sound completely
                     restartAlarmSoundAfterInterruption()
                 }
             } else {
-                // If we armed persistent playback and alarm time has passed, start main alarm now
-                if let base = persistentBaseTime,
-                   let armedId = persistentAlarmId,
-                   Date() >= base,
-                   (alarms.contains(where: { $0.id == armedId }) || testAlarms.contains(where: { $0.id == armedId })) {
-                    print("🔁 Alarm time passed during interruption — starting main alarm now")
-                    if let alarm = (alarms.first(where: { $0.id == armedId }) ?? testAlarms.first(where: { $0.id == armedId })) {
-                        startAlarmSound(for: alarm)
-                    } else {
-                        startAlarmSound()
-                    }
-                } else {
-                    print("⏸️ Not resuming alarm - not currently sounding and not at alarm time yet")
-                }
+                print("⏸️ No active alarm to resume after interruption")
             }
             
         @unknown default:
