@@ -101,6 +101,7 @@ class AlarmManager: NSObject, ObservableObject {
     @Published var alarms: [AlarmItem] = []
     private var testAlarms: [AlarmItem] = [] // Temporary storage for test alarms
     private var isProcessingNotificationResponse = false // Flag to prevent race conditions
+    private let audioStartLock = NSLock() // Prevent overlapping audio starts
     
     private override init() {
         super.init()
@@ -356,8 +357,7 @@ class AlarmManager: NSObject, ObservableObject {
         let notificationInterval = 3.0 // 3 seconds
         let maxNotifications = 20 // More notifications since they're every 3 seconds
         
-        // Music will ONLY be triggered by the FIRST notification when it presents (willPresent)
-        // No background timer - iOS restricts background audio session activation
+        // Notifications are SILENT; in-app player handles sound.
         
         for repetition in 0..<maxNotifications {
             let notificationTime = baseTime.addingTimeInterval(TimeInterval(Double(repetition) * notificationInterval))
@@ -369,28 +369,33 @@ class AlarmManager: NSObject, ObservableObject {
             content.title = "Tap to dismiss"
             content.body = "\(alarm.label)"
             
-            // Use user's chosen sound to trigger willPresent, but suppress in completion handler
-            let selectedSoundName = alarm.soundName.lowercased()
-            if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+            // Only the FIRST notification should include a sound; all later ones are silent
+            if repetition == 0 {
+                let selectedSoundName = alarm.soundName.lowercased()
+                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
+                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
+                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
+                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
                 } else {
-                    content.sound = .defaultCritical
+                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                    } else {
+                        content.sound = .defaultCritical
+                    }
                 }
-            } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
+                print("🔊 Notification 1 includes sound: \(alarm.soundName)")
             } else {
-                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
+                content.sound = nil
+                print("🔇 Notification \(repetition + 1) is SILENT to avoid overlapping audio")
             }
-            print("🔇 Notification \(repetition + 1): Has \(alarm.soundName) sound to trigger willPresent (will be suppressed)")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -1151,7 +1156,7 @@ class AlarmManager: NSObject, ObservableObject {
                 }
                 
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-                audioPlayer?.numberOfLoops = -1 // Loop indefinitely
+                audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
                 audioPlayer?.volume = 1.0
                 
                 // Enable background playback and lock screen controls
@@ -1250,7 +1255,7 @@ class AlarmManager: NSObject, ObservableObject {
         // Create and configure the SINGLE global background music player
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-            audioPlayer?.numberOfLoops = -1 // Loop indefinitely
+            audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
             
@@ -1553,15 +1558,22 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentRepetition = notification.request.content.userInfo["repetition"] as? Int ?? 0
                 print("🔔 Notification \(currentRepetition + 1)/20 is presenting for alarm: \(alarm.time)")
                 
-                // Only start music if NOT already playing (regardless of notification number)
-                // The FIRST notification that successfully calls willPresent will start music
-                if !isAlarmSounding {
-                    print("🎵 Notification \(currentRepetition + 1)/20 - starting continuous background music immediately")
+                // Strong one-at-a-time start guard to prevent overlapping tracks
+                audioStartLock.lock()
+                let alreadyStartedForThisAlarm = musicStartedForAlarm.contains(alarm.id)
+                let playerIsPlaying = (audioPlayer?.isPlaying ?? false)
+                let currentlyPlayingSameAlarm = (currentlyPlayingAlarmId == alarm.id)
+                let shouldStart = !isAlarmSounding && !playerIsPlaying && !alreadyStartedForThisAlarm
+                if shouldStart {
+                    print("🎵 Notification \(currentRepetition + 1)/20 - initiating background music (guarded)")
+                    // Mark as started before launching to avoid races with back-to-back notifications
+                    musicStartedForAlarm.insert(alarm.id)
+                    currentlyPlayingAlarmId = alarm.id
+                    audioStartLock.unlock()
                     startBackgroundAlarmMusic(for: alarm)
                 } else {
-                    print("🔇 Notification \(currentRepetition + 1)/20 - music already playing, skipping")
-                    print("   - isAlarmSounding: \(isAlarmSounding)")
-                    print("   - audioPlayer?.isPlaying: \(audioPlayer?.isPlaying ?? false)")
+                    print("🔇 Skipping start (guarded). isAlarmSounding=\(isAlarmSounding), playerIsPlaying=\(playerIsPlaying), alreadyStartedForThisAlarm=\(alreadyStartedForThisAlarm), sameAlarm=\(currentlyPlayingSameAlarm)")
+                    audioStartLock.unlock()
                 }
                     
                 if isFirstNotification {
@@ -1615,8 +1627,8 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         }
         
-        // Show notification with banner AND sound - let notification sound play briefly, then background music takes over
-        completionHandler([.banner, .sound])
+        // Foreground: show banner only; avoid system sound to prevent overlap with AVAudioPlayer
+        completionHandler([.banner])
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {

@@ -188,7 +188,7 @@ struct AlarmRingingView: View {
         if let url = soundURL {
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
-                audioPlayer?.numberOfLoops = -1 // Loop indefinitely until dismissed
+                audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
                 audioPlayer?.volume = 1.0
                 audioPlayer?.prepareToPlay()
                 
@@ -217,7 +217,7 @@ struct AlarmRingingView: View {
             print("📁 Found morning-alarm-clock.mp3, attempting to play...")
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
-                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.numberOfLoops = 19
                 audioPlayer?.volume = 1.0
                 audioPlayer?.prepareToPlay()
                 
@@ -239,7 +239,7 @@ struct AlarmRingingView: View {
             print("📁 Found smooth-alarm-clock.mp3, attempting to play...")
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
-                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.numberOfLoops = 19
                 audioPlayer?.volume = 1.0
                 audioPlayer?.prepareToPlay()
                 
@@ -261,7 +261,7 @@ struct AlarmRingingView: View {
             print("📁 Found alarm-clock.mp3, attempting to play...")
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
-                audioPlayer?.numberOfLoops = -1
+                audioPlayer?.numberOfLoops = 19
                 audioPlayer?.volume = 1.0
                 audioPlayer?.prepareToPlay()
                 

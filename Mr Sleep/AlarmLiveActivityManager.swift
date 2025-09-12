@@ -207,7 +207,7 @@ class AlarmLiveActivityManager: ObservableObject {
     private func playCustomAlarmSound(url: URL) {
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.numberOfLoops = -1 // Loop indefinitely
+            audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
             audioPlayer?.volume = 1.0
             audioPlayer?.play()
             

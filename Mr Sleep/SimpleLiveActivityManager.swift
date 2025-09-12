@@ -69,7 +69,7 @@ class SimpleLiveActivityManager: NSObject {
                          Bundle.main.url(forResource: "alarm-clock", withExtension: "m4a") {
             do {
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-                audioPlayer?.numberOfLoops = -1 // Loop indefinitely
+                audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
                 audioPlayer?.volume = 1.0
                 audioPlayer?.play()
                 print("🔊 Playing custom alarm sound")
