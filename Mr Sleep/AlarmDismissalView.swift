@@ -117,7 +117,7 @@ struct AlarmDismissalView: View {
             category: "Quick Boost",
             cycles: 5,
             createdFromSleepNow: false,
-            soundName: "Morning",
+            soundName: "Sunrise",
             shouldAutoReset: false
         ),
         onDismiss: {

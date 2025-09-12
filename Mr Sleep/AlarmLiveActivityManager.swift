@@ -136,14 +136,14 @@ class AlarmLiveActivityManager: ObservableObject {
         if let alarm = alarm {
             let soundName = alarm.soundName.lowercased()
             
-            if soundName.contains("morning") {
+            if soundName.contains("sunrise") || soundName.contains("morning") {
                 // Try morning-alarm-clock sound
                 soundURL = Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3") ??
                           Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "wav") ??
                           Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "m4a") ??
                           Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "caf")
                 print("🔊 Live Activity attempting to play morning-alarm-clock sound")
-            } else if soundName.contains("smooth") {
+            } else if soundName.contains("calm") || soundName.contains("smooth") {
                 // Try smooth-alarm-clock sound
                 soundURL = Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3") ??
                           Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "wav") ??

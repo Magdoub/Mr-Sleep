@@ -59,7 +59,7 @@ struct AlarmItem: Identifiable, Codable, Equatable {
     var category: String // "Quick Boost", "Recovery", "Full Recharge"
     var cycles: Int
     var createdFromSleepNow: Bool = false
-    var soundName: String = "Morning" // Default to morning sound
+    var soundName: String = "Sunrise" // Default to sunrise sound
     var shouldAutoReset: Bool = false // For manual alarms that should reset after firing
     
     // Equatable conformance
@@ -371,26 +371,26 @@ class AlarmManager: NSObject, ObservableObject {
             
             // Only the FIRST notification should include a sound; all later ones are silent
             if repetition == 0 {
-                let selectedSoundName = alarm.soundName.lowercased()
-                if selectedSoundName.contains("morning") || selectedSoundName == "morning" {
-                    if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
-                } else if selectedSoundName.contains("smooth") || selectedSoundName == "smooth" {
-                    if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
+            let selectedSoundName = alarm.soundName.lowercased()
+            if selectedSoundName.contains("sunrise") || selectedSoundName.contains("morning") || selectedSoundName == "sunrise" || selectedSoundName == "morning" {
+                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
                 } else {
-                    if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                    } else {
-                        content.sound = .defaultCritical
-                    }
+                    content.sound = .defaultCritical
                 }
+            } else if selectedSoundName.contains("calm") || selectedSoundName.contains("smooth") || selectedSoundName == "calm" || selectedSoundName == "smooth" {
+                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
+            } else {
+                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
+                } else {
+                    content.sound = .defaultCritical
+                }
+            }
                 print("🔊 Notification 1 includes sound: \(alarm.soundName)")
             } else {
                 content.sound = nil
@@ -1327,9 +1327,9 @@ class AlarmManager: NSObject, ObservableObject {
 
     private func selectedSoundURL(for alarm: AlarmItem) -> URL? {
         let name = alarm.soundName.lowercased()
-        if name.contains("morning") || name == "morning" {
+        if name.contains("sunrise") || name.contains("morning") || name == "sunrise" || name == "morning" {
             return Bundle.main.url(forResource: "morning-alarm-clock", withExtension: "mp3")
-        } else if name.contains("smooth") || name == "smooth" {
+        } else if name.contains("calm") || name.contains("smooth") || name == "calm" || name == "smooth" {
             return Bundle.main.url(forResource: "smooth-alarm-clock", withExtension: "mp3")
         } else {
             return Bundle.main.url(forResource: "alarm-clock", withExtension: "mp3")
