@@ -375,7 +375,7 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             // Only the FIRST notification should include a sound; all later ones are silent
             // All notifications are silent - music is handled by app-based system
-            content.sound = nil // Silent for all notifications
+            // Don't set content.sound at all to ensure complete silence
             print("🔇 Notification \(repetition + 1) is SILENT - music handled by app")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
@@ -447,7 +447,7 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         
         // All notifications are silent - music is handled by app-based system
-        content.sound = nil // Silent for all notifications
+        // Don't set content.sound at all to ensure complete silence
         content.categoryIdentifier = "ALARM_CATEGORY"
         
         // Make notification critical to bypass Do Not Disturb and volume settings
@@ -1395,27 +1395,45 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         for alarm in alarms {
             guard alarm.isEnabled else { continue }
             
-            // Check if alarm time has been reached
-            if let scheduledDate = alarm.scheduledDate {
-                let timeDifference = now.timeIntervalSince(scheduledDate)
-                
-                // If alarm time has been reached (within 30 seconds tolerance)
-                if timeDifference >= 0 && timeDifference <= 30 {
-                    // Check if this alarm is not already active
-                    if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
-                        print("🚨 ALARM TIME REACHED: \(alarm.label) at \(alarm.time)")
-                        print("   - Scheduled time: \(scheduledDate)")
-                        print("   - Current time: \(now)")
-                        print("   - Time difference: \(Int(timeDifference)) seconds")
-                        
-                        // Set ongoing alarm state
-                        ongoingAlarmState = alarm
-                        saveOngoingAlarmState()
-                        
-                        // Trigger the alarm immediately
-                        triggerAppBasedAlarm(for: alarm)
-                        return // Only handle one alarm at a time
-                    }
+            // Parse the alarm time string to get today's alarm time
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            
+            guard let timeDate = formatter.date(from: alarm.time) else { continue }
+            
+            // Get today's date with the alarm time
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
+            components.hour = timeComponents.hour
+            components.minute = timeComponents.minute
+            
+            guard let todayAlarmTime = calendar.date(from: components) else { continue }
+            
+            // Check if alarm time has been reached (within 30 seconds tolerance)
+            let timeDifference = now.timeIntervalSince(todayAlarmTime)
+            
+            print("🔍 Checking alarm: \(alarm.label) at \(alarm.time)")
+            print("   - Today's alarm time: \(todayAlarmTime)")
+            print("   - Current time: \(now)")
+            print("   - Time difference: \(Int(timeDifference)) seconds")
+            
+            // If alarm time has been reached (within 30 seconds tolerance)
+            if timeDifference >= 0 && timeDifference <= 30 {
+                // Check if this alarm is not already active
+                if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
+                    print("🚨 ALARM TIME REACHED: \(alarm.label) at \(alarm.time)")
+                    print("   - Today's alarm time: \(todayAlarmTime)")
+                    print("   - Current time: \(now)")
+                    print("   - Time difference: \(Int(timeDifference)) seconds")
+                    
+                    // Set ongoing alarm state
+                    ongoingAlarmState = alarm
+                    saveOngoingAlarmState()
+                    
+                    // Trigger the alarm immediately
+                    triggerAppBasedAlarm(for: alarm)
+                    return // Only handle one alarm at a time
                 }
             }
         }
