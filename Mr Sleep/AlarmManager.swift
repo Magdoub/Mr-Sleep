@@ -110,6 +110,10 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         checkAndResetExpiredAlarms()
         setupNotificationHandling()
         
+        // Load ongoing alarm state and start alarm check timer
+        loadOngoingAlarmState()
+        startAlarmCheckTimer()
+        
         // Always clear badge count on app start
         UNUserNotificationCenter.current().setBadgeCount(0)
     }
@@ -370,32 +374,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             content.body = "\(alarm.label)"
             
             // Only the FIRST notification should include a sound; all later ones are silent
-            if repetition == 0 {
-            let selectedSoundName = alarm.soundName.lowercased()
-            if selectedSoundName.contains("sunrise") || selectedSoundName.contains("morning") || selectedSoundName == "sunrise" || selectedSoundName == "morning" {
-                if Bundle.main.path(forResource: "morning-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("morning-alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            } else if selectedSoundName.contains("calm") || selectedSoundName.contains("smooth") || selectedSoundName == "calm" || selectedSoundName == "smooth" {
-                if Bundle.main.path(forResource: "smooth-alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("smooth-alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            } else {
-                if Bundle.main.path(forResource: "alarm-clock", ofType: "mp3") != nil {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("alarm-clock.mp3"))
-                } else {
-                    content.sound = .defaultCritical
-                }
-            }
-                print("🔊 Notification 1 includes sound: \(alarm.soundName)")
-            } else {
-                content.sound = nil
-                print("🔇 Notification \(repetition + 1) is SILENT to avoid overlapping audio")
-            }
+            // All notifications are silent - music is handled by app-based system
+            content.sound = nil // Silent for all notifications
+            print("🔇 Notification \(repetition + 1) is SILENT - music handled by app")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
             
@@ -465,8 +446,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             content.body = "\(alarm.label) - Tap to stop repeating"
         }
         
-        // Set custom sound based on alarm's sound selection
-        content.sound = getNotificationSound(for: alarm.soundName)
+        // All notifications are silent - music is handled by app-based system
+        content.sound = nil // Silent for all notifications
         content.categoryIdentifier = "ALARM_CATEGORY"
         
         // Make notification critical to bypass Do Not Disturb and volume settings
@@ -1059,6 +1040,11 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         testAlarms.removeAll { $0.id == alarm.id }
         saveAlarms()
         
+        // Clear ongoing alarm state if this was the ongoing alarm
+        if ongoingAlarmState?.id == alarm.id {
+            clearOngoingAlarmState()
+        }
+        
         // Clear badge
         UNUserNotificationCenter.current().setBadgeCount(0)
     }
@@ -1077,6 +1063,10 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var isMusicMonitoringActive = false
     private var isAggressiveRestartActive = false
     private var isBackgroundTaskActive = false
+    
+    // App-based alarm timer system
+    private var alarmCheckTimer: Timer?
+    private var ongoingAlarmState: AlarmItem? // Persistent ongoing alarm state
     
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
@@ -1374,8 +1364,30 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     // MARK: - App-Based Alarm System
     
-    private func checkForActiveAlarms() {
-        print("🔍 Checking for active alarms that should be running")
+    private func startAlarmCheckTimer() {
+        print("⏰ Starting app-based alarm check timer (every 30 seconds)")
+        
+        // Stop any existing timer
+        alarmCheckTimer?.invalidate()
+        
+        // Check every 30 seconds for alarm times
+        alarmCheckTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.checkForAlarmTimes()
+        }
+        
+        // Also check immediately
+        checkForAlarmTimes()
+    }
+    
+    private func stopAlarmCheckTimer() {
+        print("⏰ Stopping app-based alarm check timer")
+        alarmCheckTimer?.invalidate()
+        alarmCheckTimer = nil
+    }
+    
+    private func checkForAlarmTimes() {
+        print("🔍 Checking for alarm times that have been reached")
         
         let now = Date()
         let calendar = Calendar.current
@@ -1383,23 +1395,57 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         for alarm in alarms {
             guard alarm.isEnabled else { continue }
             
-            // Check if alarm time has passed but alarm hasn't been dismissed
-            if let scheduledDate = alarm.scheduledDate, scheduledDate <= now {
-                // Check if this alarm should be active (within reasonable time window)
-                let timeSinceAlarm = now.timeIntervalSince(scheduledDate)
+            // Check if alarm time has been reached
+            if let scheduledDate = alarm.scheduledDate {
+                let timeDifference = now.timeIntervalSince(scheduledDate)
+                
+                // If alarm time has been reached (within 30 seconds tolerance)
+                if timeDifference >= 0 && timeDifference <= 30 {
+                    // Check if this alarm is not already active
+                    if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
+                        print("🚨 ALARM TIME REACHED: \(alarm.label) at \(alarm.time)")
+                        print("   - Scheduled time: \(scheduledDate)")
+                        print("   - Current time: \(now)")
+                        print("   - Time difference: \(Int(timeDifference)) seconds")
+                        
+                        // Set ongoing alarm state
+                        ongoingAlarmState = alarm
+                        saveOngoingAlarmState()
+                        
+                        // Trigger the alarm immediately
+                        triggerAppBasedAlarm(for: alarm)
+                        return // Only handle one alarm at a time
+                    }
+                }
+            }
+        }
+        
+        print("🔍 No alarm times reached")
+    }
+    
+    private func checkForActiveAlarms() {
+        print("🔍 Checking for active alarms that should be running")
+        
+        // First check if there's an ongoing alarm state
+        if let ongoingAlarm = ongoingAlarmState {
+            print("🚨 Found ongoing alarm state: \(ongoingAlarm.label)")
+            
+            // Check if this alarm should still be active
+            if let scheduledDate = ongoingAlarm.scheduledDate {
+                let timeSinceAlarm = Date().timeIntervalSince(scheduledDate)
                 let maxAlarmDuration: TimeInterval = 3600 // 1 hour max
                 
                 if timeSinceAlarm <= maxAlarmDuration {
                     // Check if alarm is not already active
-                    if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
-                        print("🚨 Found active alarm that should be running: \(alarm.label)")
-                        print("   - Alarm time: \(alarm.time)")
-                        print("   - Time since alarm: \(Int(timeSinceAlarm)) seconds")
-                        
-                        // Trigger the alarm
-                        triggerAppBasedAlarm(for: alarm)
-                        return // Only handle one alarm at a time
+                    if !isAlarmSounding || currentlyPlayingAlarmId != ongoingAlarm.id {
+                        print("🚨 Restoring ongoing alarm: \(ongoingAlarm.label)")
+                        triggerAppBasedAlarm(for: ongoingAlarm)
+                        return
                     }
+                } else {
+                    // Alarm has been active too long, clear the state
+                    print("🚨 Clearing expired ongoing alarm state")
+                    clearOngoingAlarmState()
                 }
             }
         }
@@ -1423,6 +1469,39 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             print("🚨 App-based alarm: Music started and dismissal page shown")
         }
+    }
+    
+    // MARK: - Ongoing Alarm State Persistence
+    
+    private func saveOngoingAlarmState() {
+        if let alarm = ongoingAlarmState {
+            do {
+                let data = try JSONEncoder().encode(alarm)
+                UserDefaults.standard.set(data, forKey: "ongoingAlarmState")
+                print("💾 Saved ongoing alarm state: \(alarm.label)")
+            } catch {
+                print("❌ Failed to save ongoing alarm state: \(error)")
+            }
+        }
+    }
+    
+    private func loadOngoingAlarmState() {
+        if let data = UserDefaults.standard.data(forKey: "ongoingAlarmState") {
+            do {
+                let alarm = try JSONDecoder().decode(AlarmItem.self, from: data)
+                ongoingAlarmState = alarm
+                print("💾 Loaded ongoing alarm state: \(alarm.label)")
+            } catch {
+                print("❌ Failed to load ongoing alarm state: \(error)")
+                clearOngoingAlarmState()
+            }
+        }
+    }
+    
+    private func clearOngoingAlarmState() {
+        ongoingAlarmState = nil
+        UserDefaults.standard.removeObject(forKey: "ongoingAlarmState")
+        print("💾 Cleared ongoing alarm state")
     }
     
     // MARK: - Background Music Fallback Timer
