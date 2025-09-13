@@ -89,19 +89,8 @@ struct Mr_SleepApp: App {
     }
     
     private func configureBackgroundAudio() {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            
-            // Configure audio session for app-level playback
-            // Use .playback category for general app audio, not .playAndRecord
-            try audioSession.setCategory(.playback, mode: .default, options: [
-                .allowBluetooth,
-                .allowBluetoothA2DP
-            ])
-            
-            print("✅ App-level audio session configured for background playback")
-        } catch {
-            print("❌ Failed to configure app-level audio session: \(error)")
-        }
+        // Audio session configuration is now handled by AlarmManager
+        // to avoid conflicts between app-level and alarm-specific settings
+        print("✅ Audio session configuration delegated to AlarmManager")
     }
 }

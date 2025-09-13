@@ -595,8 +595,7 @@ class AlarmManager: NSObject, ObservableObject {
                 let audioSession = AVAudioSession.sharedInstance()
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                     .defaultToSpeaker,
-                    .allowBluetooth,
-                    .allowBluetoothA2DP
+                    .allowBluetooth
                 ])
                 try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
                 print("✅ Audio session configured for continuous alarm music on foreground")
@@ -634,8 +633,7 @@ class AlarmManager: NSObject, ObservableObject {
                 let audioSession = AVAudioSession.sharedInstance()
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                     .defaultToSpeaker,
-                    .allowBluetooth,
-                    .allowBluetoothA2DP
+                    .allowBluetooth
                 ])
                 try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
                 print("✅ Audio session configured for continuous alarm music on dismissal page")
@@ -1198,10 +1196,11 @@ class AlarmManager: NSObject, ObservableObject {
                 // Enable background playback and lock screen controls
                 audioPlayer?.prepareToPlay()
                 
-                print("🎵 Audio player created successfully:")
-                print("   - Duration: \(audioPlayer?.duration ?? 0) seconds")
-                print("   - Volume: \(audioPlayer?.volume ?? 0)")
-                print("   - Number of loops: \(audioPlayer?.numberOfLoops ?? 0)")
+            print("🎵 Audio player created successfully:")
+            print("   - Duration: \(audioPlayer?.duration ?? 0) seconds")
+            print("   - Volume: \(audioPlayer?.volume ?? 0)")
+            print("   - Number of loops: \(audioPlayer?.numberOfLoops ?? 0) (should be -1 for infinite)")
+            print("   - Will loop infinitely: \(audioPlayer?.numberOfLoops == -1)")
                 
                 let success = audioPlayer?.play() ?? false
                 if success {
@@ -1276,8 +1275,7 @@ class AlarmManager: NSObject, ObservableObject {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                 .defaultToSpeaker,
-                .allowBluetooth,
-                .allowBluetoothA2DP
+                .allowBluetooth
             ])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             print("✅ Audio session configured for background alarm music")
@@ -1297,6 +1295,12 @@ class AlarmManager: NSObject, ObservableObject {
             audioPlayer?.numberOfLoops = -1 // Play infinitely until dismissed
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
+            
+            print("🎵 Background audio player created:")
+            print("   - Duration: \(audioPlayer?.duration ?? 0) seconds")
+            print("   - Volume: \(audioPlayer?.volume ?? 0)")
+            print("   - Number of loops: \(audioPlayer?.numberOfLoops ?? 0) (should be -1 for infinite)")
+            print("   - Will loop infinitely: \(audioPlayer?.numberOfLoops == -1)")
             
             // Start playing immediately since notification just fired
             let success = audioPlayer?.play() ?? false
@@ -1434,8 +1438,7 @@ class AlarmManager: NSObject, ObservableObject {
                     let audioSession = AVAudioSession.sharedInstance()
                     try audioSession.setCategory(.playAndRecord, mode: .default, options: [
                         .defaultToSpeaker,
-                        .allowBluetooth,
-                        .allowBluetoothA2DP
+                        .allowBluetooth
                     ])
                      try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
                      print("✅ Audio session reactivated for continuous alarm music after interruption")
@@ -1539,6 +1542,9 @@ class AlarmManager: NSObject, ObservableObject {
             // Check if music is actually playing
             if self.audioPlayer?.isPlaying != true {
                 print("🔄 Music stopped unexpectedly, restarting...")
+                print("   - Audio player exists: \(self.audioPlayer != nil)")
+                print("   - Audio player is playing: \(self.audioPlayer?.isPlaying ?? false)")
+                print("   - Audio player loops: \(self.audioPlayer?.numberOfLoops ?? 0)")
                 
                 // Try to restart the current audio player
                 if let player = self.audioPlayer {
@@ -1554,7 +1560,7 @@ class AlarmManager: NSObject, ObservableObject {
                     self.restartMusicFromScratch()
                 }
             } else {
-                print("✅ Music is playing normally")
+                print("✅ Music is playing normally (loops: \(self.audioPlayer?.numberOfLoops ?? 0))")
             }
         }
     }
