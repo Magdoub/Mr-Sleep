@@ -1365,19 +1365,47 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     // MARK: - App-Based Alarm System
     
     private func startAlarmCheckTimer() {
-        print("⏰ Starting app-based alarm check timer (every 30 seconds)")
+        print("⏰ Starting app-based alarm check timer (at minute boundaries)")
         
         // Stop any existing timer
         alarmCheckTimer?.invalidate()
         
-        // Check every 30 seconds for alarm times
-        alarmCheckTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.checkForAlarmTimes()
-        }
+        // Schedule timer for the next minute boundary
+        scheduleNextMinuteBoundaryCheck()
         
         // Also check immediately
         checkForAlarmTimes()
+    }
+    
+    private func scheduleNextMinuteBoundaryCheck() {
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Get the next minute boundary (e.g., if it's 2:57:30, next check at 2:58:00)
+        let currentMinute = calendar.component(.minute, from: now)
+        let nextMinute = currentMinute + 1
+        
+        var components = calendar.dateComponents([.year, .month, .day, .hour], from: now)
+        components.minute = nextMinute
+        components.second = 0
+        components.nanosecond = 0
+        
+        let nextMinuteBoundary = calendar.date(from: components) ?? now
+        let timeInterval = nextMinuteBoundary.timeIntervalSince(now)
+        
+        print("⏰ Scheduling next alarm check at minute boundary: \(nextMinuteBoundary)")
+        print("   - Current time: \(now)")
+        print("   - Time until next check: \(Int(timeInterval)) seconds")
+        
+        alarmCheckTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Check for alarm times at this minute boundary
+            self.checkForAlarmTimes()
+            
+            // Schedule the next minute boundary check
+            self.scheduleNextMinuteBoundaryCheck()
+        }
     }
     
     private func stopAlarmCheckTimer() {
@@ -1410,7 +1438,7 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             guard let todayAlarmTime = calendar.date(from: components) else { continue }
             
-            // Check if alarm time has been reached (within 30 seconds tolerance)
+            // Check if alarm time has been reached (exact minute match)
             let timeDifference = now.timeIntervalSince(todayAlarmTime)
             
             print("🔍 Checking alarm: \(alarm.label) at \(alarm.time)")
@@ -1418,8 +1446,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             print("   - Current time: \(now)")
             print("   - Time difference: \(Int(timeDifference)) seconds")
             
-            // If alarm time has been reached (within 30 seconds tolerance)
-            if timeDifference >= 0 && timeDifference <= 30 {
+            // If alarm time has been reached (within 5 seconds tolerance for minute boundary precision)
+            if timeDifference >= -5 && timeDifference <= 5 {
                 // Check if this alarm is not already active
                 if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
                     print("🚨 ALARM TIME REACHED: \(alarm.label) at \(alarm.time)")
