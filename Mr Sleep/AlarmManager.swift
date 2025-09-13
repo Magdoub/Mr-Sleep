@@ -1066,6 +1066,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
+    private var musicMonitorTimer: Timer? // Timer to monitor and restart music if needed
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
     var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music (public for test access)
     
@@ -1191,7 +1192,7 @@ class AlarmManager: NSObject, ObservableObject {
                 }
                 
                 audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-                audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
+                audioPlayer?.numberOfLoops = -1 // Play infinitely until dismissed
                 audioPlayer?.volume = 1.0
                 
                 // Enable background playback and lock screen controls
@@ -1225,6 +1226,9 @@ class AlarmManager: NSObject, ObservableObject {
             print("❌ No sound URL found - using system sound")
             playSystemAlarmSound()
         }
+        
+        // Start music monitoring to ensure continuous playback
+        startMusicMonitoring()
     }
 
     // MARK: - Background Alarm Music Playback (Notification-Triggered)
@@ -1290,7 +1294,7 @@ class AlarmManager: NSObject, ObservableObject {
         // Create and configure the SINGLE global background music player
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-            audioPlayer?.numberOfLoops = 19 // Play up to 20 times total
+            audioPlayer?.numberOfLoops = -1 // Play infinitely until dismissed
             audioPlayer?.volume = 1.0
             audioPlayer?.prepareToPlay()
             
@@ -1314,6 +1318,9 @@ class AlarmManager: NSObject, ObservableObject {
                 name: AVAudioSession.interruptionNotification,
                 object: audioPlayer
             )
+            
+            // Start music monitoring to ensure continuous playback
+            startMusicMonitoring()
             
         } catch {
             print("❌ Failed to create background alarm music player: \(error)")
@@ -1380,6 +1387,9 @@ class AlarmManager: NSObject, ObservableObject {
          // Stop continuous alarm music
         audioPlayer?.stop()
         audioPlayer = nil
+        
+        // Stop music monitoring
+        stopMusicMonitoring()
         
         // Stop vibration
         stopContinuousVibration()
@@ -1506,6 +1516,70 @@ class AlarmManager: NSObject, ObservableObject {
         print("📳 Stopping continuous vibration")
         vibrationTimer?.invalidate()
         vibrationTimer = nil
+    }
+    
+    // MARK: - Music Monitoring for Infinite Playback
+    
+    private func startMusicMonitoring() {
+        print("🎵 Starting music monitoring for infinite playback")
+        
+        // Stop any existing monitoring timer
+        musicMonitorTimer?.invalidate()
+        
+        // Check every 5 seconds if music is still playing and restart if needed
+        musicMonitorTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Only monitor if alarm should be sounding
+            guard self.isAlarmSounding else {
+                self.stopMusicMonitoring()
+                return
+            }
+            
+            // Check if music is actually playing
+            if self.audioPlayer?.isPlaying != true {
+                print("🔄 Music stopped unexpectedly, restarting...")
+                
+                // Try to restart the current audio player
+                if let player = self.audioPlayer {
+                    let success = player.play()
+                    if success {
+                        print("✅ Successfully restarted existing audio player")
+                    } else {
+                        print("❌ Failed to restart existing audio player, creating new one")
+                        self.restartMusicFromScratch()
+                    }
+                } else {
+                    print("❌ No audio player found, creating new one")
+                    self.restartMusicFromScratch()
+                }
+            } else {
+                print("✅ Music is playing normally")
+            }
+        }
+    }
+    
+    private func stopMusicMonitoring() {
+        print("🎵 Stopping music monitoring")
+        musicMonitorTimer?.invalidate()
+        musicMonitorTimer = nil
+    }
+    
+    private func restartMusicFromScratch() {
+        print("🔄 Restarting music from scratch")
+        
+        // Get the current alarm that should be playing
+        guard let currentAlarm = AlarmDismissalManager.shared.currentAlarm else {
+            print("❌ No current alarm found for music restart")
+            return
+        }
+        
+        // Stop existing player
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        // Restart the background alarm music
+        startBackgroundAlarmMusic(for: currentAlarm)
     }
     
     
