@@ -1066,6 +1066,7 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var vibrationTimer: Timer?
     private var musicMonitorTimer: Timer? // Timer to monitor and restart music if needed
     private var musicRestartTimer: Timer? // Aggressive timer to restart music every 30 seconds
+    private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid // Background task for locked screen
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
     var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music (public for test access)
     
@@ -1232,6 +1233,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         
         // Start aggressive restart timer as fallback
         startAggressiveMusicRestart()
+        
+        // Start background task to keep app active when locked
+        startBackgroundTask()
     }
 
     // MARK: - Background Alarm Music Playback (Notification-Triggered)
@@ -1336,6 +1340,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             // Start aggressive restart timer as fallback
             startAggressiveMusicRestart()
             
+            // Start background task to keep app active when locked
+            startBackgroundTask()
+            
         } catch {
             print("❌ Failed to create background alarm music player: \(error)")
         }
@@ -1407,6 +1414,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         
         // Stop aggressive restart timer
         stopAggressiveMusicRestart()
+        
+        // Stop background task
+        stopBackgroundTask()
         
         // Stop vibration
         stopContinuousVibration()
@@ -1561,6 +1571,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             let duration = self.audioPlayer?.duration ?? 0
             
             print("🎵 Music monitor check:")
+            print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+            print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
             print("   - Player exists: \(playerExists)")
             print("   - Is playing: \(isPlaying)")
             print("   - Loops: \(loops)")
@@ -1617,6 +1629,11 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
             
             print("🔄 Aggressive restart triggered - forcing music restart")
+            print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+            print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+            
+            // Renew background task to ensure we stay active
+            self.renewBackgroundTask()
             
             // Get the current alarm that should be playing
             guard let currentAlarm = AlarmDismissalManager.shared.currentAlarm else {
@@ -1633,6 +1650,56 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         print("🎵 Stopping aggressive music restart timer")
         musicRestartTimer?.invalidate()
         musicRestartTimer = nil
+    }
+    
+    // MARK: - Background Task Management for Locked Screen
+    
+    private func startBackgroundTask() {
+        print("🔒 Starting background task for locked screen music")
+        print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+        print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+        
+        // End any existing background task
+        if backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTaskID)
+        }
+        
+        // Start new background task
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "AlarmMusic") { [weak self] in
+            print("⚠️ Background task about to expire - renewing for continuous music")
+            print("   - Time remaining when expiring: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+            self?.renewBackgroundTask()
+        }
+        
+        print("🔒 Background task started with ID: \(backgroundTaskID.rawValue)")
+        print("   - New background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+    }
+    
+    private func renewBackgroundTask() {
+        print("🔄 Renewing background task for continuous music")
+        
+        // End current task
+        if backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTaskID)
+        }
+        
+        // Start new task
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "AlarmMusic") { [weak self] in
+            print("⚠️ Background task about to expire again - renewing")
+            self?.renewBackgroundTask()
+        }
+        
+        print("🔄 Background task renewed with ID: \(backgroundTaskID.rawValue)")
+    }
+    
+    private func stopBackgroundTask() {
+        print("🔒 Stopping background task")
+        
+        if backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTaskID)
+            backgroundTaskID = .invalid
+            print("🔒 Background task ended")
+        }
     }
     
     private func restartMusicFromScratch() {
