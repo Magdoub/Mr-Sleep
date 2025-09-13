@@ -575,16 +575,13 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             print("🔁 Active alarm dismissal page detected on foreground - ensuring continuous music plays")
             
             // Always ensure proper audio session configuration for continuous music
-            do {
-                let audioSession = AVAudioSession.sharedInstance()
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                    .defaultToSpeaker,
-                    .allowBluetooth
-                ])
-                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            if !configureAudioSessionForBackground() {
+                print("❌ Failed to configure audio session on foreground - trying fallback")
+                if !configureAudioSessionFallback() {
+                    print("❌ All audio session configuration attempts failed on foreground")
+                }
+            } else {
                 print("✅ Audio session configured for continuous alarm music on foreground")
-            } catch {
-                print("❌ Failed to configure audio session on foreground: \(error)")
             }
             
             // Ensure background alarm music continues playing
@@ -1100,24 +1097,23 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 object: audioSession
             )
             
-            // CRITICAL: Use .playAndRecord category which allows background audio
-            // This is the only category that reliably works when phone is locked
-            // Use playAndRecord only if required for speaker routing; keep options minimal to avoid -50
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                .defaultToSpeaker,
-                .allowBluetooth
-            ])
-            
-            // Activate with option to notify other apps
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            // Configure audio session with retry mechanism
+            if !configureAudioSessionForBackground() {
+                print("❌ Failed to configure audio session - trying fallback")
+                if !configureAudioSessionFallback() {
+                    print("❌ All audio session configuration attempts failed")
+                    print("   - This might prevent audio from playing when phone is locked")
+                }
+            }
             
             // Check audio session properties
+            let session = AVAudioSession.sharedInstance()
             print("✅ Audio session configured for BACKGROUND PLAYBACK:")
-            print("   - Category: \(audioSession.category.rawValue)")
-            print("   - Category options: \(audioSession.categoryOptions)")
-            print("   - Output volume: \(audioSession.outputVolume)")
-            print("   - Is other audio playing: \(audioSession.isOtherAudioPlaying)")
-            print("   - Current route: \(audioSession.currentRoute.outputs.first?.portType.rawValue ?? "unknown")")
+            print("   - Category: \(session.category.rawValue)")
+            print("   - Category options: \(session.categoryOptions)")
+            print("   - Output volume: \(session.outputVolume)")
+            print("   - Is other audio playing: \(session.isOtherAudioPlaying)")
+            print("   - Current route: \(session.currentRoute.outputs.first?.portType.rawValue ?? "unknown")")
             
         } catch {
             print("❌ Failed to set up audio session for background: \(error)")
@@ -1276,17 +1272,13 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audioPlayer = nil
         }
         
-        // Configure audio session for background playback that works when phone is locked
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                .defaultToSpeaker,
-                .allowBluetooth
-            ])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            print("✅ Audio session configured for background alarm music")
-        } catch {
-            print("❌ Failed to configure audio session for background music: \(error)")
+        // Configure audio session for background playback with retry mechanism
+        if !configureAudioSessionForBackground() {
+            print("❌ Failed to configure audio session for background music - trying fallback")
+            if !configureAudioSessionFallback() {
+                print("❌ All audio session configuration attempts failed")
+                return
+            }
         }
         
         // Get the sound file URL based on alarm preference
@@ -1636,6 +1628,52 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             print("✅ Audio session deactivated")
         } catch {
             print("❌ Failed to deactivate audio session: \(error)")
+        }
+    }
+    
+    // MARK: - Audio Session Configuration
+    
+    private func configureAudioSessionForBackground() -> Bool {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                .defaultToSpeaker,
+                .allowBluetooth
+            ])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            print("✅ Audio session configured for background alarm music")
+            return true
+        } catch {
+            print("❌ Failed to configure audio session for background music: \(error)")
+            return false
+        }
+    }
+    
+    private func configureAudioSessionFallback() -> Bool {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            // Try with playback category as fallback
+            try audioSession.setCategory(.playback, mode: .default, options: [
+                .defaultToSpeaker,
+                .allowBluetooth
+            ])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            print("✅ Audio session configured with playback fallback")
+            return true
+        } catch {
+            print("❌ Failed to configure audio session with playback fallback: \(error)")
+            
+            // Try with minimal configuration
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playback)
+                try audioSession.setActive(true)
+                print("✅ Audio session configured with minimal settings")
+                return true
+            } catch {
+                print("❌ Failed to configure audio session with minimal settings: \(error)")
+                return false
+            }
         }
     }
     
