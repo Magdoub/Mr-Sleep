@@ -1070,6 +1070,11 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
     var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music (public for test access)
     
+    // Verification flags to track monitoring system status
+    private var isMusicMonitoringActive = false
+    private var isAggressiveRestartActive = false
+    private var isBackgroundTaskActive = false
+    
     private func startAlarmSound(for alarm: AlarmItem? = nil) {
         // If background music is already playing, don't restart it
         if isAlarmSounding && audioPlayer?.isPlaying == true {
@@ -1335,13 +1340,29 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             )
             
             // Start music monitoring to ensure continuous playback
+            print("🎵 VERIFICATION: About to start music monitoring from startBackgroundAlarmMusic")
             startMusicMonitoring()
+            print("🎵 VERIFICATION: Music monitoring started successfully")
             
             // Start aggressive restart timer as fallback
+            print("🎵 VERIFICATION: About to start aggressive restart timer from startBackgroundAlarmMusic")
             startAggressiveMusicRestart()
+            print("🎵 VERIFICATION: Aggressive restart timer started successfully")
             
             // Start background task to keep app active when locked
+            print("🎵 VERIFICATION: About to start background task from startBackgroundAlarmMusic")
             startBackgroundTask()
+            print("🎵 VERIFICATION: Background task started successfully")
+            
+            // Print comprehensive verification summary
+            print("🎵 VERIFICATION SUMMARY:")
+            print("   - Music monitoring active: \(isMusicMonitoringActive)")
+            print("   - Aggressive restart active: \(isAggressiveRestartActive)")
+            print("   - Background task active: \(isBackgroundTaskActive)")
+            print("   - Audio player loops: \(audioPlayer?.numberOfLoops ?? 0)")
+            print("   - Audio player playing: \(audioPlayer?.isPlaying ?? false)")
+            print("   - App state: \(UIApplication.shared.applicationState.rawValue)")
+            print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
             
         } catch {
             print("❌ Failed to create background alarm music player: \(error)")
@@ -1548,6 +1569,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     private func startMusicMonitoring() {
         print("🎵 Starting music monitoring for infinite playback")
+        print("   - Called from: \(Thread.callStackSymbols[1])")
+        print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+        print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
         
         // Stop any existing monitoring timer
         musicMonitorTimer?.invalidate()
@@ -1601,18 +1625,27 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 print("✅ Music is playing normally")
             }
         }
+        
+        // Set verification flag
+        isMusicMonitoringActive = true
+        print("🎵 VERIFICATION: Music monitoring timer created and active: \(isMusicMonitoringActive)")
     }
     
     private func stopMusicMonitoring() {
         print("🎵 Stopping music monitoring")
         musicMonitorTimer?.invalidate()
         musicMonitorTimer = nil
+        isMusicMonitoringActive = false
+        print("🎵 VERIFICATION: Music monitoring stopped, active: \(isMusicMonitoringActive)")
     }
     
     // MARK: - Aggressive Music Restart (Fallback System)
     
     private func startAggressiveMusicRestart() {
         print("🎵 Starting aggressive music restart timer (30-second intervals)")
+        print("   - Called from: \(Thread.callStackSymbols[1])")
+        print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+        print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
         
         // Stop any existing restart timer
         musicRestartTimer?.invalidate()
@@ -1644,12 +1677,18 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             // Force restart the music
             self.restartMusicFromScratch()
         }
+        
+        // Set verification flag
+        isAggressiveRestartActive = true
+        print("🎵 VERIFICATION: Aggressive restart timer created and active: \(isAggressiveRestartActive)")
     }
     
     private func stopAggressiveMusicRestart() {
         print("🎵 Stopping aggressive music restart timer")
         musicRestartTimer?.invalidate()
         musicRestartTimer = nil
+        isAggressiveRestartActive = false
+        print("🎵 VERIFICATION: Aggressive restart timer stopped, active: \(isAggressiveRestartActive)")
     }
     
     // MARK: - Background Task Management for Locked Screen
@@ -1673,6 +1712,10 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         
         print("🔒 Background task started with ID: \(backgroundTaskID.rawValue)")
         print("   - New background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+        
+        // Set verification flag
+        isBackgroundTaskActive = true
+        print("🎵 VERIFICATION: Background task created and active: \(isBackgroundTaskActive)")
     }
     
     private func renewBackgroundTask() {
@@ -1700,6 +1743,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             backgroundTaskID = .invalid
             print("🔒 Background task ended")
         }
+        
+        isBackgroundTaskActive = false
+        print("🎵 VERIFICATION: Background task stopped, active: \(isBackgroundTaskActive)")
     }
     
     private func restartMusicFromScratch() {
@@ -1837,11 +1883,17 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let shouldStart = !isAlarmSounding && !playerIsPlaying && !alreadyStartedForThisAlarm
                 if shouldStart {
                     print("🎵 Notification \(currentRepetition + 1)/20 - initiating background music (guarded)")
+                    print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+                    print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
+                    print("   - About to call startBackgroundAlarmMusic from notification handler")
+                    
                     // Mark as started before launching to avoid races with back-to-back notifications
                     musicStartedForAlarm.insert(alarm.id)
                     currentlyPlayingAlarmId = alarm.id
                     audioStartLock.unlock()
                     startBackgroundAlarmMusic(for: alarm)
+                    
+                    print("   - startBackgroundAlarmMusic call completed from notification handler")
                 } else {
                     print("🔇 Skipping start (guarded). isAlarmSounding=\(isAlarmSounding), playerIsPlaying=\(playerIsPlaying), alreadyStartedForThisAlarm=\(alreadyStartedForThisAlarm), sameAlarm=\(currentlyPlayingSameAlarm)")
                     audioStartLock.unlock()
