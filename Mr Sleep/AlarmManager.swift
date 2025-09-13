@@ -564,6 +564,9 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return
         }
         
+        // Check for active alarms that should be running
+        checkForActiveAlarms()
+        
         // Ensure alarm sound continues if an alarm is currently active
         resumeAlarmIfActiveOnForeground()
         
@@ -1369,6 +1372,59 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
+    // MARK: - App-Based Alarm System
+    
+    private func checkForActiveAlarms() {
+        print("🔍 Checking for active alarms that should be running")
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        for alarm in alarms {
+            guard alarm.isEnabled else { continue }
+            
+            // Check if alarm time has passed but alarm hasn't been dismissed
+            if let scheduledDate = alarm.scheduledDate, scheduledDate <= now {
+                // Check if this alarm should be active (within reasonable time window)
+                let timeSinceAlarm = now.timeIntervalSince(scheduledDate)
+                let maxAlarmDuration: TimeInterval = 3600 // 1 hour max
+                
+                if timeSinceAlarm <= maxAlarmDuration {
+                    // Check if alarm is not already active
+                    if !isAlarmSounding || currentlyPlayingAlarmId != alarm.id {
+                        print("🚨 Found active alarm that should be running: \(alarm.label)")
+                        print("   - Alarm time: \(alarm.time)")
+                        print("   - Time since alarm: \(Int(timeSinceAlarm)) seconds")
+                        
+                        // Trigger the alarm
+                        triggerAppBasedAlarm(for: alarm)
+                        return // Only handle one alarm at a time
+                    }
+                }
+            }
+        }
+        
+        print("🔍 No active alarms found that need to be running")
+    }
+    
+    private func triggerAppBasedAlarm(for alarm: AlarmItem) {
+        print("🚨 App-based alarm triggered for: \(alarm.label)")
+        print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
+        
+        // Start the music and show dismissal page
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Start the music with all monitoring systems
+            self.startBackgroundAlarmMusic(for: alarm)
+            
+            // Show dismissal page to make app dismissal-only
+            AlarmDismissalManager.shared.showDismissalPage(for: alarm)
+            
+            print("🚨 App-based alarm: Music started and dismissal page shown")
+        }
+    }
+    
     // MARK: - Background Music Fallback Timer
     private func scheduleBackgroundMusicFallback(for alarm: AlarmItem, at baseTime: Date) {
         let now = Date()
@@ -1882,18 +1938,20 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                 let currentlyPlayingSameAlarm = (currentlyPlayingAlarmId == alarm.id)
                 let shouldStart = !isAlarmSounding && !playerIsPlaying && !alreadyStartedForThisAlarm
                 if shouldStart {
-                    print("🎵 Notification \(currentRepetition + 1)/20 - initiating background music (guarded)")
+                    print("🔔 Notification \(currentRepetition + 1)/20 - app-based alarm system will handle music")
                     print("   - App state: \(UIApplication.shared.applicationState.rawValue) (0=active, 1=inactive, 2=background)")
                     print("   - Background time remaining: \(UIApplication.shared.backgroundTimeRemaining) seconds")
-                    print("   - About to call startBackgroundAlarmMusic from notification handler")
+                    print("   - Music will be handled by app-based alarm detection, not notifications")
                     
-                    // Mark as started before launching to avoid races with back-to-back notifications
+                    // Mark as started to prevent duplicate processing
                     musicStartedForAlarm.insert(alarm.id)
                     currentlyPlayingAlarmId = alarm.id
                     audioStartLock.unlock()
-                    startBackgroundAlarmMusic(for: alarm)
                     
-                    print("   - startBackgroundAlarmMusic call completed from notification handler")
+                    // Trigger app-based alarm detection instead of starting music directly
+                    triggerAppBasedAlarm(for: alarm)
+                    
+                    print("   - App-based alarm detection triggered from notification")
                 } else {
                     print("🔇 Skipping start (guarded). isAlarmSounding=\(isAlarmSounding), playerIsPlaying=\(playerIsPlaying), alreadyStartedForThisAlarm=\(alreadyStartedForThisAlarm), sameAlarm=\(currentlyPlayingSameAlarm)")
                     audioStartLock.unlock()

@@ -21,8 +21,30 @@ struct MainTabView: View {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
                 SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
+            } else if alarmDismissalManager.isShowingDismissalPage {
+                // Show dismissal page only when alarm is active (dismissal-only mode)
+                if let alarm = alarmDismissalManager.currentAlarm {
+                    AlarmDismissalView(
+                        alarm: alarm,
+                        onDismiss: {
+                            print("🔔 DEBUG: AlarmDismissalView onDismiss called")
+                            // Stop sound, remove notifications, delete alarm
+                            alarmManager.dismissAlarmCompletely(alarm)
+                            alarmDismissalManager.dismissAlarm()
+                        }
+                    )
+                    .onAppear {
+                        print("🔔 DEBUG: App in dismissal-only mode for alarm: \(alarm.label)")
+                    }
+                } else {
+                    // Fallback if no alarm data
+                    Text("Alarm Active - Dismissal Only Mode")
+                        .onAppear {
+                            print("🔔 DEBUG: Dismissal-only mode but no alarm data!")
+                        }
+                }
             } else {
-                // Show full TabView after onboarding
+                // Show full TabView when no alarm is active
                 TabView(selection: $selectedTab) {
                     SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
                         .tabItem {
@@ -61,28 +83,7 @@ struct MainTabView: View {
                 )
             }
         }
-        .fullScreenCover(isPresented: $alarmDismissalManager.isShowingDismissalPage) {
-            if let alarm = alarmDismissalManager.currentAlarm {
-                AlarmDismissalView(
-                    alarm: alarm,
-                    onDismiss: {
-                        print("🔔 DEBUG: AlarmDismissalView onDismiss called")
-                        // Stop sound, remove notifications, delete alarm
-                        alarmManager.dismissAlarmCompletely(alarm)
-                        alarmDismissalManager.dismissAlarm()
-                    }
-                )
-                .onAppear {
-                    print("🔔 DEBUG: fullScreenCover showing AlarmDismissalView for alarm: \(alarm.label)")
-                }
-            } else {
-                // This should not happen but let's log it
-                Text("No alarm data")
-                    .onAppear {
-                        print("🔔 DEBUG: fullScreenCover triggered but no alarm data!")
-                    }
-            }
-        }
+        // Dismissal page is now shown directly in the main view instead of as a fullScreenCover
         .onChange(of: alarmDismissalManager.isShowingDismissalPage) { isShowing in
             print("🔔 DEBUG: MainTabView detected isShowingDismissalPage changed to: \(isShowing)")
             if isShowing {
