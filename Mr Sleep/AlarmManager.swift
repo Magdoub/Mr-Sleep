@@ -375,7 +375,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             // Only the FIRST notification should include a sound; all later ones are silent
             // All notifications are silent - music is handled by app-based system
-            // Don't set content.sound at all to ensure complete silence
+            // Explicitly set sound to none to ensure complete silence
+            content.sound = .none
             print("🔇 Notification \(repetition + 1) is SILENT - music handled by app")
             content.categoryIdentifier = "ALARM_CATEGORY"
             print("🔔 DEBUG: Set categoryIdentifier to ALARM_CATEGORY for notification \(repetition + 1)")
@@ -447,7 +448,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         
         // All notifications are silent - music is handled by app-based system
-        // Don't set content.sound at all to ensure complete silence
+        // Explicitly set sound to none to ensure complete silence
+        content.sound = .none
         content.categoryIdentifier = "ALARM_CATEGORY"
         
         // Make notification critical to bypass Do Not Disturb and volume settings
@@ -1276,8 +1278,11 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         if !configureAudioSessionForBackground() {
             print("❌ Failed to configure audio session for background music - trying fallback")
             if !configureAudioSessionFallback() {
-                print("❌ All audio session configuration attempts failed")
-                return
+                print("❌ All audio session configuration attempts failed - trying aggressive background approach")
+                if !configureAudioSessionAggressiveBackground() {
+                    print("❌ All audio session configuration attempts failed including aggressive approach")
+                    return
+                }
             }
         }
         
@@ -1652,11 +1657,8 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private func configureAudioSessionFallback() -> Bool {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            // Try with playback category as fallback
-            try audioSession.setCategory(.playback, mode: .default, options: [
-                .defaultToSpeaker,
-                .allowBluetooth
-            ])
+            // Try with playback category as fallback (without defaultToSpeaker which is incompatible)
+            try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             print("✅ Audio session configured with playback fallback")
             return true
@@ -1672,7 +1674,65 @@ class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 return true
             } catch {
                 print("❌ Failed to configure audio session with minimal settings: \(error)")
-                return false
+                
+                // Last resort: try ambient category for background audio
+                do {
+                    let audioSession = AVAudioSession.sharedInstance()
+                    try audioSession.setCategory(.ambient)
+                    try audioSession.setActive(true)
+                    print("✅ Audio session configured with ambient fallback")
+                    return true
+                } catch {
+                    print("❌ Failed to configure audio session with ambient fallback: \(error)")
+                    return false
+                }
+            }
+        }
+    }
+    
+    private func configureAudioSessionAggressiveBackground() -> Bool {
+        print("🔊 Attempting aggressive background audio session configuration")
+        
+        // Try to deactivate first, then reactivate with different approach
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            
+            // First, try to deactivate any existing session
+            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+            print("🔊 Deactivated existing audio session")
+            
+            // Wait a moment for the deactivation to complete
+            Thread.sleep(forTimeInterval: 0.1)
+            
+            // Try with soloAmbient category (designed for background audio)
+            try audioSession.setCategory(.soloAmbient, mode: .default)
+            try audioSession.setActive(true)
+            print("✅ Audio session configured with soloAmbient for background")
+            return true
+            
+        } catch {
+            print("❌ Failed soloAmbient configuration: \(error)")
+            
+            // Last resort: try multiRoute category
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.multiRoute)
+                try audioSession.setActive(true)
+                print("✅ Audio session configured with multiRoute fallback")
+                return true
+            } catch {
+                print("❌ Failed multiRoute configuration: \(error)")
+                
+                // Final attempt: force activation without changing category
+                do {
+                    let audioSession = AVAudioSession.sharedInstance()
+                    try audioSession.setActive(true, options: [])
+                    print("✅ Audio session force activated without category change")
+                    return true
+                } catch {
+                    print("❌ Failed force activation: \(error)")
+                    return false
+                }
             }
         }
     }
