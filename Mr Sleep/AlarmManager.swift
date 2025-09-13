@@ -538,6 +538,13 @@ class AlarmManager: NSObject, ObservableObject {
     func handleAppForeground() {
         // Called when app enters foreground (phone unlocked or app opened)
         trackAppActivity()
+        
+        // Don't interfere if we're processing a notification response
+        if isProcessingNotificationResponse {
+            print("⏸️ Skipping app foreground handling - processing notification response")
+            return
+        }
+        
         checkNotificationServiceActivity()
         
         // Never auto-dismiss on foreground/unlock; user must explicitly dismiss
@@ -550,6 +557,12 @@ class AlarmManager: NSObject, ObservableObject {
     func handleAppBecameActive() {
         // Called when app becomes active (additional check for user interaction)
         trackAppActivity()
+        
+        // Don't interfere if we're processing a notification response
+        if isProcessingNotificationResponse {
+            print("⏸️ Skipping app became active handling - processing notification response")
+            return
+        }
         
         // Ensure alarm sound continues if an alarm is currently active
         resumeAlarmIfActiveOnForeground()
@@ -570,53 +583,75 @@ class AlarmManager: NSObject, ObservableObject {
     }
 
     private func resumeAlarmIfActiveOnForeground() {
-        // If dismissal page is up or any alarm has pending notifications, ensure sound is playing
+        // Only resume music if dismissal page is visible (indicating an active alarm)
         let dismissalVisible = AlarmDismissalManager.shared.isShowingDismissalPage
         let currentAlarm = AlarmDismissalManager.shared.currentAlarm
         
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let hasPendingForAnyAlarm = requests.contains { $0.identifier.contains("-repeat-") }
-            DispatchQueue.main.async {
-                if dismissalVisible || hasPendingForAnyAlarm {
-                    print("🔁 Active alarm detected on foreground - ensuring continuous music plays")
-                    
-                    // Always ensure proper audio session configuration for continuous music
-                    do {
-                        let audioSession = AVAudioSession.sharedInstance()
-                        try audioSession.setCategory(.playAndRecord, mode: .default, options: [
-                            .defaultToSpeaker,
-                            .allowBluetooth,
-                            .allowBluetoothA2DP
-                        ])
-                        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                        print("✅ Audio session configured for continuous alarm music on foreground")
-                    } catch {
-                        print("❌ Failed to configure audio session on foreground: \(error)")
-                    }
-                    
-                    // Ensure background alarm music continues playing
-                    if !self.isAlarmSounding || self.audioPlayer?.isPlaying != true {
-                        print("🎵 Starting/resuming background alarm music on foreground")
-                        if let alarm = currentAlarm {
-                            self.startBackgroundAlarmMusic(for: alarm)
-                        } else {
-                            // Fallback - find any active alarm and start its sound
-                            if let activeAlarm = self.alarms.first(where: { $0.isEnabled }) {
-                                self.startBackgroundAlarmMusic(for: activeAlarm)
-                            } else {
-                                // Emergency fallback - use any available alarm music
-                                if let anyAlarm = self.alarms.first {
-                                    self.startBackgroundAlarmMusic(for: anyAlarm)
-                                }
-                            }
-                        }
-                    } else {
-                        print("✅ Background alarm music already playing on foreground")
-                    }
-                } else {
-                    print("⏸️ No active alarms found on foreground")
-                }
+        if dismissalVisible && currentAlarm != nil {
+            print("🔁 Active alarm dismissal page detected on foreground - ensuring continuous music plays")
+            
+            // Always ensure proper audio session configuration for continuous music
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .allowBluetoothA2DP
+                ])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                print("✅ Audio session configured for continuous alarm music on foreground")
+            } catch {
+                print("❌ Failed to configure audio session on foreground: \(error)")
             }
+            
+            // Ensure background alarm music continues playing
+            if !self.isAlarmSounding || self.audioPlayer?.isPlaying != true {
+                print("🎵 Starting/resuming background alarm music on foreground")
+                if let alarm = currentAlarm {
+                    self.startBackgroundAlarmMusic(for: alarm)
+                }
+            } else {
+                print("✅ Background alarm music already playing on foreground")
+            }
+        } else {
+            print("⏸️ No active alarm dismissal page found on foreground - not resuming music")
+        }
+    }
+    
+    private func ensureAlarmMusicForDismissalPage(alarm: AlarmItem) {
+        // Ensure alarm music is playing when dismissal page is shown
+        print("🔔 Ensuring alarm music for dismissal page: \(alarm.label)")
+        
+        // Check if dismissal page is actually visible
+        let dismissalVisible = AlarmDismissalManager.shared.isShowingDismissalPage
+        let currentAlarm = AlarmDismissalManager.shared.currentAlarm
+        
+        if dismissalVisible && currentAlarm?.id == alarm.id {
+            print("🔁 Dismissal page is visible - ensuring continuous music plays")
+            
+            // Always ensure proper audio session configuration for continuous music
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .allowBluetoothA2DP
+                ])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                print("✅ Audio session configured for continuous alarm music on dismissal page")
+            } catch {
+                print("❌ Failed to configure audio session on dismissal page: \(error)")
+            }
+            
+            // Ensure background alarm music continues playing
+            if !self.isAlarmSounding || self.audioPlayer?.isPlaying != true {
+                print("🎵 Starting/resuming background alarm music on dismissal page")
+                self.startBackgroundAlarmMusic(for: alarm)
+            } else {
+                print("✅ Background alarm music already playing on dismissal page")
+            }
+        } else {
+            print("⏸️ Dismissal page not visible or wrong alarm - not starting music")
         }
     }
     
@@ -1014,14 +1049,14 @@ class AlarmManager: NSObject, ObservableObject {
             }
         }
         
+        // Stop sound/overlay/activities BEFORE removing from arrays
+        stopAlarmSound()
+        dismissLiveActivity(for: alarm.id.uuidString)
+        
         // Remove alarm from lists and persist
         alarms.removeAll { $0.id == alarm.id }
         testAlarms.removeAll { $0.id == alarm.id }
         saveAlarms()
-        
-        // Stop sound/overlay/activities
-        stopAlarmSound()
-        dismissLiveActivity(for: alarm.id.uuidString)
         
         // Clear badge
         UNUserNotificationCenter.current().setBadgeCount(0)
@@ -1677,6 +1712,13 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
                         print("🔔 About to show dismissal page for alarm: \(alarm.label)")
                     AlarmDismissalManager.shared.showDismissalPage(for: alarm)
                         print("🔔 Dismissal page show request completed")
+                    
+                    // Ensure alarm music starts when dismissal page is shown
+                    // This is needed because we skip resumeAlarmIfActiveOnForeground during notification processing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        print("🔔 Ensuring alarm music starts for dismissal page")
+                        self.ensureAlarmMusicForDismissalPage(alarm: alarm)
+                    }
                 }
                 
                     // IMPORTANT: Don't stop the alarm sound yet - let the dismissal page handle it
@@ -1713,10 +1755,31 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
             }
         } else {
             print("❌ Alarm not found for ID: \(alarmIdString)")
+            print("🔔 This likely means the alarm was already dismissed - clearing any remaining notifications")
+            
+            // Clear any remaining notifications for this alarm ID
+            UNUserNotificationCenter.current().getDeliveredNotifications { delivered in
+                let ids = delivered
+                    .map { $0.request.identifier }
+                    .filter { $0.contains(alarmIdString) }
+                if !ids.isEmpty {
+                    UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+                    print("🧹 Cleared \(ids.count) remaining notifications for dismissed alarm")
+                }
+            }
+            
+            // Also clear any pending notifications
+            var identifiersToCancel: [String] = []
+            for repetition in 0..<20 {
+                identifiersToCancel.append("\(alarmIdString)-repeat-\(repetition)")
+            }
+            identifiersToCancel.append(alarmIdString)
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToCancel)
+            print("🧹 Cancelled pending notifications for dismissed alarm")
         }
         
         // Clear the flag after a delay to give dismissal page time to show
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             self.isProcessingNotificationResponse = false
             print("🔔 Cleared notification response processing flag")
         }
