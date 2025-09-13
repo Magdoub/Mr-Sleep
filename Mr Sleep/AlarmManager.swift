@@ -95,7 +95,7 @@ struct AlarmItem: Identifiable, Codable, Equatable {
     }
 }
 
-class AlarmManager: NSObject, ObservableObject {
+class AlarmManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     static let shared = AlarmManager()
     
     @Published var alarms: [AlarmItem] = []
@@ -1065,6 +1065,7 @@ class AlarmManager: NSObject, ObservableObject {
     private var isAlarmSounding = false
     private var vibrationTimer: Timer?
     private var musicMonitorTimer: Timer? // Timer to monitor and restart music if needed
+    private var musicRestartTimer: Timer? // Aggressive timer to restart music every 30 seconds
     private var currentlyPlayingAlarmId: UUID? // Track which alarm is currently playing
     var musicStartedForAlarm: Set<UUID> = [] // Track which alarms have already started music (public for test access)
     
@@ -1228,6 +1229,9 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Start music monitoring to ensure continuous playback
         startMusicMonitoring()
+        
+        // Start aggressive restart timer as fallback
+        startAggressiveMusicRestart()
     }
 
     // MARK: - Background Alarm Music Playback (Notification-Triggered)
@@ -1302,6 +1306,9 @@ class AlarmManager: NSObject, ObservableObject {
             print("   - Number of loops: \(audioPlayer?.numberOfLoops ?? 0) (should be -1 for infinite)")
             print("   - Will loop infinitely: \(audioPlayer?.numberOfLoops == -1)")
             
+            // Add delegate to track when audio finishes (though it shouldn't with infinite loops)
+            audioPlayer?.delegate = self
+            
             // Start playing immediately since notification just fired
             let success = audioPlayer?.play() ?? false
             isAlarmSounding = success
@@ -1325,6 +1332,9 @@ class AlarmManager: NSObject, ObservableObject {
             
             // Start music monitoring to ensure continuous playback
             startMusicMonitoring()
+            
+            // Start aggressive restart timer as fallback
+            startAggressiveMusicRestart()
             
         } catch {
             print("❌ Failed to create background alarm music player: \(error)")
@@ -1394,6 +1404,9 @@ class AlarmManager: NSObject, ObservableObject {
         
         // Stop music monitoring
         stopMusicMonitoring()
+        
+        // Stop aggressive restart timer
+        stopAggressiveMusicRestart()
         
         // Stop vibration
         stopContinuousVibration()
@@ -1529,22 +1542,35 @@ class AlarmManager: NSObject, ObservableObject {
         // Stop any existing monitoring timer
         musicMonitorTimer?.invalidate()
         
-        // Check every 5 seconds if music is still playing and restart if needed
-        musicMonitorTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // Check every 2 seconds if music is still playing and restart if needed
+        musicMonitorTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
             // Only monitor if alarm should be sounding
             guard self.isAlarmSounding else {
+                print("🎵 Music monitoring stopped - alarm no longer sounding")
                 self.stopMusicMonitoring()
                 return
             }
             
+            // Detailed audio player state logging
+            let playerExists = self.audioPlayer != nil
+            let isPlaying = self.audioPlayer?.isPlaying ?? false
+            let loops = self.audioPlayer?.numberOfLoops ?? 0
+            let currentTime = self.audioPlayer?.currentTime ?? 0
+            let duration = self.audioPlayer?.duration ?? 0
+            
+            print("🎵 Music monitor check:")
+            print("   - Player exists: \(playerExists)")
+            print("   - Is playing: \(isPlaying)")
+            print("   - Loops: \(loops)")
+            print("   - Current time: \(String(format: "%.1f", currentTime))s")
+            print("   - Duration: \(String(format: "%.1f", duration))s")
+            print("   - Progress: \(duration > 0 ? String(format: "%.1f", (currentTime/duration)*100) : "0")%")
+            
             // Check if music is actually playing
-            if self.audioPlayer?.isPlaying != true {
+            if !isPlaying {
                 print("🔄 Music stopped unexpectedly, restarting...")
-                print("   - Audio player exists: \(self.audioPlayer != nil)")
-                print("   - Audio player is playing: \(self.audioPlayer?.isPlaying ?? false)")
-                print("   - Audio player loops: \(self.audioPlayer?.numberOfLoops ?? 0)")
                 
                 // Try to restart the current audio player
                 if let player = self.audioPlayer {
@@ -1560,7 +1586,7 @@ class AlarmManager: NSObject, ObservableObject {
                     self.restartMusicFromScratch()
                 }
             } else {
-                print("✅ Music is playing normally (loops: \(self.audioPlayer?.numberOfLoops ?? 0))")
+                print("✅ Music is playing normally")
             }
         }
     }
@@ -1569,6 +1595,44 @@ class AlarmManager: NSObject, ObservableObject {
         print("🎵 Stopping music monitoring")
         musicMonitorTimer?.invalidate()
         musicMonitorTimer = nil
+    }
+    
+    // MARK: - Aggressive Music Restart (Fallback System)
+    
+    private func startAggressiveMusicRestart() {
+        print("🎵 Starting aggressive music restart timer (30-second intervals)")
+        
+        // Stop any existing restart timer
+        musicRestartTimer?.invalidate()
+        
+        // Restart music every 30 seconds regardless of current state
+        musicRestartTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Only restart if alarm should be sounding
+            guard self.isAlarmSounding else {
+                print("🎵 Aggressive restart stopped - alarm no longer sounding")
+                self.stopAggressiveMusicRestart()
+                return
+            }
+            
+            print("🔄 Aggressive restart triggered - forcing music restart")
+            
+            // Get the current alarm that should be playing
+            guard let currentAlarm = AlarmDismissalManager.shared.currentAlarm else {
+                print("❌ No current alarm found for aggressive restart")
+                return
+            }
+            
+            // Force restart the music
+            self.restartMusicFromScratch()
+        }
+    }
+    
+    private func stopAggressiveMusicRestart() {
+        print("🎵 Stopping aggressive music restart timer")
+        musicRestartTimer?.invalidate()
+        musicRestartTimer = nil
     }
     
     private func restartMusicFromScratch() {
@@ -1640,6 +1704,31 @@ class AlarmManager: NSObject, ObservableObject {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: Date())
+    }
+    
+    // MARK: - AVAudioPlayerDelegate
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("🎵 Audio player finished playing - successfully: \(flag)")
+        print("   - This should NOT happen with infinite loops!")
+        print("   - Player loops: \(player.numberOfLoops)")
+        print("   - Alarm should be sounding: \(isAlarmSounding)")
+        
+        // If the audio finished and we should still be playing, restart it
+        if isAlarmSounding {
+            print("🔄 Audio finished unexpectedly - restarting immediately")
+            restartMusicFromScratch()
+        }
+    }
+    
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("❌ Audio player decode error: \(error?.localizedDescription ?? "Unknown error")")
+        
+        // If there's a decode error and we should still be playing, restart
+        if isAlarmSounding {
+            print("🔄 Audio decode error - restarting music")
+            restartMusicFromScratch()
+        }
     }
 }
 
