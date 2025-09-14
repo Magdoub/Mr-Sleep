@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: - Alarm Item Model
 struct AlarmItem: Identifiable, Codable, Equatable {
-    let id = UUID()
+    var id: UUID
     var time: String
     var isEnabled: Bool
     var label: String
@@ -19,6 +19,18 @@ struct AlarmItem: Identifiable, Codable, Equatable {
     var createdFromSleepNow: Bool = false
     var soundName: String = "Sunrise"
     var shouldAutoReset: Bool = false
+    
+    init(time: String, isEnabled: Bool, label: String, category: String, cycles: Int, createdFromSleepNow: Bool = false, soundName: String = "Sunrise", shouldAutoReset: Bool = false) {
+        self.id = UUID()
+        self.time = time
+        self.isEnabled = isEnabled
+        self.label = label
+        self.category = category
+        self.cycles = cycles
+        self.createdFromSleepNow = createdFromSleepNow
+        self.soundName = soundName
+        self.shouldAutoReset = shouldAutoReset
+    }
     
     // Equatable conformance
     static func == (lhs: AlarmItem, rhs: AlarmItem) -> Bool {
