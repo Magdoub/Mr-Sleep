@@ -6,6 +6,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based on sleep cycle science. The app uses 90-minute sleep cycles and accounts for 15 minutes to fall asleep.
 
+## ⚠️ CRITICAL: Approval Required Before Any Changes
+
+**MANDATORY WORKFLOW**: Before making ANY changes to this codebase, Claude MUST:
+
+1. **Explain exactly what will be done** - Describe the specific changes, files to be modified, and the reasoning
+2. **Wait for explicit user approval** - Do not proceed until the user confirms with "yes" or similar approval
+3. **Apply to ALL changes** - This includes:
+   - Code modifications
+   - File creation/deletion
+   - Configuration changes
+   - Documentation updates
+   - Git commits
+   - Any other file system operations
+
+**Example workflow:**
+```
+Claude: "I will add a new function to AlarmManager.swift to handle snooze functionality. This involves adding a snooze() method and updating the alarm state management. Do you approve?"
+
+User: "yes"
+
+Claude: [Proceeds with the approved changes]
+```
+
+**No exceptions** - Every change requires prior explanation and approval.
+
 ## Build and Development Commands
 
 ```bash
