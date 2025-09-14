@@ -68,7 +68,7 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 ### Framework and Dependencies
 - **Pure SwiftUI** application with SwiftUI App lifecycle
 - **No external dependencies** - uses only SwiftUI and Foundation
-- **iOS 15.0+ minimum**, iPhone-only target
+- **iOS 18.0+ minimum**, iPhone-only target
 - **Bundle ID**: `com.magdoub.Mr-Sleeper`
 
 ### Core Architecture Pattern
