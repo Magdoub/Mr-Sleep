@@ -11,6 +11,14 @@ import StoreKit
 @main
 struct Mr_SleepApp: App {
     @StateObject private var alarmManager = AlarmManager.shared
+    @StateObject private var backgroundAlarmManager = BackgroundAlarmManager.shared
+    
+    init() {
+        // Initialize background alarm system on app launch
+        DispatchQueue.main.async {
+            BackgroundAlarmManager.shared.startBackgroundAudio()
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -19,6 +27,16 @@ struct Mr_SleepApp: App {
                 .environmentObject(alarmManager)
                 .onAppear {
                     incrementLaunchCount()
+                    // Ensure background audio is running
+                    backgroundAlarmManager.startBackgroundAudio()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    // Resume background audio when app enters foreground
+                    backgroundAlarmManager.startBackgroundAudio()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    // Ensure audio continues in background
+                    print("📱 App entering background - background audio should continue")
                 }
         }
     }

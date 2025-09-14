@@ -101,10 +101,21 @@ struct MainTabView: View {
     @State private var showTabBarAnimation = false
     @EnvironmentObject var alarmManager: AlarmManager
     @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
+    @StateObject private var backgroundAlarmManager = BackgroundAlarmManager.shared
     
     var body: some View {
         Group {
-            if showOnboarding {
+            if backgroundAlarmManager.isAlarmCurrentlyRinging {
+                // Show alarm dismissal view when alarm is ringing
+                if let alarm = backgroundAlarmManager.currentActiveAlarm {
+                    AlarmDismissalView(
+                        alarm: alarm,
+                        onDismiss: {
+                            backgroundAlarmManager.dismissAlarm()
+                        }
+                    )
+                }
+            } else if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
                 SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
             } else {
