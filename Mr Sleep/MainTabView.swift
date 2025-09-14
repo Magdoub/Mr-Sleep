@@ -13,38 +13,14 @@ struct MainTabView: View {
     @State private var tabBarOffset: CGFloat = 0
     @State private var showTabBarAnimation = false
     @EnvironmentObject var alarmManager: AlarmManager
-    @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
-    @ObservedObject private var alarmDismissalManager = AlarmDismissalManager.shared
     
     var body: some View {
         Group {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
                 SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
-            } else if alarmDismissalManager.isShowingDismissalPage {
-                // Show dismissal page only when alarm is active (dismissal-only mode)
-                if let alarm = alarmDismissalManager.currentAlarm {
-                    AlarmDismissalView(
-                        alarm: alarm,
-                        onDismiss: {
-                            print("🔔 DEBUG: AlarmDismissalView onDismiss called")
-                            // Stop sound, remove notifications, delete alarm
-                            alarmManager.dismissAlarmCompletely(alarm)
-                            alarmDismissalManager.dismissAlarm()
-                        }
-                    )
-                    .onAppear {
-                        print("🔔 DEBUG: App in dismissal-only mode for alarm: \(alarm.label)")
-                    }
-                } else {
-                    // Fallback if no alarm data
-                    Text("Alarm Active - Dismissal Only Mode")
-                        .onAppear {
-                            print("🔔 DEBUG: Dismissal-only mode but no alarm data!")
-                        }
-                }
             } else {
-                // Show full TabView when no alarm is active
+                // Show full TabView
                 TabView(selection: $selectedTab) {
                     SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
                         .tabItem {
@@ -72,52 +48,24 @@ struct MainTabView: View {
                 .animation(.easeOut(duration: 0.6), value: showTabBarAnimation)
             }
         }
-        .fullScreenCover(isPresented: $alarmOverlayManager.isShowingAlarm) {
-            if let alarm = alarmOverlayManager.currentAlarm {
-                AlarmRingingView(
-                    alarm: alarm,
-                    onDismiss: {
-                        // Dismiss through AlarmManager to stop sound properly
-                        alarmManager.dismissLiveActivity(for: alarm.id.uuidString)
-                    }
-                )
-            }
-        }
-        // Dismissal page is now shown directly in the main view instead of as a fullScreenCover
-        .onChange(of: alarmDismissalManager.isShowingDismissalPage) { isShowing in
-            print("🔔 DEBUG: MainTabView detected isShowingDismissalPage changed to: \(isShowing)")
-            if isShowing {
-                print("🔔 DEBUG: MainTabView should show fullScreenCover now")
-            }
-        }
-        .onChange(of: alarmDismissalManager.currentAlarm) { alarm in
-            print("🔔 DEBUG: MainTabView detected currentAlarm changed to: \(alarm?.label ?? "nil")")
-        }
         .onChange(of: showOnboarding) { isOnboarding in
-            // Update onboarding state when it changes
             showOnboarding = isOnboarding
         }
         .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
-            // Update showOnboarding state when onboarding is completed
             showOnboarding = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            // Reset animation state when app comes from background
             if !showOnboarding {
                 showTabBarAnimation = false
                 tabBarOffset = 0
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            // Trigger slide-up animation when app becomes active
             if !showOnboarding {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     showTabBarAnimation = true
                 }
             }
-            
-            // Handle app lifecycle in alarm manager
-            alarmManager.handleAppBecameActive()
         }
         .onAppear {
             // Configure tab bar appearance
@@ -154,7 +102,6 @@ struct MainTabView: View {
         }
     }
 }
-
 
 #Preview {
     MainTabView()
