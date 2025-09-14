@@ -31,6 +31,25 @@ Claude: [Proceeds with the approved changes]
 
 **No exceptions** - Every change requires prior explanation and approval.
 
+## 🔍 MANDATORY: Always Ask for Review
+
+**CRITICAL REMINDER**: Before making ANY modifications to this codebase, Claude MUST:
+
+1. **Stop and ask for review** - Never proceed directly with changes
+2. **Explain the planned changes clearly** - What files will be modified and why
+3. **Wait for explicit "yes" or approval** - Do not assume permission
+4. **Apply to every single change** - No matter how small or obvious it seems
+
+**This applies to:**
+- All code modifications
+- File creation or deletion
+- Configuration updates
+- Documentation changes
+- Git operations
+- Any file system operations
+
+**Remember**: The user wants to review and approve every change before it happens.
+
 ## Build and Development Commands
 
 ```bash
