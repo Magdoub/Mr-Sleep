@@ -64,7 +64,7 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - `SleepNowView.swift` - Main sleep calculation and wake-up time selection
 - `AlarmsView.swift` - Alarm management with native iOS Clock app experience
 - `SettingsView.swift` - User preferences and app configuration
-- `AlarmManager.swift` - Alarm data management and notification handling
+- `AlarmManager.swift` - Alarm data storage and UI management (no notifications)
 - `SleepCalculator.swift` - Business logic singleton for sleep calculations
 - `WakeUpTimeButton` - Reusable button component for time display
 - `SleepGuideView` - Educational overlay about sleep hygiene
@@ -75,8 +75,9 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - **Recommended sleep**: 4.5-6 hours highlighted as optimal
 - **Real-time updates**: Timer publishes minute-level updates to UI
 - **Alarm creation**: One-tap alarm creation from sleep calculations
-- **Auto-reset alarms**: Manual alarms automatically disable after firing
-- **Notification permissions**: Automatic request and management
+- **Alarm data management**: Create, edit, delete, toggle alarms (UI-only)
+- **Sound selection**: Multiple alarm tones with preview functionality
+- **⚠️ NO NOTIFICATIONS**: Alarms are stored but do not send iOS notifications
 
 ## Code Patterns and Conventions
 
@@ -226,6 +227,9 @@ refactor(ui): Extract sleep analytics into separate view component
 - Recommended times highlighted visually
 - Custom gradient backgrounds and button styling
 - **Automatic navigation**: After creating an alarm, automatically switches to Alarms tab
+- **Alarm management UI**: Complete interface for creating, editing, and managing alarms
+- **Sound preview**: Play alarm sounds when selecting them in the UI
+- **⚠️ Visual-only alarms**: UI shows alarms but they don't actually trigger notifications
 
 ### Platform Specifics
 - iPhone-only application (no iPad/Mac support)
@@ -234,37 +238,55 @@ refactor(ui): Extract sleep analytics into separate view component
 - Uses native iOS date/time formatting
 
 ### Extension Opportunities
+- **PRIORITY: Implement real notifications** - Add UNUserNotificationCenter for functional alarms
 - Could add iPad support with adaptive layouts
 - Apple Watch companion app potential
 - Internationalization support (currently English-only)
-- Background notifications for optimal sleep times
+- Live Activities for lock screen alarm display
+- Critical alerts to bypass Do Not Disturb
 
 ## Version History
 
-### Version 3.1 (Build 3) - January 2025
-**🔔 Alarm System Overhaul - Now Fully Functional!**
+### Version 3.1 (Build 3) - Current Status
+**⚠️ Alarm System - UI Complete, Notifications NOT Implemented**
 
-- ✅ **Fixed alarm notifications**: Alarms now work reliably when phone is locked
-- 🔄 **Smart repeat system**: Up to 6 notifications every 30 seconds for heavy sleepers
-- 🔓 **Lock-aware behavior**: Notifications automatically stop when phone is unlocked
-- 🎵 **Multiple alarm sounds**: Choose between Morning, Smooth, and Classic alarm tones
-- 🎯 **Auto-toggle functionality**: Alarms automatically turn off when:
-  - Phone is unlocked (without opening app)
-  - App is opened
-  - Any notification is tapped
-  - All 6 notifications complete
-- 🔊 **Critical alerts**: Bypass Do Not Disturb and volume settings
-- 📱 **Live Activities**: Enhanced alarm display on lock screen
-- 🎨 **Improved UI**: Better sound selection and alarm management
+**✅ What Currently Works:**
+- 🎨 **Complete alarm UI**: Full alarm management interface with create, edit, delete, toggle
+- 🎵 **Sound selection**: Choose between Morning, Smooth, and Classic alarm tones with preview
+- 💾 **Data persistence**: Alarms saved to UserDefaults and persist between app launches
+- 🔄 **Sleep integration**: One-tap alarm creation from sleep time calculations
+- 📱 **Navigation flow**: Automatic tab switching after alarm creation
+- 🎯 **Alarm management**: Toggle alarms on/off, edit times and sounds
 
-**Technical Improvements:**
-- Pre-scheduling notification system for reliability
-- Enhanced app lifecycle detection
-- Robust background processing handling
-- Comprehensive logging for debugging
-- Multiple fallback mechanisms for alarm dismissal
+**❌ What Does NOT Work:**
+- 🚫 **NO NOTIFICATIONS**: Alarms do not send any iOS notifications
+- 🚫 **NO BACKGROUND ALERTS**: App cannot wake you up when closed/locked
+- 🚫 **NO CRITICAL ALERTS**: No bypass of Do Not Disturb or volume settings
+- 🚫 **NO LIVE ACTIVITIES**: No lock screen alarm display
+- 🚫 **NO RELIABLE BACKGROUND**: Background audio approach is experimental and unreliable
+
+**🔧 Current Technical Implementation:**
+- **AlarmManager**: Data-only alarm storage and UI management
+- **BackgroundAlarmManager**: Experimental background audio + timer approach (unreliable)
+- **AlarmsView**: Complete UI for alarm management with sound previews
+- **AlarmDismissalView**: UI component (not triggered by real alarms)
+- **Missing**: UNUserNotificationCenter integration for actual iOS notifications
+
+**🚨 Critical Issue:**
+The alarm system is currently **UI-only**. Users can create and manage alarms, but **no actual notifications are sent**. The app attempts to use background audio to stay alive and check times, but this approach:
+- Fails when app is force-closed
+- Fails when device restarts
+- Fails when iOS terminates app for memory/battery
+- Is unreliable and not recommended by Apple
+
+**📋 Required for Functional Alarms:**
+1. Implement UNUserNotificationCenter for real iOS notifications
+2. Request notification permissions from user
+3. Schedule notifications when alarms are created/enabled
+4. Handle notification responses and alarm dismissal
+5. Implement proper background notification handling
 
 ### Version 3.0 (Build 2) - Previous Release
-- Initial alarm functionality
-- Basic notification system
+- Initial alarm UI implementation
+- Basic data storage system
 - Sleep calculation features
