@@ -200,13 +200,16 @@ struct SleepNowView: View {
                                                 pulseScale: 1.0,
                                                 action: {
                                                     let wakeUpTimeString = SleepCalculator.shared.formatTime(timeData.time)
-                                                    alarmManager.addAlarm(
+                                                    let alarm = AlarmItem(
                                                         time: wakeUpTimeString,
+                                                        isEnabled: true,
+                                                        label: "💤 \(formatSleepDurationSimple(cycles: timeData.cycles)) \(categoryData.category)",
                                                         category: categoryData.category,
-                                                        cycles: timeData.cycles
+                                                        cycles: timeData.cycles,
+                                                        createdFromSleepNow: true,
+                                                        soundName: "Morning"
                                                     )
-                                                    selectedWakeUpTime = wakeUpTimeString
-                                                    showAlarmInstructions = true
+                                                    AlarmOverlayManager.shared.showAlarmCreation(for: alarm)
                                                 }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
