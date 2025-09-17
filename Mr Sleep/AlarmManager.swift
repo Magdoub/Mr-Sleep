@@ -50,7 +50,7 @@ class AlarmManager: ObservableObject {
     
     // MARK: - Basic Alarm Operations
     
-    func addAlarm(time: String, category: String, cycles: Int) {
+    func addAlarm(time: String, category: String, cycles: Int) -> UUID {
         let label = generateAlarmLabel(category: category, cycles: cycles)
         let alarm = AlarmItem(
             time: time,
@@ -63,9 +63,10 @@ class AlarmManager: ObservableObject {
         )
         alarms.append(alarm)
         saveAlarms()
+        return alarm.id
     }
     
-    func addManualAlarm(time: String, soundName: String) {
+    func addManualAlarm(time: String, soundName: String) -> UUID {
         let alarm = AlarmItem(
             time: time,
             isEnabled: true,
@@ -78,6 +79,7 @@ class AlarmManager: ObservableObject {
         )
         alarms.append(alarm)
         saveAlarms()
+        return alarm.id
     }
     
     func removeAlarm(_ alarm: AlarmItem) {

@@ -245,7 +245,7 @@ struct SleepNowView: View {
                         showModal: $showAlarmInstructions,
                         onDismiss: {
                             // Navigate to Alarms tab after dismissing popup
-                            selectedTab = 1
+                            selectedTab = 0
                         }
                     )
                 }

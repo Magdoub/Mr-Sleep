@@ -43,8 +43,8 @@
 /* Begin PBXFileReference section */
 		1D087FC22E71A547008D05E8 /* AlarmDismissalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmDismissalView.swift; sourceTree = "<group>"; };
 		1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "morning-alarm-clock.mp3"; sourceTree = "<group>"; };
-		1D4770D12E71A600007AF563 /* BackgroundAlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundAlarmManager.swift; sourceTree = "<group>"; };
 		1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "smooth-alarm-clock.mp3"; sourceTree = "<group>"; };
+		1D4770D12E71A600007AF563 /* BackgroundAlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundAlarmManager.swift; sourceTree = "<group>"; };
 		1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "alarm-clock.mp3"; sourceTree = "<group>"; };
 		1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mr Sleep.entitlements"; sourceTree = "<group>"; };
 		1DB00CBD2E52405C003DCB88 /* Mr Sleep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mr Sleep.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +79,7 @@
 			children = (
 				1DB00CBF2E52405C003DCB88 /* Mr Sleep */,
 				1DB00CBE2E52405C003DCB88 /* Products */,
+				1DB00CE02E5240B8003DCB88 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,6 +125,13 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		1DB00CE02E5240B8003DCB88 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -153,7 +161,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					1DB00CBC2E52405C003DCB88 = {
 						CreatedOnToolsVersion = 15.4;
@@ -210,6 +218,7 @@
 				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
 				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
 				1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */,
+				1D000001AE71A600007AF563 /* AlarmKitManager.swift in Sources */,
 				1D4770D02E71A600007AF563 /* BackgroundAlarmManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -270,12 +279,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -328,11 +338,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -349,12 +360,13 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAlarmUsageDescription = "This app uses alarms to wake you up at optimal times based on your sleep cycles.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -383,12 +395,13 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Mr Sleep/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSAlarmUsageDescription = "This app uses alarms to wake you up at optimal times based on your sleep cycles.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

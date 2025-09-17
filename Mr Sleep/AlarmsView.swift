@@ -182,8 +182,12 @@ struct AlarmsView: View {
                                                 }
                                             }
                                         ),
-                                        onToggle: { alarmManager.toggleAlarm(alarm) },
-                                        onDelete: { alarmManager.removeAlarm(alarm) },
+                                        onToggle: { 
+                                            alarmManager.toggleAlarm(alarm) 
+                                        },
+                                        onDelete: { 
+                                            alarmManager.removeAlarm(alarm) 
+                                        },
                                         onEdit: {
                                             alarmToEdit = alarm
                                             showingEditAlarm = true
@@ -293,6 +297,8 @@ struct AddAlarmView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSound = "Sunrise"
     @StateObject private var soundPreview = SoundPreviewManager()
+    @State private var showingError = false
+    @State private var errorMessage = ""
     
     let soundOptions = ["Sunrise", "Calm", "Classic"]
     
@@ -386,6 +392,11 @@ struct AddAlarmView: View {
                 }
             }
         }
+        .alert("Alarm Error", isPresented: $showingError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage)
+        }
     }
     
     private func addAlarm() {
@@ -393,7 +404,7 @@ struct AddAlarmView: View {
         formatter.dateFormat = "h:mm a"
         let timeString = formatter.string(from: selectedTime)
         
-        alarmManager.addManualAlarm(time: timeString, soundName: selectedSound)
+        let _ = alarmManager.addManualAlarm(time: timeString, soundName: selectedSound)
         soundPreview.stopCurrentSound()
         dismiss()
     }
@@ -517,6 +528,8 @@ struct EditAlarmView: View {
         formatter.dateFormat = "h:mm a"
         let timeString = formatter.string(from: selectedTime)
         
+        
+        // Update UI alarm
         alarmManager.updateAlarm(
             alarm: alarm,
             newTime: timeString,

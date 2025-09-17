@@ -95,43 +95,33 @@ struct AlarmCreationView: View {
 }
 
 struct MainTabView: View {
-    @State private var selectedTab = 0
+    @State private var selectedTab = 1
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @State private var tabBarOffset: CGFloat = 0
     @State private var showTabBarAnimation = false
+    @State private var showingAlarmError = false
+    @State private var alarmErrorMessage = ""
     @EnvironmentObject var alarmManager: AlarmManager
-    @StateObject private var alarmOverlayManager = AlarmOverlayManager.shared
-    @StateObject private var backgroundAlarmManager = BackgroundAlarmManager.shared
     
     var body: some View {
         Group {
-            if backgroundAlarmManager.isAlarmCurrentlyRinging {
-                // Show alarm dismissal view when alarm is ringing
-                if let alarm = backgroundAlarmManager.currentActiveAlarm {
-                    AlarmDismissalView(
-                        alarm: alarm,
-                        onDismiss: {
-                            backgroundAlarmManager.dismissAlarm()
-                        }
-                    )
-                }
-            } else if showOnboarding {
+            if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
                 SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
             } else {
                 // Show full TabView
                 TabView(selection: $selectedTab) {
-                    SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
+                    AlarmsView(alarmManager: alarmManager)
                         .tabItem {
-                            Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
-                            Text("Sleep Now")
+                            Image(systemName: selectedTab == 0 ? "alarm.fill" : "alarm")
+                            Text("Alarms")
                         }
                         .tag(0)
                     
-                    AlarmsView(alarmManager: alarmManager)
+                    SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
                         .tabItem {
-                            Image(systemName: selectedTab == 1 ? "alarm.fill" : "alarm")
-                            Text("Alarms")
+                            Image(systemName: selectedTab == 1 ? "bed.double.fill" : "bed.double")
+                            Text("Sleep Now")
                         }
                         .tag(1)
                     
@@ -143,34 +133,41 @@ struct MainTabView: View {
                         .tag(2)
                 }
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                .onAppear {
+                    // Configure tab bar appearance for iOS 26
+                    let tabBarAppearance = UITabBarAppearance()
+                    tabBarAppearance.configureWithOpaqueBackground()
+                    
+                    // Set background colors
+                    tabBarAppearance.backgroundColor = UIColor(red: 0.05, green: 0.05, blue: 0.1, alpha: 0.95)
+                    
+                    // Configure normal state
+                    tabBarAppearance.stackedLayoutAppearance.normal.iconColor = UIColor(white: 0.6, alpha: 1.0)
+                    tabBarAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+                        .foregroundColor: UIColor(white: 0.6, alpha: 1.0),
+                        .font: UIFont.systemFont(ofSize: 11, weight: .medium)
+                    ]
+                    
+                    // Configure selected state
+                    tabBarAppearance.stackedLayoutAppearance.selected.iconColor = UIColor(red: 0.894, green: 0.729, blue: 0.306, alpha: 1.0)
+                    tabBarAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+                        .foregroundColor: UIColor(red: 0.894, green: 0.729, blue: 0.306, alpha: 1.0),
+                        .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
+                    ]
+                    
+                    // Apply appearance
+                    UITabBar.appearance().standardAppearance = tabBarAppearance
+                    UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+                    
+                    // Add extra bottom padding for iOS 26
+                    UITabBar.appearance().itemPositioning = .centered
+                    UITabBar.appearance().itemSpacing = 8
+                }
                 .offset(y: showTabBarAnimation ? 0 : tabBarOffset)
                 .animation(.easeOut(duration: 0.6), value: showTabBarAnimation)
             }
         }
-        .overlay(
-            // Alarm creation overlay
-            Group {
-                if alarmOverlayManager.isShowingAlarm, let alarm = alarmOverlayManager.currentAlarm {
-                    AlarmCreationView(
-                        alarm: alarm,
-                        onConfirm: {
-                            // Add the alarm and switch to alarms tab
-                            alarmManager.addAlarm(
-                                time: alarm.time,
-                                category: alarm.category,
-                                cycles: alarm.cycles
-                            )
-                            alarmOverlayManager.dismissAlarm()
-                            selectedTab = 1 // Switch to Alarms tab
-                        },
-                        onDismiss: {
-                            alarmOverlayManager.dismissAlarm()
-                        }
-                    )
-                }
-            }
-        )
-        .onChange(of: showOnboarding) { isOnboarding in
+        .onChange(of: showOnboarding) { _, isOnboarding in
             showOnboarding = isOnboarding
         }
         .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
@@ -188,6 +185,11 @@ struct MainTabView: View {
                     showTabBarAnimation = true
                 }
             }
+        }
+        .alert("Alarm Error", isPresented: $showingAlarmError) {
+            Button("OK") { }
+        } message: {
+            Text(alarmErrorMessage)
         }
         .onAppear {
             // Configure tab bar appearance

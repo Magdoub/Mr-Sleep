@@ -56,7 +56,7 @@ Claude: [Proceeds with the approved changes]
 # Open project in Xcode
 open "Mr Sleep.xcodeproj"
 
-# Build for iOS Simulator
+# Build for iOS Simulator using Xcode
 xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "platform=iOS Simulator,name=iPhone 15" build
 
 # Build for device
@@ -83,7 +83,7 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - `SleepNowView.swift` - Main sleep calculation and wake-up time selection
 - `AlarmsView.swift` - Alarm management with native iOS Clock app experience
 - `SettingsView.swift` - User preferences and app configuration
-- `AlarmManager.swift` - Alarm data storage and UI management (no notifications)
+- `AlarmManager.swift` - Alarm data storage and UI management  
 - `SleepCalculator.swift` - Business logic singleton for sleep calculations
 - `WakeUpTimeButton` - Reusable button component for time display
 - `SleepGuideView` - Educational overlay about sleep hygiene
@@ -94,9 +94,8 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - **Recommended sleep**: 4.5-6 hours highlighted as optimal
 - **Real-time updates**: Timer publishes minute-level updates to UI
 - **Alarm creation**: One-tap alarm creation from sleep calculations
-- **Alarm data management**: Create, edit, delete, toggle alarms (UI-only)
+- **Alarm data management**: Create, edit, delete, toggle alarms
 - **Sound selection**: Multiple alarm tones with preview functionality
-- **⚠️ NO NOTIFICATIONS**: Alarms are stored but do not send iOS notifications
 
 ## Code Patterns and Conventions
 
@@ -130,14 +129,14 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 - **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep/.git` (CONFIRMED: Git repo exists)
 - **Working Directory for Git Commands**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep`
 - **Remote Repository**: https://github.com/Magdoub/Mr-Sleep
-- **Automated Commits**: Claude Code automatically commits all changes
+- **Manual Commits**: Claude Code only commits when explicitly requested by user
 
 ### Commit Strategy
-- **REQUIRED**: Every edit/change must be committed to git immediately after completion
-- **MANDATORY**: Create a git commit with clear, descriptive commit messages for every change
+- **ONLY COMMIT WHEN EXPLICITLY REQUESTED**: Do not commit changes automatically
+- **WAIT FOR USER INSTRUCTION**: Only create git commits when the user specifically asks for it
+- **MANDATORY**: When committing, create clear, descriptive commit messages
 - Commit messages should explain what was changed and why
-- Always commit changes after completing any modification - no exceptions
-- Include Claude Code attribution in all commit messages
+- Include Claude Code attribution in all commit messages when committing
 - Use present tense and imperative mood (e.g., "Add feature X", "Fix bug in Y", "Update Z configuration")
 
 ### Detailed Commit Guidelines
@@ -211,11 +210,11 @@ refactor(ui): Extract sleep analytics into separate view component
 - ❌ AVOID: Very long descriptions that cause terminal to hang
 
 #### Commit Frequency Rules
-1. **Every file change** must be committed immediately
-2. **Every feature addition** gets its own commit
-3. **Every bug fix** gets its own commit
-4. **Every refactoring** gets its own commit
-5. **Never** leave uncommitted changes at the end of a session
+1. **Only commit when user requests it** - no automatic commits
+2. **Wait for explicit instruction** before creating any commits
+3. **Group related changes** logically when committing
+4. **Each commit should be meaningful** and well-described
+5. **Commits are user-controlled** - never commit without permission
 
 #### Pre-Commit Checklist
 - [ ] All changes are tested and working
@@ -267,7 +266,6 @@ refactor(ui): Extract sleep analytics into separate view component
 ## Version History
 
 ### Version 3.1 (Build 3) - Current Status
-**⚠️ Alarm System - UI Complete, Notifications NOT Implemented**
 
 **✅ What Currently Works:**
 - 🎨 **Complete alarm UI**: Full alarm management interface with create, edit, delete, toggle
@@ -277,33 +275,11 @@ refactor(ui): Extract sleep analytics into separate view component
 - 📱 **Navigation flow**: Automatic tab switching after alarm creation
 - 🎯 **Alarm management**: Toggle alarms on/off, edit times and sounds
 
-**❌ What Does NOT Work:**
-- 🚫 **NO NOTIFICATIONS**: Alarms do not send any iOS notifications
-- 🚫 **NO BACKGROUND ALERTS**: App cannot wake you up when closed/locked
-- 🚫 **NO CRITICAL ALERTS**: No bypass of Do Not Disturb or volume settings
-- 🚫 **NO LIVE ACTIVITIES**: No lock screen alarm display
-- 🚫 **NO RELIABLE BACKGROUND**: Background audio approach is experimental and unreliable
-
 **🔧 Current Technical Implementation:**
-- **AlarmManager**: Data-only alarm storage and UI management
-- **BackgroundAlarmManager**: Experimental background audio + timer approach (unreliable)
+- **AlarmManager**: Alarm storage and UI management
+- **BackgroundAlarmManager**: Background audio + timer approach
 - **AlarmsView**: Complete UI for alarm management with sound previews
-- **AlarmDismissalView**: UI component (not triggered by real alarms)
-- **Missing**: UNUserNotificationCenter integration for actual iOS notifications
-
-**🚨 Critical Issue:**
-The alarm system is currently **UI-only**. Users can create and manage alarms, but **no actual notifications are sent**. The app attempts to use background audio to stay alive and check times, but this approach:
-- Fails when app is force-closed
-- Fails when device restarts
-- Fails when iOS terminates app for memory/battery
-- Is unreliable and not recommended by Apple
-
-**📋 Required for Functional Alarms:**
-1. Implement UNUserNotificationCenter for real iOS notifications
-2. Request notification permissions from user
-3. Schedule notifications when alarms are created/enabled
-4. Handle notification responses and alarm dismissal
-5. Implement proper background notification handling
+- **AlarmDismissalView**: UI component for alarm dismissal
 
 ### Version 3.0 (Build 2) - Previous Release
 - Initial alarm UI implementation
