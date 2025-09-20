@@ -5,6 +5,17 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * App Entry Point & Configuration
+ * 
+ * This file defines the main SwiftUI App struct and handles:
+ * - App lifecycle and startup configuration
+ * - Dark mode preference setting
+ * - Launch count tracking for App Store review prompts
+ * - Global environment object setup (AlarmManager)
+ * - Initial view hierarchy configuration
+ */
+
 import SwiftUI
 import StoreKit
 

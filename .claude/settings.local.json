@@ -45,7 +45,8 @@
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"AlarmKit-ScheduleAndAlert.xcodeproj\" -scheme \"AlarmKit-ScheduleAndAlert\" -destination \"platform=iOS Simulator,name=iPhone 16\" -derivedDataPath \"/tmp/AlarmKitSample\" install)",
       "Bash(xcrun simctl list:*)",
       "Bash(xcrun simctl boot:*)",
-      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 17 Pro\" build)"
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 17 Pro\" build)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": [],

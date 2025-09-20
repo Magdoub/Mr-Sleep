@@ -1,8 +1,40 @@
+//
+//  SleepNowView.swift
+//  Mr Sleep
+//
+//  Created by Magdoub on 17/08/2025.
+//
+
+/*
+ * Primary Sleep Calculation Interface
+ * 
+ * This is the main view that users interact with for sleep planning:
+ * - Real-time sleep cycle calculations based on 90-minute cycles
+ * - Interactive onboarding flow for new users
+ * - Categorized wake-up time recommendations (Quick Boost, Recovery, Full Recharge)
+ * - One-tap alarm creation with automatic tab switching
+ * - Animated loading states and completion feedback
+ * - 3D moon icons with rotation and floating "zzz" animations
+ * - Sleep guide integration for educational content
+ * 
+ * Contains embedded views:
+ * - OnboardingView: 3-step user introduction
+ * - CalculatingWakeUpTimesView: Loading animation
+ * - FinishingUpView: Completion animation
+ * - AlarmInstructionsModal: Alarm creation confirmation
+ */
+
 import SwiftUI
 import AVFoundation
 import AudioToolbox
 
-struct ContentView: View {
+extension Notification.Name {
+    static let onboardingCompleted = Notification.Name("onboardingCompleted")
+}
+
+struct SleepNowView: View {
+    @ObservedObject var alarmManager: AlarmManager
+    @Binding var selectedTab: Int
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
@@ -15,14 +47,13 @@ struct ContentView: View {
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [1.0, 0.8, 0.6]
     @State private var breathingScale: Double = 1.0
-    @State private var showAlarmInstructions = false
-    @State private var selectedWakeUpTime = ""
     @State private var currentMoonIcon: String = "moon-3D-icon"
     @State private var wakeUpTimeVisibility: [Bool] = [false, false, false, false, false, false]
     @State private var categoryHeadersVisible: Bool = false
     @State private var isCalculatingWakeUpTimes = false
     @State private var calculationProgress: Double = 0.0
     @State private var isFinishingUp = false
+    @State private var hasCompletedInitialLoading = false
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -184,10 +215,6 @@ struct ContentView: View {
                                                 isRecommended: false,
                                                 cycles: timeData.cycles,
                                                 pulseScale: 1.0,
-                                                action: {
-                                                    selectedWakeUpTime = SleepCalculator.shared.formatTime(timeData.time)
-                                                    showAlarmInstructions = true
-                                                }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
                                             .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
@@ -215,14 +242,6 @@ struct ContentView: View {
                     }
                 }
                 
-                // Alarm Instructions Modal
-                if showAlarmInstructions {
-                    AlarmInstructionsModal(
-                        wakeUpTime: selectedWakeUpTime,
-                        showModal: $showAlarmInstructions,
-                        onDismiss: nil
-                    )
-                }
             }
         }
         .onAppear {
@@ -230,10 +249,15 @@ struct ContentView: View {
             calculateWakeUpTimes()
             currentTime = Date()
             
-            // Only start animations and select moon if onboarding is not active
-            if !showOnboarding {
+            // Only start animations and select moon if onboarding is not active AND initial loading hasn't been completed
+            if !showOnboarding && !hasCompletedInitialLoading {
                 selectNextMoonIcon()
                 startEntranceAnimation()
+                startBreathingEffect()
+                startZzzAnimation()
+            } else if !showOnboarding {
+                // If we've already completed initial loading, just start the breathing effect and select moon
+                selectNextMoonIcon()
                 startBreathingEffect()
                 startZzzAnimation()
             }
@@ -269,6 +293,7 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Helper Methods (same as original ContentView)
     private func updateTimeAndCalculations() {
         currentTime = Date()
         calculateWakeUpTimes()
@@ -316,28 +341,6 @@ struct ContentView: View {
             totalIndex += categorizedWakeUpTimes[i].times.count
         }
         return totalIndex + timeIndex
-    }
-    
-    private func createAlarm(for wakeUpTime: Date) {
-        // No action - just display the times
-        return
-    }
-    
-    private func openClockAppFallback() {
-        guard let clockURL = URL(string: "clock://") else {
-            print("Failed to create fallback clock URL")
-            return
-        }
-        
-        if UIApplication.shared.canOpenURL(clockURL) {
-            UIApplication.shared.open(clockURL) { success in
-                if !success {
-                    print("Failed to open Clock app")
-                }
-            }
-        } else {
-            print("Cannot open Clock app")
-        }
     }
     
     private func startEntranceAnimation() {
@@ -431,6 +434,7 @@ struct ContentView: View {
                     
                     withAnimation(.easeOut(duration: 0.3)) {
                         isFinishingUp = false
+                        hasCompletedInitialLoading = true // Mark initial loading as completed
                     }
                     
                     // Small delay before wake-up times start appearing
@@ -481,25 +485,14 @@ struct ContentView: View {
         impactFeedback.prepare() // Prepare for better performance
         impactFeedback.impactOccurred()
         
-        // Alternative: Use notification feedback for success
-        // let notificationFeedback = UINotificationFeedbackGenerator()
-        // notificationFeedback.prepare()
-        // notificationFeedback.notificationOccurred(.success)
-        
         // Relaxing completion sound - try different system sounds:
         AudioServicesPlaySystemSound(1057) // Gentle notification beep
-        
-        // Other smooth sound alternatives (replace 1057 with any of these):
-        // AudioServicesPlaySystemSound(1052) // Very soft chime
-        // AudioServicesPlaySystemSound(1054) // Soft bell
-        // AudioServicesPlaySystemSound(1055) // Gentle ping
-        // AudioServicesPlaySystemSound(1106) // Camera shutter (subtle)
-        // AudioServicesPlaySystemSound(1003) // SMS received (soft)
-        // AudioServicesPlaySystemSound(1014) // Very gentle notification
-        // AudioServicesPlaySystemSound(1016) // Soft success tone
     }
     
     private func startPostOnboardingLoading() {
+        // Post notification to update MainTabView state
+        NotificationCenter.default.post(name: .onboardingCompleted, object: nil)
+        
         // IMMEDIATELY reset ALL states to prevent card flash
         wakeUpTimeVisibility = [false, false, false, false, false, false]
         categoryHeadersVisible = false
@@ -552,14 +545,6 @@ struct ContentView: View {
         }
     }
     
-    private func formatSleepDuration(cycles: Int) -> String {
-        let hours = Double(cycles) * 1.5
-        let cycleText = cycles == 1 ? "cycle" : "cycles"
-        let hoursText = hours == 1.0 ? "hour of sleep" : "hours of sleep"
-        
-        return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours)) \(hoursText) • \(cycles) \(cycleText)"
-    }
-    
     private func formatSleepDurationSimple(cycles: Int) -> String {
         let hours = Double(cycles) * 1.5
         return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours))h"
@@ -610,11 +595,9 @@ struct ContentView: View {
                 .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
         }
     }
-    
 }
 
-
-
+// MARK: - Supporting Views
 
 struct CalculatingWakeUpTimesView: View {
     let progress: Double
@@ -885,9 +868,6 @@ struct AlarmInstructionsModal: View {
     }
 }
 
-#Preview {
-    ContentView()
-}
 // MARK: - Onboarding Views
 
 struct OnboardingView: View {
@@ -1186,3 +1166,6 @@ struct OnboardingStep {
     let buttonText: String
 }
 
+#Preview {
+    SleepNowView(alarmManager: AlarmManager.shared, selectedTab: .constant(0))
+}

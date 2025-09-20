@@ -13,7 +13,6 @@
 		1D4770D02E71A600007AF563 /* BackgroundAlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4770D12E71A600007AF563 /* BackgroundAlarmManager.swift */; };
 		1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */; };
 		1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */; };
-		1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC22E52405C003DCB88 /* ContentView.swift */; };
 		1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC42E52405D003DCB88 /* Assets.xcassets */; };
 		1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */; };
 		1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */; };
@@ -49,7 +48,6 @@
 		1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mr Sleep.entitlements"; sourceTree = "<group>"; };
 		1DB00CBD2E52405C003DCB88 /* Mr Sleep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mr Sleep.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mr_SleepApp.swift; sourceTree = "<group>"; };
-		1DB00CC22E52405C003DCB88 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1DB00CC42E52405D003DCB88 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCalculator.swift; sourceTree = "<group>"; };
@@ -99,7 +97,6 @@
 				1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */,
 				1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */,
 				1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */,
-				1DB00CC22E52405C003DCB88 /* ContentView.swift */,
 				1DB00CC42E52405D003DCB88 /* Assets.xcassets */,
 				1DB00CC62E52405D003DCB88 /* Preview Content */,
 				1DB00CCE2E5240B8003DCB88 /* SleepCalculator.swift */,
@@ -208,7 +205,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */,
-				1DB00CC32E52405C003DCB88 /* ContentView.swift in Sources */,
 				1D087FC32E71A547008D05E8 /* AlarmDismissalView.swift in Sources */,
 				1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */,
 				1DB00CD02E5240B8003DCB88 /* MainTabView.swift in Sources */,
@@ -218,7 +214,6 @@
 				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
 				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
 				1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */,
-				1D000001AE71A600007AF563 /* AlarmKitManager.swift in Sources */,
 				1D4770D02E71A600007AF563 /* BackgroundAlarmManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

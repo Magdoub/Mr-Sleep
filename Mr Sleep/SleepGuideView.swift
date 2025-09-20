@@ -5,6 +5,18 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * Sleep Education & Tips Interface
+ * 
+ * This view provides educational content about sleep hygiene:
+ * - Sleep science explanation (90-minute cycles)
+ * - Best practices for better sleep quality
+ * - Tips for falling asleep faster
+ * - Educational content accessible from main interface
+ * - Clean, readable format with sectioned information
+ * - Modal presentation with smooth animations
+ */
+
 import SwiftUI
 
 struct SleepGuideView: View {

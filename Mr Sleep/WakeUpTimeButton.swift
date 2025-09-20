@@ -5,6 +5,19 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * Wake-Up Time Display Component
+ * 
+ * This view creates informational displays for wake-up times:
+ * - Displays wake-up time in large, readable format
+ * - Shows sleep duration and cycle information
+ * - Visual distinction for recommended times
+ * - Pulse animations for user attention
+ * - Category integration (Quick Boost, Recovery, Full Recharge)
+ * - Consistent styling across the app
+ * - Read-only information display (no interaction)
+ */
+
 import SwiftUI
 
 struct WakeUpTimeButton: View {
@@ -14,11 +27,10 @@ struct WakeUpTimeButton: View {
     let isRecommended: Bool
     let cycles: Int
     let pulseScale: Double
-    let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
+        // Removed button wrapper - now just displays information
+        HStack(spacing: 16) {
                 // Left side - Wake Up Time
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Wake Up Time")
@@ -41,22 +53,19 @@ struct WakeUpTimeButton: View {
                         .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
         .accessibilityLabel("Wake up at \(wakeUpTime), \(sleepDuration) total sleep")
-        .accessibilityHint("Double tap to get instructions for setting an alarm")
-        .accessibilityAddTraits([.isButton])
+        .accessibilityHint("Sleep time information display")
     }
 }
 
@@ -67,8 +76,7 @@ struct WakeUpTimeButton: View {
         sleepDuration: "7.5h",
         isRecommended: true,
         cycles: 5,
-        pulseScale: 1.0,
-        action: {}
+        pulseScale: 1.0
     )
     .padding()
     .background(Color.black)

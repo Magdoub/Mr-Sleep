@@ -5,6 +5,23 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * Sleep Cycle Calculation Engine
+ * 
+ * This singleton handles all sleep science calculations:
+ * - 90-minute sleep cycle duration calculations
+ * - 15-minute fall-asleep buffer time
+ * - Optimal wake-up time generation (1-6 cycles)
+ * - Time rounding to 5-minute intervals for practicality
+ * - Sleep category classification (Quick Boost, Recovery, Full Recharge)
+ * - 3D icon assignment for each category
+ * - Duration formatting for user display
+ * 
+ * The calculations are based on sleep science research showing that
+ * waking up at the end of complete 90-minute cycles helps users
+ * feel more refreshed and reduces sleep inertia.
+ */
+
 import Foundation
 
 class SleepCalculator {

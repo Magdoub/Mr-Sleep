@@ -5,6 +5,20 @@
 //  Created by Magdoub on 08/09/2025.
 //
 
+/*
+ * Alarm Data Management System
+ * 
+ * This file handles all alarm-related data operations:
+ * - AlarmItem model definition with sleep category integration
+ * - AlarmManager singleton for centralized alarm storage
+ * - UserDefaults persistence for alarm data
+ * - Alarm creation from sleep calculations and manual input
+ * - Alarm editing, deletion, and state management
+ * - Category-based labeling (Quick Boost, Recovery, Full Recharge)
+ * - Sound assignment and management
+ * - Integration with sleep cycle calculations
+ */
+
 import SwiftUI
 import Foundation
 

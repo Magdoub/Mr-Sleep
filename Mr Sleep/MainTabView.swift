@@ -5,94 +5,20 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * Main Tab Navigation Container
+ * 
+ * This file provides the primary navigation structure for the app:
+ * - Three-tab navigation: Alarms, Sleep Now, Settings
+ * - Onboarding flow management for first-time users
+ * - Tab bar appearance customization with dark theme
+ * - Smooth animation handling for tab transitions
+ * - Integration between sleep calculations and alarm management
+ */
+
 import SwiftUI
 
-// Simple alarm overlay manager for creation flow
-class AlarmOverlayManager: ObservableObject {
-    static let shared = AlarmOverlayManager()
-    
-    @Published var isShowingAlarm = false
-    @Published var currentAlarm: AlarmItem?
-    
-    private init() {}
-    
-    func showAlarmCreation(for alarm: AlarmItem) {
-        currentAlarm = alarm
-        isShowingAlarm = true
-    }
-    
-    func dismissAlarm() {
-        isShowingAlarm = false
-        currentAlarm = nil
-    }
-}
 
-// Simple alarm creation view
-struct AlarmCreationView: View {
-    let alarm: AlarmItem
-    let onConfirm: () -> Void
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    onDismiss()
-                }
-            
-            VStack(spacing: 20) {
-                Text("Create Alarm?")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text(alarm.time)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                
-                Text(alarm.label)
-                    .font(.headline)
-                    .foregroundColor(.white.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                
-                HStack(spacing: 20) {
-                    Button("Cancel") {
-                        onDismiss()
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(25)
-                    
-                    Button("Create Alarm") {
-                        onConfirm()
-                    }
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(Color(red: 0.894, green: 0.729, blue: 0.306))
-                    .cornerRadius(25)
-                }
-                .padding(.top, 10)
-            }
-            .padding(30)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(red: 0.1, green: 0.25, blue: 0.5))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal, 40)
-        }
-    }
-}
 
 struct MainTabView: View {
     @State private var selectedTab = 1

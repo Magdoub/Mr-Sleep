@@ -5,6 +5,23 @@
 //  Created by Magdoub on 14/09/2025.
 //
 
+/*
+ * Background Alarm Processing System
+ * 
+ * This manager handles alarm triggering and audio playback:
+ * - Background timer management for alarm scheduling
+ * - Audio session configuration for background playback
+ * - Alarm sound loading and playback control
+ * - Integration with AlarmDismissalView for UI presentation
+ * - Background task handling for iOS system compliance
+ * - Audio interruption handling and restoration
+ * - Alarm state management and cleanup
+ * 
+ * Note: This provides the audio/timer infrastructure but actual
+ * push notifications should be implemented via UNUserNotificationCenter
+ * for production-ready alarm functionality.
+ */
+
 import Foundation
 import AVFoundation
 import UIKit

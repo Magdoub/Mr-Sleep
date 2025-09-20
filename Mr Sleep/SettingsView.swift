@@ -5,6 +5,17 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * App Settings & Configuration
+ * 
+ * This view provides user configuration options:
+ * - Notification permissions management
+ * - Sleep guide access for educational content
+ * - App information and version details
+ * - Future settings expansion point
+ * - Clean, system-style settings interface
+ */
+
 import SwiftUI
 import UserNotifications
 

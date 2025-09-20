@@ -5,6 +5,20 @@
 //  Created by Magdoub on 17/08/2025.
 //
 
+/*
+ * Alarm Management Interface
+ * 
+ * This view provides comprehensive alarm management functionality:
+ * - Display all created alarms in a clean, iOS Clock app-style interface
+ * - Toggle alarms on/off with visual feedback
+ * - Create new manual alarms with time picker
+ * - Edit existing alarms (time, sound, labels)
+ * - Delete alarms with swipe gestures
+ * - Sound selection with preview functionality
+ * - Category-based visual organization (Quick Boost, Recovery, Full Recharge)
+ * - Integration with AlarmManager for data persistence
+ */
+
 import SwiftUI
 import AVFoundation
 

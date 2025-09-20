@@ -5,6 +5,19 @@
 //  Created by Magdoub on 10/09/2025.
 //
 
+/*
+ * Alarm Dismissal Interface
+ * 
+ * This view provides the alarm dismissal experience:
+ * - Full-screen alarm notification display
+ * - Large, prominent current time display
+ * - Animated background gradient effects
+ * - Clear dismiss button for stopping alarms
+ * - Real-time clock updates during alarm state
+ * - Visual feedback and animations
+ * - Integration with alarm management system
+ */
+
 import SwiftUI
 
 struct AlarmDismissalView: View {

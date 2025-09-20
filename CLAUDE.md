@@ -57,11 +57,20 @@ Claude: [Proceeds with the approved changes]
 open "Mr Sleep.xcodeproj"
 
 # Build for iOS Simulator using Xcode
-xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "platform=iOS Simulator,name=iPhone 15" build
+~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "platform=iOS Simulator,name=iPhone 15" build
 
 # Build for device
-xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generic/platform=iOS" build
+~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generic/platform=iOS" build
 ```
+
+## Xcode Configuration
+
+**IMPORTANT**: Always use the desktop Xcode installation:
+- **Correct Xcode Path**: `~/Desktop/Xcode.app` 
+- **DO NOT use**: `~/Desktop/Xcode-beta.app` (no longer available)
+- **xcodebuild Path**: `~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild`
+
+All build commands should use the full path to the desktop Xcode.app installation to ensure compatibility and avoid conflicts with multiple Xcode versions.
 
 ## Architecture
 
@@ -74,19 +83,21 @@ xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generi
 ### Core Architecture Pattern
 - **MVVM-like structure** with singleton business logic
 - **SleepCalculator.shared** - Singleton containing all sleep calculation logic
-- **ContentView** - Main UI container with embedded child components
+- **SleepNowView** - Main sleep calculation UI with embedded supporting components
 - **State-driven UI** using SwiftUI `@State` properties extensively
 
 ### Key Components
 - `Mr_SleepApp.swift` - App entry point with dark mode configuration
 - `MainTabView.swift` - Tab bar container managing app navigation
-- `SleepNowView.swift` - Main sleep calculation and wake-up time selection
+- `SleepNowView.swift` - Main sleep calculation UI with onboarding and supporting views
 - `AlarmsView.swift` - Alarm management with native iOS Clock app experience
 - `SettingsView.swift` - User preferences and app configuration
 - `AlarmManager.swift` - Alarm data storage and UI management  
 - `SleepCalculator.swift` - Business logic singleton for sleep calculations
-- `WakeUpTimeButton` - Reusable button component for time display
-- `SleepGuideView` - Educational overlay about sleep hygiene
+- `WakeUpTimeButton.swift` - Reusable button component for time display
+- `SleepGuideView.swift` - Educational overlay about sleep hygiene
+- `AlarmDismissalView.swift` - UI component for alarm dismissal
+- `BackgroundAlarmManager.swift` - Background audio and timer management
 
 ### Business Logic
 - **Sleep cycles**: 90 minutes each (3-8 cycles supported)
@@ -233,20 +244,35 @@ refactor(ui): Extract sleep analytics into separate view component
 ### Key Files Structure
 - `/Mr Sleep/` - Main source directory
   - `Mr_SleepApp.swift` - App configuration and launch
-  - `ContentView.swift` - Primary UI and all view logic
+  - `MainTabView.swift` - Tab navigation container
+  - `SleepNowView.swift` - Primary sleep calculation UI with embedded views:
+    - `OnboardingView` - First-time user onboarding
+    - `CalculatingWakeUpTimesView` - Loading animation
+    - `FinishingUpView` - Completion animation
+  - `AlarmsView.swift` - Alarm management interface
+  - `SettingsView.swift` - App configuration
   - `SleepCalculator.swift` - Core business logic
-- `/Assets.xcassets/` - App icons and custom moon icon
+  - `AlarmManager.swift` - Alarm data management
+  - `BackgroundAlarmManager.swift` - Background alarm functionality
+  - `AlarmDismissalView.swift` - Alarm dismissal interface
+  - `SleepGuideView.swift` - Sleep education overlay
+  - `WakeUpTimeButton.swift` - Reusable time selection component
+- `/Assets.xcassets/` - App icons and 3D moon icons
 - `/Preview Content/` - SwiftUI preview assets
+- Audio files: `morning-alarm-clock.mp3`, `smooth-alarm-clock.mp3`, `alarm-clock.mp3`
 
 ### UI/UX Features
-- Real-time clock with minute-level updates
-- Collapsible "more options" section
-- Educational sleep guide overlay
-- Recommended times highlighted visually
-- Custom gradient backgrounds and button styling
-- **Automatic navigation**: After creating an alarm, automatically switches to Alarms tab
-- **Alarm management UI**: Complete interface for creating, editing, and managing alarms
+- **Real-time clock** with minute-level updates and animations
+- **Onboarding flow** with 3-step interactive introduction
+- **Loading animations** for wake-up time calculations
+- **Educational sleep guide** overlay with sleep hygiene tips
+- **Categorized wake-up times** (Quick Boost, Recovery, Full Recharge)
+- **3D icon assets** with rotating moon icons
+- **Custom gradient backgrounds** and smooth animations
+- **Read-only wake-up times**: Sleep calculations display only, no direct alarm creation
+- **Complete alarm management**: Create, edit, delete, toggle alarms manually in Alarms tab
 - **Sound preview**: Play alarm sounds when selecting them in the UI
+- **Breathing animations** and floating "zzz" effects
 - **⚠️ Visual-only alarms**: UI shows alarms but they don't actually trigger notifications
 
 ### Platform Specifics
@@ -265,23 +291,39 @@ refactor(ui): Extract sleep analytics into separate view component
 
 ## Version History
 
-### Version 3.1 (Build 3) - Current Status
+### Version 3.2 (Current) - Codebase Cleanup
+
+**🧹 Code Cleanup (September 2025):**
+- ✅ **Removed duplicate code**: Deleted unused `ContentView.swift` (1,189 lines)
+- ✅ **Consolidated views**: Moved all UI components into `SleepNowView.swift`
+- ✅ **Removed unused components**: Deleted `AlarmOverlayManager`, `AlarmCreationView`, `AlarmActivityAttributes`
+- ✅ **Simplified architecture**: Direct `AlarmManager` integration without overlay layers
+- ✅ **Maintained functionality**: All features preserved while reducing codebase by ~1,300 lines
 
 **✅ What Currently Works:**
 - 🎨 **Complete alarm UI**: Full alarm management interface with create, edit, delete, toggle
 - 🎵 **Sound selection**: Choose between Morning, Smooth, and Classic alarm tones with preview
 - 💾 **Data persistence**: Alarms saved to UserDefaults and persist between app launches
-- 🔄 **Sleep integration**: One-tap alarm creation from sleep time calculations
-- 📱 **Navigation flow**: Automatic tab switching after alarm creation
+- 🔄 **Sleep calculations**: Read-only wake-up time displays for information
+- 📱 **Manual alarm creation**: Create alarms manually in the Alarms tab
 - 🎯 **Alarm management**: Toggle alarms on/off, edit times and sounds
+- 🎭 **Onboarding experience**: 3-step interactive introduction for new users
+- 🌙 **3D animations**: Rotating moon icons and breathing effects
 
 **🔧 Current Technical Implementation:**
-- **AlarmManager**: Alarm storage and UI management
+- **SleepNowView**: Main UI with embedded onboarding, loading, and modal components
+- **AlarmManager**: Direct alarm storage and UI management integration
 - **BackgroundAlarmManager**: Background audio + timer approach
 - **AlarmsView**: Complete UI for alarm management with sound previews
 - **AlarmDismissalView**: UI component for alarm dismissal
 
-### Version 3.0 (Build 2) - Previous Release
-- Initial alarm UI implementation
-- Basic data storage system
+### Version 3.1 (Build 3) - Feature Complete
+- Complete alarm UI implementation
+- Sound selection and preview functionality
+- Automatic navigation between tabs
+- Data persistence system
+
+### Version 3.0 (Build 2) - Initial Release
+- Basic alarm UI implementation
 - Sleep calculation features
+- Initial data storage system
