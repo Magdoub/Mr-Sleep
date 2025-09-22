@@ -47,7 +47,8 @@
       "Bash(xcrun simctl boot:*)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 17 Pro\" build)",
       "Bash(sed:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],
