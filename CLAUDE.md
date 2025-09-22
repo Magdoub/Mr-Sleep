@@ -20,6 +20,8 @@ Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based o
    - Git commits
    - Any other file system operations
 
+**EXCEPTION: Bash Commands** - Diagnostic, build, test, and file listing commands can be executed without explicit approval.
+
 **Example workflow:**
 ```
 Claude: "I will add a new function to AlarmManager.swift to handle snooze functionality. This involves adding a snooze() method and updating the alarm state management. Do you approve?"
@@ -48,6 +50,8 @@ Claude: [Proceeds with the approved changes]
 - Git operations
 - Any file system operations
 
+**EXCEPTION:** Bash commands for diagnostics, builds, tests, and file operations can proceed without approval.
+
 **Remember**: The user wants to review and approve every change before it happens.
 
 ## Build and Development Commands
@@ -66,8 +70,7 @@ open "Mr Sleep.xcodeproj"
 ## Xcode Configuration
 
 **IMPORTANT**: Always use the desktop Xcode installation:
-- **Correct Xcode Path**: `~/Desktop/Xcode.app` 
-- **DO NOT use**: `~/Desktop/Xcode-beta.app` (no longer available)
+- **Xcode Path**: `~/Desktop/Xcode.app` 
 - **xcodebuild Path**: `~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild`
 
 All build commands should use the full path to the desktop Xcode.app installation to ensure compatibility and avoid conflicts with multiple Xcode versions.
@@ -77,7 +80,7 @@ All build commands should use the full path to the desktop Xcode.app installatio
 ### Framework and Dependencies
 - **Pure SwiftUI** application with SwiftUI App lifecycle
 - **No external dependencies** - uses only SwiftUI and Foundation
-- **iOS 18.0+ minimum**, iPhone-only target
+- **iOS 26.0+ minimum**, iPhone-only target
 - **Bundle ID**: `com.magdoub.Mr-Sleeper`
 
 ### Core Architecture Pattern
@@ -97,7 +100,6 @@ All build commands should use the full path to the desktop Xcode.app installatio
 - `WakeUpTimeButton.swift` - Reusable button component for time display
 - `SleepGuideView.swift` - Educational overlay about sleep hygiene
 - `AlarmDismissalView.swift` - UI component for alarm dismissal
-- `BackgroundAlarmManager.swift` - Background audio and timer management
 
 ### Business Logic
 - **Sleep cycles**: 90 minutes each (3-8 cycles supported)
@@ -123,7 +125,7 @@ All build commands should use the full path to the desktop Xcode.app installatio
 - Smooth animations and transitions
 
 ### State Management
-- All UI state lives in ContentView as `@State` properties
+- All UI state lives in SleepNowView as `@State` properties
 - Business logic centralized in SleepCalculator singleton
 - No external state management frameworks used
 
@@ -137,8 +139,8 @@ All build commands should use the full path to the desktop Xcode.app installatio
 ## Git Workflow
 
 ### Repository Information
-- **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep/.git` (CONFIRMED: Git repo exists)
-- **Working Directory for Git Commands**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/Mr Sleep`
+- **Git Repository Location**: `/Users/magdoub/Documents/iOS projects/Mr Sleep/.git` (CONFIRMED: Git repo exists)
+- **Working Directory for Git Commands**: `/Users/magdoub/Documents/iOS projects/Mr Sleep`
 - **Remote Repository**: https://github.com/Magdoub/Mr-Sleep
 - **Manual Commits**: Claude Code only commits when explicitly requested by user
 
@@ -241,25 +243,45 @@ refactor(ui): Extract sleep analytics into separate view component
 
 ## Development Notes
 
-### Key Files Structure
-- `/Mr Sleep/` - Main source directory
-  - `Mr_SleepApp.swift` - App configuration and launch
-  - `MainTabView.swift` - Tab navigation container
-  - `SleepNowView.swift` - Primary sleep calculation UI with embedded views:
-    - `OnboardingView` - First-time user onboarding
-    - `CalculatingWakeUpTimesView` - Loading animation
-    - `FinishingUpView` - Completion animation
-  - `AlarmsView.swift` - Alarm management interface
-  - `SettingsView.swift` - App configuration
-  - `SleepCalculator.swift` - Core business logic
-  - `AlarmManager.swift` - Alarm data management
-  - `BackgroundAlarmManager.swift` - Background alarm functionality
-  - `AlarmDismissalView.swift` - Alarm dismissal interface
-  - `SleepGuideView.swift` - Sleep education overlay
-  - `WakeUpTimeButton.swift` - Reusable time selection component
-- `/Assets.xcassets/` - App icons and 3D moon icons
-- `/Preview Content/` - SwiftUI preview assets
-- Audio files: `morning-alarm-clock.mp3`, `smooth-alarm-clock.mp3`, `alarm-clock.mp3`
+### Project Structure
+```
+Mr Sleep/
+├── App/
+│   ├── Mr_SleepApp.swift - App configuration and launch
+│   └── MainTabView.swift - Tab navigation container
+│
+├── Views/
+│   ├── Sleep/
+│   │   ├── SleepNowView.swift - Primary sleep calculation UI with embedded views:
+│   │   │   ├── OnboardingView - First-time user onboarding
+│   │   │   ├── CalculatingWakeUpTimesView - Loading animation
+│   │   │   └── FinishingUpView - Completion animation
+│   │   ├── SleepGuideView.swift - Sleep education overlay
+│   │   └── WakeUpTimeButton.swift - Reusable time selection component
+│   ├── Alarms/
+│   │   ├── AlarmsView.swift - Alarm management interface
+│   │   └── AlarmDismissalView.swift - Alarm dismissal interface
+│   └── Settings/
+│       └── SettingsView.swift - App configuration
+│
+├── Models/
+│   ├── SleepCalculator.swift - Core business logic
+│   └── AlarmManager.swift - Alarm data management
+│
+├── Resources/
+│   ├── Audio/
+│   │   ├── morning-alarm-clock.mp3
+│   │   ├── smooth-alarm-clock.mp3
+│   │   └── alarm-clock.mp3
+│   ├── Assets.xcassets/ - App icons and 3D moon icons
+│   └── LaunchScreen.storyboard
+│
+├── Supporting Files/
+│   └── Mr Sleep.entitlements
+│
+└── Preview Content/
+    └── Preview Assets.xcassets/ - SwiftUI preview assets
+```
 
 ### UI/UX Features
 - **Real-time clock** with minute-level updates and animations
@@ -282,16 +304,25 @@ refactor(ui): Extract sleep analytics into separate view component
 - Uses native iOS date/time formatting
 
 ### Extension Opportunities
-- **PRIORITY: Implement real notifications** - Add UNUserNotificationCenter for functional alarms
-- Could add iPad support with adaptive layouts
-- Apple Watch companion app potential
-- Internationalization support (currently English-only)
-- Live Activities for lock screen alarm display
-- Critical alerts to bypass Do Not Disturb
+- **Testing infrastructure** - Add unit tests for SleepCalculator and UI tests for core flows
+- **iPad support** - Add adaptive layouts for larger screens
+- **Apple Watch companion** - Extend sleep tracking to watch
+- **Internationalization** - Support multiple languages (currently English-only)
+- **HealthKit integration** - Sleep data synchronization
+- **Enhanced 3D animations** - More interactive moon phases and sleep visualizations
 
 ## Version History
 
-### Version 3.2 (Current) - Codebase Cleanup
+### Version 3.3 (Current) - Project Organization & Cleanup
+
+**🗂️ Project Organization (September 2025):**
+- ✅ **Organized folder structure**: Implemented clean MVVM-style organization with App/, Views/, Models/, Resources/ folders
+- ✅ **Removed unused files**: Deleted backup files, build artifacts, unused extensions, and dead code
+- ✅ **Fixed build issues**: Resolved file path conflicts and asset catalog references
+- ✅ **Updated project configuration**: Corrected Xcode project structure and build settings
+- ✅ **Maintained functionality**: All features preserved while improving maintainability
+
+### Version 3.2 - Codebase Cleanup
 
 **🧹 Code Cleanup (September 2025):**
 - ✅ **Removed duplicate code**: Deleted unused `ContentView.swift` (1,189 lines)
@@ -313,7 +344,6 @@ refactor(ui): Extract sleep analytics into separate view component
 **🔧 Current Technical Implementation:**
 - **SleepNowView**: Main UI with embedded onboarding, loading, and modal components
 - **AlarmManager**: Direct alarm storage and UI management integration
-- **BackgroundAlarmManager**: Background audio + timer approach
 - **AlarmsView**: Complete UI for alarm management with sound previews
 - **AlarmDismissalView**: UI component for alarm dismissal
 
