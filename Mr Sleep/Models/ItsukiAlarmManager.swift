@@ -291,8 +291,7 @@ class ItsukiAlarmManager {
         let configuration = AlarmConfiguration(
             schedule: schedule,
             attributes: attributes,
-            stopIntent: StopIntent(alarmID: alarmID.uuidString),
-            secondaryIntent: nil
+            stopIntent: StopIntent(alarmID: alarmID.uuidString)
         )
         
         try await scheduleAlarm(id: alarmID, configuration: configuration, metadata: metadata, title: title)
@@ -369,8 +368,12 @@ class ItsukiAlarmManager {
         }
         
         do {
+            print("🔄 Calling alarmManager.schedule with id: \(id)")
+            print("🔄 Configuration: \(configuration)")
+            
             let alarm = try await alarmManager.schedule(id: id, configuration: configuration)
             
+            print("✅ AlarmKit schedule call succeeded")
             let itsukiAlarm = ItsukiAlarm(alarm: alarm, metadata: metadata)
             
             await MainActor.run {
@@ -466,17 +469,8 @@ class ItsukiAlarmManager {
             stopButton: .stopButton
         )
         
-        let countdownContent = AlarmPresentation.Countdown(
-            title: LocalizedStringResource(stringLiteral: title),
-            pauseButton: .pauseButton
-        )
-        
-        let pausedContent = AlarmPresentation.Paused(
-            title: "Paused",
-            resumeButton: .resumeButton
-        )
-        
-        return AlarmPresentation(alert: alertContent, countdown: countdownContent, paused: pausedContent)
+        // For simple scheduled alarms, only provide alert content (no countdown/paused states)
+        return AlarmPresentation(alert: alertContent)
     }
     
     // MARK: - Quick Access Properties
