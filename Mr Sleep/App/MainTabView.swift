@@ -9,7 +9,7 @@
  * Main Tab Navigation Container
  * 
  * This file provides the primary navigation structure for the app:
- * - Three-tab navigation: Alarms, Sleep Now, Settings
+ * - Four-tab navigation: Alarms, Sleep Now, AlarmKit, Settings
  * - Onboarding flow management for first-time users
  * - Tab bar appearance customization with dark theme
  * - Smooth animation handling for tab transitions
@@ -17,6 +17,7 @@
  */
 
 import SwiftUI
+import AlarmKit
 
 
 
@@ -51,12 +52,19 @@ struct MainTabView: View {
                         }
                         .tag(1)
                     
-                    SettingsView()
+                    AlarmKitView()
                         .tabItem {
-                            Image(systemName: selectedTab == 2 ? "gearshape.fill" : "gearshape")
-                            Text("Settings")
+                            Image(systemName: selectedTab == 2 ? "alarm.waves.left.and.right.fill" : "alarm.waves.left.and.right")
+                            Text("AK")
                         }
                         .tag(2)
+                    
+                    SettingsView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 3 ? "gearshape.fill" : "gearshape")
+                            Text("Settings")
+                        }
+                        .tag(3)
                 }
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 .onAppear {

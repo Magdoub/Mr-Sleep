@@ -6,41 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based on sleep cycle science. The app uses 90-minute sleep cycles and accounts for 15 minutes to fall asleep.
 
-## ⚠️ CRITICAL: Approval Required Before Any Changes
+## ⚠️ AUTO-APPROVAL MODE ENABLED
 
-**MANDATORY WORKFLOW**: Before making ANY changes to this codebase, Claude MUST:
+**CURRENT WORKFLOW**: Claude can make changes automatically without prior approval.
 
-1. **Explain exactly what will be done** - Describe the specific changes, files to be modified, and the reasoning
-2. **Wait for explicit user approval** - Do not proceed until the user confirms with "yes" or similar approval
-3. **Apply to ALL changes** - This includes:
+**AUTO-APPROVED OPERATIONS** - All operations can proceed without explicit approval:
    - Code modifications
    - File creation/deletion
    - Configuration changes
    - Documentation updates
    - Git commits
+   - Bash commands
    - Any other file system operations
 
-**EXCEPTION: Bash Commands** - Diagnostic, build, test, and file listing commands can be executed without explicit approval.
+**Working Mode:** Claude will explain what was done after making changes, rather than asking for permission beforehand.
 
-**Example workflow:**
-```
-Claude: "I will add a new function to AlarmManager.swift to handle snooze functionality. This involves adding a snooze() method and updating the alarm state management. Do you approve?"
+## 🔍 AUTO-APPROVAL: Review After Changes
 
-User: "yes"
+**CURRENT MODE**: Claude makes changes first, then explains what was done.
 
-Claude: [Proceeds with the approved changes]
-```
-
-**No exceptions** - Every change requires prior explanation and approval.
-
-## 🔍 MANDATORY: Always Ask for Review
-
-**CRITICAL REMINDER**: Before making ANY modifications to this codebase, Claude MUST:
-
-1. **Stop and ask for review** - Never proceed directly with changes
-2. **Explain the planned changes clearly** - What files will be modified and why
-3. **Wait for explicit "yes" or approval** - Do not assume permission
-4. **Apply to every single change** - No matter how small or obvious it seems
+1. **Proceed with changes immediately** - Make necessary modifications without waiting
+2. **Explain changes clearly after completion** - Describe what was modified and why
+3. **Apply to all operations** - All changes are auto-approved
 
 **This applies to:**
 - All code modifications
@@ -49,10 +36,9 @@ Claude: [Proceeds with the approved changes]
 - Documentation changes
 - Git operations
 - Any file system operations
+- Bash commands
 
-**EXCEPTION:** Bash commands for diagnostics, builds, tests, and file operations can proceed without approval.
-
-**Remember**: The user wants to review and approve every change before it happens.
+**Remember**: User has enabled auto-approval for all operations.
 
 ## Build and Development Commands
 
@@ -357,3 +343,4 @@ Mr Sleep/
 - Basic alarm UI implementation
 - Sleep calculation features
 - Initial data storage system
+- add to memory: auto approval
