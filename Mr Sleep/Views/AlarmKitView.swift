@@ -65,17 +65,15 @@ struct AlarmKitView: View {
     var simpleAlarmListView: some View {
         List {
             ForEach(viewModel.runningAlarms, id: \.id) { alarm in
-                SimpleAlarmCell(alarm: alarm)
+                SimpleAlarmCell(alarm: alarm, onDelete: {
+                    Task {
+                        await viewModel.deleteAlarm(alarm)
+                    }
+                })
                     .environment(viewModel)
             }
-            .onDelete { indexSet in
-                indexSet.forEach { index in
-                    Task {
-                        await viewModel.deleteAlarm(viewModel.runningAlarms[index])
-                    }
-                }
-            }
         }
+        .listStyle(.plain)
     }
     
     var emptyStateView: some View {
@@ -159,11 +157,12 @@ struct AlarmKitView: View {
 // MARK: - Simple Alarm Cell
 struct SimpleAlarmCell: View {
     let alarm: ItsukiAlarm
+    let onDelete: () -> Void
     @Environment(AlarmKitViewModel.self) private var viewModel
     @State private var isEnabled = true
     
     var body: some View {
-        HStack {
+        HStack(alignment: .center, spacing: 16) {
             // Time Display
             VStack(alignment: .leading, spacing: 4) {
                 if let scheduledTime = alarm.scheduledTime {
@@ -185,9 +184,22 @@ struct SimpleAlarmCell: View {
             }
             
             Spacer()
+                .frame(maxWidth: 120)
+            
+            // Delete button
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 16)
             
             // Toggle Switch
             Toggle("", isOn: $isEnabled)
+                .scaleEffect(0.8)
                 .onChange(of: isEnabled) { _, newValue in
                     Task {
                         if newValue {
@@ -205,6 +217,7 @@ struct SimpleAlarmCell: View {
                 }
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
         .onAppear {
             isEnabled = alarm.state != .paused
         }
