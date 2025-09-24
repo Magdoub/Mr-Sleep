@@ -153,4 +153,78 @@ extension AlarmKitForm {
         form.label = "Morning Alarm"
         return form
     }
+    
+    // MARK: - Edit Initializer
+    static func fromExistingAlarm(_ alarm: ItsukiAlarm) -> AlarmKitForm {
+        var form = AlarmKitForm()
+        
+        // Basic properties
+        form.label = alarm.displayTitle
+        form.selectedSleepContext = alarm.metadata.sleepContext
+        form.selectedWakeUpReason = alarm.metadata.wakeUpReason
+        
+        // Schedule configuration
+        if let schedule = alarm.alarm.schedule {
+            form.scheduleEnabled = true
+            
+            switch schedule {
+            case .relative(let relative):
+                // Convert relative time to Date for the picker
+                var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                components.hour = relative.time.hour
+                components.minute = relative.time.minute
+                form.selectedDate = Calendar.current.date(from: components) ?? Date()
+                
+                // Set selected days for repeating alarms
+                switch relative.repeats {
+                case .weekly(let days):
+                    form.selectedDays = Set(days)
+                case .never:
+                    form.selectedDays = []
+                @unknown default:
+                    form.selectedDays = []
+                }
+                
+            case .fixed(let date):
+                form.selectedDate = date
+                form.selectedDays = [] // Fixed alarms don't repeat
+                
+            @unknown default:
+                form.scheduleEnabled = false
+            }
+        }
+        
+        // Countdown configuration
+        if let countdown = alarm.alarm.countdownDuration {
+            if let preAlert = countdown.preAlert {
+                form.preAlertEnabled = true
+                let hours = Int(preAlert) / 3600
+                let minutes = Int(preAlert.truncatingRemainder(dividingBy: 3600)) / 60
+                let seconds = Int(preAlert) % 60
+                form.selectedPreAlert = CountdownInterval(hour: hours, min: minutes, sec: seconds)
+            }
+            
+            if let postAlert = countdown.postAlert {
+                let hours = Int(postAlert) / 3600
+                let minutes = Int(postAlert.truncatingRemainder(dividingBy: 3600)) / 60
+                let seconds = Int(postAlert) % 60
+                form.selectedPostAlert = CountdownInterval(hour: hours, min: minutes, sec: seconds)
+                form.selectedSecondaryButton = .countdown
+            }
+        }
+        
+        // Secondary button behavior
+        // This is inferred from the presence of countdown post-alert or custom intents
+        if form.selectedSecondaryButton != .countdown {
+            // Check if there's a custom intent (like OpenMrSleepAppIntent)
+            // Since we can't directly access the intent, we'll infer from alarm type
+            if alarm.alarmType == .custom && alarm.alarm.countdownDuration?.postAlert == nil {
+                form.selectedSecondaryButton = .openApp
+            } else {
+                form.selectedSecondaryButton = .none
+            }
+        }
+        
+        return form
+    }
 }

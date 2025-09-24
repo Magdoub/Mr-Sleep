@@ -31,6 +31,7 @@
 		1DB777A22E8127490037CCB2 /* AlarmKitAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB7779F2E8127490037CCB2 /* AlarmKitAddView.swift */; };
 		1DB777A32E8127490037CCB2 /* AlarmKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB777A02E8127490037CCB2 /* AlarmKitView.swift */; };
 		1DB777A42E8127490037CCB2 /* AlarmKitViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB777A12E8127490037CCB2 /* AlarmKitViewModel.swift */; };
+		88C44ED2D4DC41AB9749982D /* AlarmKitEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3178B40080E74B38AFCC881C /* AlarmKitEditView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -74,6 +75,7 @@
 		1DB7779F2E8127490037CCB2 /* AlarmKitAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmKitAddView.swift; sourceTree = "<group>"; };
 		1DB777A02E8127490037CCB2 /* AlarmKitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmKitView.swift; sourceTree = "<group>"; };
 		1DB777A12E8127490037CCB2 /* AlarmKitViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmKitViewModel.swift; sourceTree = "<group>"; };
+		3178B40080E74B38AFCC881C /* AlarmKitEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmKitEditView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,6 +147,7 @@
 			isa = PBXGroup;
 			children = (
 				1DB7779F2E8127490037CCB2 /* AlarmKitAddView.swift */,
+				3178B40080E74B38AFCC881C /* AlarmKitEditView.swift */,
 				1DB777A02E8127490037CCB2 /* AlarmKitView.swift */,
 				1DB777A12E8127490037CCB2 /* AlarmKitViewModel.swift */,
 				1DB00CE62E71A705003DCB88 /* Sleep */,
@@ -309,6 +312,7 @@
 				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
 				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
 				1DB777A22E8127490037CCB2 /* AlarmKitAddView.swift in Sources */,
+				88C44ED2D4DC41AB9749982D /* AlarmKitEditView.swift in Sources */,
 				1DB777A32E8127490037CCB2 /* AlarmKitView.swift in Sources */,
 				1DB777A42E8127490037CCB2 /* AlarmKitViewModel.swift in Sources */,
 				1DB00CDC2E5240B8003DCB88 /* AlarmManager.swift in Sources */,

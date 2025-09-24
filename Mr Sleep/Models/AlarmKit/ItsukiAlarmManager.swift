@@ -341,6 +341,53 @@ class ItsukiAlarmManager {
         await updateAlarmState(alarmID: alarmID, to: .countdown)
     }
     
+    func updateAlarm(
+        _ existingAlarm: ItsukiAlarm,
+        title: String,
+        icon: String,
+        metadata: MrSleepAlarmMetadata,
+        schedule: Alarm.Schedule?,
+        countdownDuration: Alarm.CountdownDuration?,
+        secondaryIntent: (any LiveActivityIntent)?
+    ) async throws {
+        
+        // First, cancel the existing alarm
+        try alarmManager.cancel(id: existingAlarm.id)
+        
+        // Create new alarm with same ID but updated configuration
+        let attributes = AlarmAttributes(
+            presentation: createAlarmPresentation(metadata: metadata, title: title),
+            metadata: metadata,
+            tintColor: .accentColor
+        )
+        
+        let configuration = AlarmConfiguration(
+            countdownDuration: countdownDuration,
+            schedule: schedule,
+            attributes: attributes,
+            stopIntent: StopIntent(alarmID: existingAlarm.id.uuidString),
+            secondaryIntent: secondaryIntent
+        )
+        
+        guard await checkAuthorization() else {
+            throw AlarmError.notAuthorized
+        }
+        
+        let updatedAlarm = try await alarmManager.schedule(id: existingAlarm.id, configuration: configuration)
+        
+        let updatedItsukiAlarm = ItsukiAlarm(alarm: updatedAlarm, metadata: metadata)
+        
+        await MainActor.run {
+            // Remove old alarm from running alarms
+            runningAlarms.removeAll(where: { $0.id == existingAlarm.id })
+            
+            // Add updated alarm
+            runningAlarms.append(updatedItsukiAlarm)
+            
+            saveAlarmsToUserDefaults()
+        }
+    }
+    
     private func updateAlarmState(alarmID: UUID, to state: Alarm.State) async {
         await MainActor.run {
             guard let firstIndex = runningAlarms.firstIndex(where: { $0.id == alarmID }) else { return }

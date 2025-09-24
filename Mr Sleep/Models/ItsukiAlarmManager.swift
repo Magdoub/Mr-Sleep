@@ -391,6 +391,49 @@ class ItsukiAlarmManager {
         }
     }
     
+    func updateAlarm(
+        _ existingAlarm: ItsukiAlarm,
+        title: String,
+        icon: String,
+        metadata: MrSleepAlarmMetadata,
+        schedule: Alarm.Schedule?,
+        countdownDuration: Alarm.CountdownDuration?,
+        secondaryIntent: (any LiveActivityIntent)?
+    ) async throws {
+        
+        // First, cancel the existing alarm
+        if let alarmManager = alarmManager {
+            try? alarmManager.cancel(id: existingAlarm.id)
+        }
+        
+        // Create new alarm with same ID but updated configuration
+        let attributes = AlarmAttributes(
+            presentation: createAlarmPresentation(metadata: metadata, title: title),
+            metadata: metadata,
+            tintColor: .accentColor
+        )
+        
+        let configuration = AlarmConfiguration(
+            countdownDuration: countdownDuration,
+            schedule: schedule,
+            attributes: attributes,
+            stopIntent: StopIntent(alarmID: existingAlarm.id.uuidString),
+            secondaryIntent: secondaryIntent
+        )
+        
+        guard await checkAuthorization() else {
+            throw AlarmError.notAuthorized
+        }
+        
+        // Schedule new alarm with same ID
+        try await scheduleAlarm(
+            id: existingAlarm.id,
+            configuration: configuration,
+            metadata: metadata,
+            title: title
+        )
+    }
+    
     func deleteAlarm(_ alarmID: UUID) async throws {
         // Cancel the alarm using the correct AlarmKit API
         if let alarmManager = alarmManager {

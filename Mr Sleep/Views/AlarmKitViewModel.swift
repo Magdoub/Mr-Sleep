@@ -188,8 +188,40 @@ import Foundation
         }
     }
     
+    // MARK: - Edit Alarm
+    
+    func editAlarm(_ existingAlarm: ItsukiAlarm, with userInput: AlarmKitForm) async {
+        do {
+            try await alarmManager.updateAlarm(
+                existingAlarm,
+                title: userInput.label.isEmpty ? "Alarm" : userInput.label,
+                icon: userInput.metadata.sleepContext?.icon ?? userInput.metadata.wakeUpReason.icon,
+                metadata: userInput.metadata,
+                schedule: userInput.schedule,
+                countdownDuration: userInput.countdownDuration,
+                secondaryIntent: secondaryIntent(alarmID: existingAlarm.id, userInput: userInput)
+            )
+        } catch {
+            await MainActor.run {
+                alarmManager.error = error
+            }
+        }
+    }
+    
     // MARK: - Helper Methods
-    // Removed secondaryIntent method since simplified UI doesn't use complex button behaviors
+    
+    private func secondaryIntent(alarmID: UUID, userInput: AlarmKitForm) -> (any LiveActivityIntent)? {
+        guard let behavior = userInput.secondaryButtonBehavior else { return nil }
+        
+        switch behavior {
+        case .countdown:
+            return RepeatIntent(alarmID: alarmID.uuidString)
+        case .custom:
+            return OpenMrSleepAppIntent(alarmID: alarmID.uuidString)
+        @unknown default:
+            return nil
+        }
+    }
     
     private func createTwoMinutesFromNowSchedule() -> Alarm.Schedule {
         let twoMinsFromNow = Date.now.addingTimeInterval(2 * 60)

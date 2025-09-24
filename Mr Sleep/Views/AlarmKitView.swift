@@ -4,6 +4,7 @@ import SwiftUI
 struct AlarmKitView: View {
     @State private var viewModel = AlarmKitViewModel()
     @State private var showAddSheet = false
+    @State private var selectedAlarmToEdit: ItsukiAlarm?
     @State private var selectedTab = 0
     
     var body: some View {
@@ -69,11 +70,17 @@ struct AlarmKitView: View {
                     Task {
                         await viewModel.deleteAlarm(alarm)
                     }
+                }, onEdit: { alarm in
+                    selectedAlarmToEdit = alarm
                 })
                     .environment(viewModel)
             }
         }
         .listStyle(.plain)
+        .sheet(item: $selectedAlarmToEdit) { alarmToEdit in
+            AlarmKitEditView(alarm: alarmToEdit)
+                .environment(viewModel)
+        }
     }
     
     var emptyStateView: some View {
@@ -158,12 +165,13 @@ struct AlarmKitView: View {
 struct SimpleAlarmCell: View {
     let alarm: ItsukiAlarm
     let onDelete: () -> Void
+    let onEdit: (ItsukiAlarm) -> Void
     @Environment(AlarmKitViewModel.self) private var viewModel
     @State private var isEnabled = true
     
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            // Time Display
+            // Time Display - Tappable area for editing
             VStack(alignment: .leading, spacing: 4) {
                 if let scheduledTime = alarm.scheduledTime {
                     Text(scheduledTime, style: .time)
@@ -182,9 +190,11 @@ struct SimpleAlarmCell: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
-            Spacer()
-                .frame(maxWidth: 120)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onEdit(alarm)
+            }
             
             // Delete button
             Button(action: onDelete) {
@@ -217,7 +227,6 @@ struct SimpleAlarmCell: View {
                 }
         }
         .padding(.vertical, 8)
-        .contentShape(Rectangle())
         .onAppear {
             isEnabled = alarm.state != .paused
         }

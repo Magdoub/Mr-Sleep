@@ -12,7 +12,7 @@ struct MrSleepAlarmMetadata: AlarmMetadata {
         self.wakeUpReason = wakeUpReason
     }
     
-    enum SleepContext: String, Codable {
+    enum SleepContext: String, Codable, CaseIterable {
         case quickNap = "Quick Nap"
         case powerNap = "Power Nap"
         case shortSleep = "Short Sleep"

@@ -215,6 +215,26 @@ import Foundation
         }
     }
     
+    // MARK: - Edit Alarm
+    
+    func editAlarm(_ existingAlarm: ItsukiAlarm, with userInput: AlarmKitForm) async {
+        do {
+            try await alarmManager.updateAlarm(
+                existingAlarm,
+                title: userInput.label.isEmpty ? "Alarm" : userInput.label,
+                icon: userInput.metadata.sleepContext?.icon ?? userInput.metadata.wakeUpReason.icon,
+                metadata: userInput.metadata,
+                schedule: userInput.schedule,
+                countdownDuration: userInput.countdownDuration,
+                secondaryIntent: secondaryIntent(alarmID: existingAlarm.id, userInput: userInput)
+            )
+        } catch {
+            await MainActor.run {
+                alarmManager.error = error
+            }
+        }
+    }
+    
     // MARK: - Helper Methods
     
     private func secondaryIntent(alarmID: UUID, userInput: AlarmKitForm) -> (any LiveActivityIntent)? {

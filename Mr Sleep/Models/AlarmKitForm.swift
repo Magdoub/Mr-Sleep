@@ -2,43 +2,229 @@ import AlarmKit
 import Foundation
 
 struct AlarmKitForm {
+    var label = ""
+    
     var selectedDate = Date.now
+    var selectedDays = Set<Locale.Weekday>()
+    
+    var selectedPreAlert = CountdownInterval()
+    var selectedPostAlert = CountdownInterval()
+    
+    var selectedSecondaryButton: SecondaryButtonOption = .none
+    var selectedSleepContext: MrSleepAlarmMetadata.SleepContext? = nil
+    var selectedWakeUpReason: MrSleepAlarmMetadata.WakeUpReason = .general
+    
+    var preAlertEnabled = false
     var scheduleEnabled = false
     
     var isValidAlarm: Bool {
-        scheduleEnabled
+        (preAlertEnabled && selectedPreAlert.interval > 0) || scheduleEnabled
     }
     
     var localizedLabel: LocalizedStringResource {
-        return LocalizedStringResource("Alarm")
+        if label.isEmpty {
+            if let context = selectedSleepContext {
+                return LocalizedStringResource(stringLiteral: context.rawValue)
+            }
+            return LocalizedStringResource("Alarm")
+        }
+        return LocalizedStringResource(stringLiteral: label)
+    }
+    
+    func isSelected(day: Locale.Weekday) -> Bool {
+        selectedDays.contains(day)
+    }
+    
+    enum SecondaryButtonOption: String, CaseIterable {
+        case none = "None"
+        case countdown = "Countdown"
+        case openApp = "Open App"
+        
+        var description: String {
+            switch self {
+            case .none: "Only the Stop button is displayed in the alarm alert."
+            case .countdown: "Displays the Repeat option when the alarm is triggered."
+            case .openApp: "Displays the Open App button when the alarm is triggered."
+            }
+        }
+    }
+    
+    struct CountdownInterval {
+        var hour = 0
+        var min = 15
+        var sec = 0
+        
+        var interval: TimeInterval {
+            TimeInterval(hour * 60 * 60 + min * 60 + sec)
+        }
+        
+        var formattedString: String {
+            if hour > 0 {
+                return String(format: "%dh %dm %ds", hour, min, sec)
+            } else if min > 0 {
+                return String(format: "%dm %ds", min, sec)
+            } else {
+                return String(format: "%ds", sec)
+            }
+        }
     }
     
     // MARK: AlarmKit Properties
     
+    var countdownDuration: Alarm.CountdownDuration? {
+        let preAlertCountdown: TimeInterval? = if preAlertEnabled {
+            selectedPreAlert.interval
+        } else { nil }
+        
+        let postAlertCountdown: TimeInterval? = if secondaryButtonBehavior == .countdown {
+            selectedPostAlert.interval
+        } else { nil }
+        
+        guard preAlertCountdown != nil || postAlertCountdown != nil else { return nil }
+        
+        return .init(preAlert: preAlertCountdown, postAlert: postAlertCountdown)
+    }
+    
     var schedule: Alarm.Schedule? {
         guard scheduleEnabled else { return nil }
         
-        // Use local time zone to ensure correct hour/minute extraction
-        let calendar = Calendar.current
-        let dateComponents = calendar.dateComponents([.hour, .minute], from: selectedDate)
+        let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: selectedDate)
         
         guard let hour = dateComponents.hour, let minute = dateComponents.minute else { return nil }
-        
-        print("📅 Creating schedule for hour: \(hour), minute: \(minute)")
-        print("📅 Original selectedDate: \(selectedDate)")
-        print("📅 Extracted components: hour=\(hour), minute=\(minute)")
         
         let time = Alarm.Schedule.Relative.Time(hour: hour, minute: minute)
         return .relative(.init(
             time: time,
-            repeats: .never
+            repeats: selectedDays.isEmpty ? .never : .weekly(Array(selectedDays))
         ))
+    }
+    
+    var secondaryButtonBehavior: AlarmPresentation.Alert.SecondaryButtonBehavior? {
+        switch selectedSecondaryButton {
+        case .none: nil
+        case .countdown: .countdown
+        case .openApp: .custom
+        }
     }
     
     var metadata: MrSleepAlarmMetadata {
         MrSleepAlarmMetadata(
-            sleepContext: nil,
-            wakeUpReason: .general
+            sleepContext: selectedSleepContext,
+            wakeUpReason: selectedWakeUpReason
         )
+    }
+}
+
+// MARK: - Quick Setup Extensions
+extension AlarmKitForm {
+    static func quickNap() -> AlarmKitForm {
+        var form = AlarmKitForm()
+        form.selectedSleepContext = .quickNap
+        form.preAlertEnabled = true
+        form.selectedPreAlert = CountdownInterval(hour: 0, min: 20, sec: 0)
+        form.label = "Quick Nap"
+        return form
+    }
+    
+    static func powerNap() -> AlarmKitForm {
+        var form = AlarmKitForm()
+        form.selectedSleepContext = .powerNap
+        form.preAlertEnabled = true
+        form.selectedPreAlert = CountdownInterval(hour: 0, min: 30, sec: 0)
+        form.label = "Power Nap"
+        return form
+    }
+    
+    static func shortSleep() -> AlarmKitForm {
+        var form = AlarmKitForm()
+        form.selectedSleepContext = .shortSleep
+        form.preAlertEnabled = true
+        form.selectedPreAlert = CountdownInterval(hour: 1, min: 30, sec: 0)
+        form.label = "Short Sleep"
+        return form
+    }
+    
+    static func morningAlarm(at time: Date) -> AlarmKitForm {
+        var form = AlarmKitForm()
+        form.scheduleEnabled = true
+        form.selectedDate = time
+        form.selectedWakeUpReason = .work
+        form.selectedSecondaryButton = .openApp
+        form.label = "Morning Alarm"
+        return form
+    }
+    
+    // MARK: - Edit Initializer
+    static func fromExistingAlarm(_ alarm: ItsukiAlarm) -> AlarmKitForm {
+        var form = AlarmKitForm()
+        
+        // Basic properties
+        form.label = alarm.displayTitle
+        form.selectedSleepContext = alarm.metadata.sleepContext
+        form.selectedWakeUpReason = alarm.metadata.wakeUpReason
+        
+        // Schedule configuration
+        if let schedule = alarm.alarm.schedule {
+            form.scheduleEnabled = true
+            
+            switch schedule {
+            case .relative(let relative):
+                // Convert relative time to Date for the picker
+                var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                components.hour = relative.time.hour
+                components.minute = relative.time.minute
+                form.selectedDate = Calendar.current.date(from: components) ?? Date()
+                
+                // Set selected days for repeating alarms
+                switch relative.repeats {
+                case .weekly(let days):
+                    form.selectedDays = Set(days)
+                case .never:
+                    form.selectedDays = []
+                @unknown default:
+                    form.selectedDays = []
+                }
+                
+            case .fixed(let date):
+                form.selectedDate = date
+                form.selectedDays = [] // Fixed alarms don't repeat
+                
+            @unknown default:
+                form.scheduleEnabled = false
+            }
+        }
+        
+        // Countdown configuration
+        if let countdown = alarm.alarm.countdownDuration {
+            if let preAlert = countdown.preAlert {
+                form.preAlertEnabled = true
+                let hours = Int(preAlert) / 3600
+                let minutes = Int(preAlert.truncatingRemainder(dividingBy: 3600)) / 60
+                let seconds = Int(preAlert) % 60
+                form.selectedPreAlert = CountdownInterval(hour: hours, min: minutes, sec: seconds)
+            }
+            
+            if let postAlert = countdown.postAlert {
+                let hours = Int(postAlert) / 3600
+                let minutes = Int(postAlert.truncatingRemainder(dividingBy: 3600)) / 60
+                let seconds = Int(postAlert) % 60
+                form.selectedPostAlert = CountdownInterval(hour: hours, min: minutes, sec: seconds)
+                form.selectedSecondaryButton = .countdown
+            }
+        }
+        
+        // Secondary button behavior
+        // This is inferred from the presence of countdown post-alert or custom intents
+        if form.selectedSecondaryButton != .countdown {
+            // Check if there's a custom intent (like OpenMrSleepAppIntent)
+            // Since we can't directly access the intent, we'll infer from alarm type
+            if alarm.alarmType == .custom && alarm.alarm.countdownDuration?.postAlert == nil {
+                form.selectedSecondaryButton = .openApp
+            } else {
+                form.selectedSecondaryButton = .none
+            }
+        }
+        
+        return form
     }
 }
