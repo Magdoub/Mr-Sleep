@@ -12,7 +12,6 @@
  * - App lifecycle and startup configuration
  * - Dark mode preference setting
  * - Launch count tracking for App Store review prompts
- * - Global environment object setup (AlarmManager)
  * - Initial view hierarchy configuration
  */
 
@@ -21,8 +20,6 @@ import StoreKit
 
 @main
 struct Mr_SleepApp: App {
-    @StateObject private var alarmManager = AlarmManager.shared
-    
     init() {
         
     }
@@ -31,7 +28,6 @@ struct Mr_SleepApp: App {
         WindowGroup {
             MainTabView()
                 .preferredColorScheme(.dark)
-                .environmentObject(alarmManager)
                 .onAppear {
                     incrementLaunchCount()
                 }

@@ -32,7 +32,6 @@ extension Notification.Name {
 }
 
 struct SleepNowView: View {
-    @ObservedObject var alarmManager: AlarmManager
     @Binding var selectedTab: Int
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
@@ -1026,5 +1025,5 @@ struct OnboardingStep {
 }
 
 #Preview {
-    SleepNowView(alarmManager: AlarmManager.shared, selectedTab: .constant(0))
+    SleepNowView(selectedTab: .constant(0))
 }

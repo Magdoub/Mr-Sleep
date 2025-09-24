@@ -9,11 +9,10 @@
  * Main Tab Navigation Container
  * 
  * This file provides the primary navigation structure for the app:
- * - Four-tab navigation: Alarms, Sleep Now, AlarmKit, Settings
+ * - Three-tab navigation: Sleep Now, AlarmKit, Settings
  * - Onboarding flow management for first-time users
  * - Tab bar appearance customization with dark theme
  * - Smooth animation handling for tab transitions
- * - Integration between sleep calculations and alarm management
  */
 
 import SwiftUI
@@ -22,49 +21,39 @@ import AlarmKit
 
 
 struct MainTabView: View {
-    @State private var selectedTab = 1
+    @State private var selectedTab = 0
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @State private var tabBarOffset: CGFloat = 0
     @State private var showTabBarAnimation = false
-    @State private var showingAlarmError = false
-    @State private var alarmErrorMessage = ""
-    @EnvironmentObject var alarmManager: AlarmManager
     
     var body: some View {
         Group {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
-                SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
+                SleepNowView(selectedTab: $selectedTab)
             } else {
                 // Show full TabView
                 TabView(selection: $selectedTab) {
-                    AlarmsView(alarmManager: alarmManager)
+                    SleepNowView(selectedTab: $selectedTab)
                         .tabItem {
-                            Image(systemName: selectedTab == 0 ? "alarm.fill" : "alarm")
-                            Text("Alarms")
+                            Image(systemName: selectedTab == 0 ? "bed.double.fill" : "bed.double")
+                            Text("Sleep Now")
                         }
                         .tag(0)
                     
-                    SleepNowView(alarmManager: alarmManager, selectedTab: $selectedTab)
+                    AlarmKitView()
                         .tabItem {
-                            Image(systemName: selectedTab == 1 ? "bed.double.fill" : "bed.double")
-                            Text("Sleep Now")
+                            Image(systemName: selectedTab == 1 ? "alarm.waves.left.and.right.fill" : "alarm.waves.left.and.right")
+                            Text("AK")
                         }
                         .tag(1)
                     
-                    AlarmKitView()
-                        .tabItem {
-                            Image(systemName: selectedTab == 2 ? "alarm.waves.left.and.right.fill" : "alarm.waves.left.and.right")
-                            Text("AK")
-                        }
-                        .tag(2)
-                    
                     SettingsView()
                         .tabItem {
-                            Image(systemName: selectedTab == 3 ? "gearshape.fill" : "gearshape")
+                            Image(systemName: selectedTab == 2 ? "gearshape.fill" : "gearshape")
                             Text("Settings")
                         }
-                        .tag(3)
+                        .tag(2)
                 }
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 .onAppear {
@@ -120,11 +109,6 @@ struct MainTabView: View {
                 }
             }
         }
-        .alert("Alarm Error", isPresented: $showingAlarmError) {
-            Button("OK") { }
-        } message: {
-            Text(alarmErrorMessage)
-        }
         .onAppear {
             // Configure tab bar appearance
             let appearance = UITabBarAppearance()
@@ -163,5 +147,4 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
-        .environmentObject(AlarmManager.shared)
 }

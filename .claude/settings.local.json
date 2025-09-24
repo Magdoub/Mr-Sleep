@@ -108,6 +108,9 @@
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" clean build)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"name=iPhone (3)\" build)"
     ],
     "deny": [],

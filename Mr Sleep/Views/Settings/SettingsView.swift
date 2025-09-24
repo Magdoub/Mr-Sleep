@@ -25,7 +25,6 @@ struct SettingsView: View {
     @State private var notificationsEnabled: Bool = true
     @State private var hapticFeedback: Bool = true
     @State private var darkMode: Bool = true
-    @StateObject private var alarmManager = AlarmManager.shared
     
     var body: some View {
         GeometryReader { geometry in
