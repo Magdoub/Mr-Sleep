@@ -46,11 +46,8 @@ Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based o
 # Open project in Xcode
 open "Mr Sleep.xcodeproj"
 
-# Build for iOS Simulator using Xcode
-~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "platform=iOS Simulator,name=iPhone 15" build
-
-# Build for device
-~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "generic/platform=iOS" build
+# Build for physical device (iPhone 3)
+~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "name=iPhone (3)" build
 ```
 
 ## Xcode Configuration
