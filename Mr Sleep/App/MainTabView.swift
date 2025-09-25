@@ -56,6 +56,13 @@ struct MainTabView: View {
                             Text("Settings")
                         }
                         .tag(2)
+                    
+                    SingleAlarmView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 3 ? "sparkles.rectangle.stack.fill" : "sparkles.rectangle.stack")
+                            Text("Single")
+                        }
+                        .tag(3)
                 }
                 .environment(alarmViewModel)
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
