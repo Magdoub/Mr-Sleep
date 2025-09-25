@@ -22,35 +22,31 @@ struct AlarmKitAddView: View {
                     .padding(.horizontal)
                 
                 Spacer()
-                
-                Button(action: scheduleAlarm) {
-                    HStack {
-                        if isScheduling {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("Save Alarm")
-                                .font(.headline)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(isScheduling)
-                .padding(.horizontal)
-                .padding(.bottom, 40)
             }
             .navigationTitle("New Alarm")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
                     }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: scheduleAlarm) {
+                        if isScheduling {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                    .disabled(isScheduling)
                 }
             }
         }

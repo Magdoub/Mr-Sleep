@@ -66,14 +66,18 @@ struct AlarmKitView: View {
     var simpleAlarmListView: some View {
         List {
             ForEach(viewModel.runningAlarms, id: \.id) { alarm in
-                SimpleAlarmCell(alarm: alarm, onDelete: {
-                    Task {
-                        await viewModel.deleteAlarm(alarm)
-                    }
-                }, onEdit: { alarm in
+                SimpleAlarmCell(alarm: alarm, onEdit: { alarm in
                     selectedAlarmToEdit = alarm
                 })
                     .environment(viewModel)
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let alarm = viewModel.runningAlarms[index]
+                    Task {
+                        await viewModel.deleteAlarm(alarm)
+                    }
+                }
             }
         }
         .listStyle(.plain)
@@ -164,7 +168,6 @@ struct AlarmKitView: View {
 // MARK: - Simple Alarm Cell
 struct SimpleAlarmCell: View {
     let alarm: ItsukiAlarm
-    let onDelete: () -> Void
     let onEdit: (ItsukiAlarm) -> Void
     @Environment(AlarmKitViewModel.self) private var viewModel
     @State private var isEnabled = true
@@ -195,17 +198,6 @@ struct SimpleAlarmCell: View {
             .onTapGesture {
                 onEdit(alarm)
             }
-            
-            // Delete button
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(Color(red: 0.8, green: 0.4, blue: 0.4))
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 16)
             
             // Toggle Switch
             Toggle("", isOn: $isEnabled)

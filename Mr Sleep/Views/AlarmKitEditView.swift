@@ -83,24 +83,13 @@ struct AlarmKitEditView: View {
                 
                 Spacer()
                 
-                Button(action: updateAlarm) {
-                    HStack {
-                        if isUpdating {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("Save Changes")
-                                .font(.headline)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                Button(action: deleteAlarm) {
+                    Text("Delete Alarm")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                 }
-                .disabled(isUpdating)
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
@@ -108,9 +97,26 @@ struct AlarmKitEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
                     }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: updateAlarm) {
+                        if isUpdating {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                    .disabled(isUpdating)
                 }
             }
         }
@@ -130,6 +136,16 @@ struct AlarmKitEditView: View {
             
             await MainActor.run {
                 isUpdating = false
+                dismiss()
+            }
+        }
+    }
+    
+    func deleteAlarm() {
+        Task {
+            await viewModel.deleteAlarm(alarm)
+            
+            await MainActor.run {
                 dismiss()
             }
         }
