@@ -35,6 +35,10 @@ extension Notification.Name {
 struct SleepNowView: View {
     @Binding var selectedTab: Int
     @Environment(AlarmKitViewModel.self) private var alarmViewModel
+    
+    // Debouncing state for alarm creation
+    @State private var isCreatingAlarm = false
+    @State private var lastAlarmCreationTime: Date?
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
@@ -221,7 +225,8 @@ struct SleepNowView: View {
                                                         category: categoryData.category,
                                                         cycles: timeData.cycles
                                                     )
-                                                }
+                                                },
+                                                isCreatingAlarm: isCreatingAlarm
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
                                             .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
@@ -561,6 +566,22 @@ struct SleepNowView: View {
     
     private func createAlarm(wakeUpTime: Date, category: String, cycles: Int) {
         Task { @MainActor in
+            // Debouncing: Prevent multiple simultaneous alarm creations
+            if isCreatingAlarm {
+                return
+            }
+            
+            // Time-based debouncing: Prevent rapid successive taps
+            let now = Date()
+            if let lastCreation = lastAlarmCreationTime,
+               now.timeIntervalSince(lastCreation) < 2.0 {
+                return
+            }
+            
+            // Set creation state
+            isCreatingAlarm = true
+            lastAlarmCreationTime = now
+            
             // Check if an alarm already exists for this time (within 1 minute)
             let calendar = Calendar.current
             let wakeUpComponents = calendar.dateComponents([.hour, .minute], from: wakeUpTime)
@@ -588,6 +609,9 @@ struct SleepNowView: View {
                 // Add brief visual feedback for duplicate
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                 impactFeedback.impactOccurred()
+                
+                // Reset creation state
+                isCreatingAlarm = false
                 return
             }
             
@@ -614,6 +638,9 @@ struct SleepNowView: View {
             
             // Create the alarm
             await alarmViewModel.scheduleAlarm(with: alarmForm)
+            
+            // Reset creation state after alarm is created
+            isCreatingAlarm = false
             
             // Navigate to Alarms tab with a slight delay for visual feedback
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

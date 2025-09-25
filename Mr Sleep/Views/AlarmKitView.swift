@@ -171,10 +171,11 @@ struct SimpleAlarmCell: View {
     let onEdit: (ItsukiAlarm) -> Void
     @Environment(AlarmKitViewModel.self) private var viewModel
     @State private var isEnabled = true
+    @State private var isPressed = false
     
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            // Time Display - Tappable area for editing
+            // Time Display - Entire area clickable for editing
             VStack(alignment: .leading, spacing: 4) {
                 if let scheduledTime = alarm.scheduledTime {
                     Text(scheduledTime, style: .time)
@@ -194,12 +195,8 @@ struct SimpleAlarmCell: View {
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onEdit(alarm)
-            }
             
-            // Toggle Switch
+            // Toggle Switch - Independent interactive area
             Toggle("", isOn: $isEnabled)
                 .scaleEffect(0.8)
                 .onChange(of: isEnabled) { _, newValue in
@@ -219,6 +216,29 @@ struct SimpleAlarmCell: View {
                 }
         }
         .padding(.vertical, 8)
+        .background(
+            // Invisible background to capture taps on entire card
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+        )
+        .background(
+            // Visual feedback background
+            Rectangle()
+                .fill(Color.primary.opacity(isPressed ? 0.05 : 0))
+                .animation(.easeInOut(duration: 0.1), value: isPressed)
+        )
+        .contentShape(Rectangle()) // Make entire area tappable
+        .onTapGesture {
+            // Only trigger edit if tap is not on toggle area
+            onEdit(alarm)
+        }
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            // Visual feedback for press state
+            isPressed = pressing
+        }, perform: {})
         .onAppear {
             isEnabled = alarm.state != .paused
         }

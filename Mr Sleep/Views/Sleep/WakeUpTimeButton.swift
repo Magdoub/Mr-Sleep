@@ -27,6 +27,7 @@ struct WakeUpTimeButton: View {
     let cycles: Int
     let pulseScale: Double
     let onTap: () -> Void
+    let isCreatingAlarm: Bool
     
     @State private var isPressed = false
     @State private var breathingScale: Double = 1.0
@@ -34,6 +35,9 @@ struct WakeUpTimeButton: View {
     
     var body: some View {
         Button(action: {
+            // Don't perform action if creating alarm
+            guard !isCreatingAlarm else { return }
+            
             // Add haptic feedback
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
@@ -78,11 +82,12 @@ struct WakeUpTimeButton: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity) // Move frame inside button for full-width clickability
+            .padding(.horizontal, 18) // Move padding inside button for clickable padding areas
+            .padding(.vertical, 20) // Move padding inside button for clickable padding areas
+            .contentShape(Rectangle()) // Makes entire area including Spacer clickable
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20) // Increased for better touch target
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white.opacity(isPressed ? 0.14 : 0.11)) // Improved contrast
@@ -97,8 +102,10 @@ struct WakeUpTimeButton: View {
                     y: isPressed ? 2 : 3 // Slightly more lift
                 )
         )
-        .scaleEffect((isPressed ? 0.98 : 1.0) * breathingScale)
+        .scaleEffect((isPressed ? 0.95 : 1.0) * breathingScale)
+        .opacity(isCreatingAlarm ? 0.6 : 1.0) // Visual feedback during alarm creation
         .animation(.easeInOut(duration: 0.15), value: isPressed) // Slightly longer for smoother feel
+        .animation(.easeInOut(duration: 0.2), value: isCreatingAlarm) // Smooth opacity transition
         .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: breathingScale)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
@@ -124,7 +131,8 @@ struct WakeUpTimeButton: View {
         isRecommended: true,
         cycles: 5,
         pulseScale: 1.0,
-        onTap: { print("Preview button tapped") }
+        onTap: { print("Preview button tapped") },
+        isCreatingAlarm: false
     )
     .padding()
     .background(Color.black)
