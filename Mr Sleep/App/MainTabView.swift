@@ -44,7 +44,7 @@ struct MainTabView: View {
                     AlarmKitView()
                         .tabItem {
                             Image(systemName: selectedTab == 1 ? "alarm.waves.left.and.right.fill" : "alarm.waves.left.and.right")
-                            Text("AK")
+                            Text("Alarms")
                         }
                         .tag(1)
                     

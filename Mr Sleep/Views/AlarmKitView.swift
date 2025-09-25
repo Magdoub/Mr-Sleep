@@ -10,7 +10,7 @@ struct AlarmKitView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("AlarmKit")
+                .navigationTitle("Alarms")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if viewModel.alarmManager.isAlarmKitAvailable {
