@@ -36,6 +36,41 @@ import Foundation
     
     // MARK: - Alarm Scheduling from Form
     
+    func scheduleAlarmWithID(_ alarmID: UUID, with userInput: AlarmKitForm) async -> Bool {
+        do {
+            if let schedule = userInput.schedule {
+                print("📅 Scheduling alarm with ID: \(alarmID) and schedule: \(schedule)")
+                print("⏰ Alarm time: \(userInput.selectedDate)")
+                
+                // Simple scheduled alarm with specific ID
+                try await alarmManager.addAlarm(
+                    title: "Alarm",
+                    icon: "alarm",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    schedule: schedule
+                )
+                print("✅ Alarm scheduled successfully with ID: \(alarmID)")
+                return true
+            } else {
+                print("❌ No schedule created from userInput")
+                return false
+            }
+        } catch {
+            print("💥 AlarmKit Error: \(error)")
+            print("💥 Error localizedDescription: \(error.localizedDescription)")
+            if let alarmError = error as? NSError {
+                print("💥 Error code: \(alarmError.code)")
+                print("💥 Error domain: \(alarmError.domain)")
+                print("💥 Error userInfo: \(alarmError.userInfo)")
+            }
+            await MainActor.run {
+                alarmManager.error = error
+            }
+            return false
+        }
+    }
+    
     func scheduleAlarm(with userInput: AlarmKitForm) async {
         let alarmID = UUID()
         

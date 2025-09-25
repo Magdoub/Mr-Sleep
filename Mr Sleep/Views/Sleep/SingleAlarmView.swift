@@ -20,27 +20,39 @@
 import SwiftUI
 import AVFoundation
 import AudioToolbox
+import AlarmKit
 
 // MARK: - Single Alarm Data Model
 struct SingleAlarmData: Codable {
     let alarmTime: Date
     let startTime: Date
     let cycles: Int
+    let alarmID: UUID?
     
     static let userDefaultsKey = "SingleAlarmData"
+    
+    // Initializer for backward compatibility
+    init(alarmTime: Date, startTime: Date, cycles: Int, alarmID: UUID? = nil) {
+        self.alarmTime = alarmTime
+        self.startTime = startTime
+        self.cycles = cycles
+        self.alarmID = alarmID
+    }
 }
 
 // MARK: - Alarm Selection State
 enum SingleAlarmState: Equatable {
     case none
     case selected(time: Date, cycles: Int, adjustmentMinutes: Int)
-    case active(alarmTime: Date, startTime: Date)
+    case active(alarmTime: Date, startTime: Date, alarmID: UUID?)
 }
 
 // OnboardingStep is defined in SleepNowView.swift
 
 // MARK: - Main Single Alarm View
 struct SingleAlarmView: View {
+    @Environment(AlarmKitViewModel.self) private var alarmViewModel
+    
     // Single alarm state
     @State private var singleAlarmState: SingleAlarmState = .none
     @State private var showAdjustmentControls = false
@@ -92,7 +104,7 @@ struct SingleAlarmView: View {
                 .ignoresSafeArea(.container, edges: .all)
                 
                 // Handle different view states
-                if case .active(let alarmTime, let startTime) = singleAlarmState {
+                if case .active(let alarmTime, let startTime, _) = singleAlarmState {
                     activeAlarmView(alarmTime: alarmTime, startTime: startTime, geometry: geometry)
                 } else if case .selected(let selectedTime, let cycles, let adjustmentMinutes) = singleAlarmState {
                     fullScreenAdjustmentView(selectedTime: selectedTime, cycles: cycles, adjustmentMinutes: adjustmentMinutes, geometry: geometry)
@@ -578,11 +590,20 @@ struct SingleAlarmView: View {
             let successFeedback = UINotificationFeedbackGenerator()
             successFeedback.notificationOccurred(.success)
             
-            let alarmData = SingleAlarmData(alarmTime: adjustedTime, startTime: Date(), cycles: cycles)
-            saveAlarmData(alarmData)
-            
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                singleAlarmState = .active(alarmTime: adjustedTime, startTime: Date())
+            // Schedule the actual alarm using AlarmKit and get the ID
+            Task {
+                let alarmID = await scheduleAlarmKitAlarm(time: adjustedTime, cycles: cycles)
+                
+                // Save alarm data with the ID
+                let alarmData = SingleAlarmData(alarmTime: adjustedTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
+                saveAlarmData(alarmData)
+                
+                // Update state with the alarm ID
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        singleAlarmState = .active(alarmTime: adjustedTime, startTime: Date(), alarmID: alarmID)
+                    }
+                }
             }
         }
     }
@@ -590,6 +611,13 @@ struct SingleAlarmView: View {
     private func cancelAlarm() {
         let warningFeedback = UINotificationFeedbackGenerator()
         warningFeedback.notificationOccurred(.warning)
+        
+        // Delete the AlarmKit alarm if it exists
+        if case .active(let alarmTime, _, let alarmID) = singleAlarmState {
+            Task {
+                await deleteExistingAlarmKitAlarm(alarmID: alarmID, time: alarmTime)
+            }
+        }
         
         clearSavedAlarmData()
         
@@ -599,7 +627,7 @@ struct SingleAlarmView: View {
     }
     
     private func updateCountdown() {
-        guard case .active(let alarmTime, let startTime) = singleAlarmState else { return }
+        guard case .active(let alarmTime, let startTime, _) = singleAlarmState else { return }
         
         let now = Date()
         let timeRemaining = alarmTime.timeIntervalSince(now)
@@ -620,6 +648,105 @@ struct SingleAlarmView: View {
         progressValue = min(1.0, max(0.0, 1.0 - (timeRemaining / totalTime)))
     }
     
+    // MARK: - AlarmKit Integration
+    private func scheduleAlarmKitAlarm(time: Date, cycles: Int) async -> UUID? {
+        // Check for duplicate alarms at the same time
+        let existingAlarms = await MainActor.run { alarmViewModel.runningAlarms }
+        let hasExistingAlarm = existingAlarms.contains { alarm in
+            guard let schedule = alarm.alarm.schedule else { return false }
+            
+            switch schedule {
+            case .fixed(let alarmDate):
+                return Calendar.current.isDate(alarmDate, equalTo: time, toGranularity: .minute)
+            case .relative(let relative):
+                let wakeUpComponents = Calendar.current.dateComponents([.hour, .minute], from: time)
+                guard let wakeUpHour = wakeUpComponents.hour, let wakeUpMinute = wakeUpComponents.minute else { return false }
+                return relative.time.hour == wakeUpHour && relative.time.minute == wakeUpMinute
+            @unknown default:
+                return false
+            }
+        }
+        
+        // If alarm already exists, don't create another one
+        if hasExistingAlarm {
+            print("Alarm already exists at \(SleepCalculator.shared.formatTime(time))")
+            return nil
+        }
+        
+        // Generate alarm ID
+        let alarmID = UUID()
+        
+        // Create alarm form
+        var alarmForm = AlarmKitForm()
+        alarmForm.selectedDate = time
+        alarmForm.scheduleEnabled = true
+        alarmForm.label = "Single Alarm - \(SleepCalculator.shared.formatTime(time))"
+        
+        // Set metadata based on cycles
+        switch cycles {
+        case 3:
+            alarmForm.selectedWakeUpReason = .workout
+            alarmForm.selectedSleepContext = .quickNap
+        case 4:
+            alarmForm.selectedWakeUpReason = .work
+            alarmForm.selectedSleepContext = .shortSleep
+        case 5, 6:
+            alarmForm.selectedWakeUpReason = .general
+            alarmForm.selectedSleepContext = .normalSleep
+        default:
+            alarmForm.selectedWakeUpReason = .general
+        }
+        
+        // Schedule the alarm with specific ID
+        let success = await alarmViewModel.scheduleAlarmWithID(alarmID, with: alarmForm)
+        
+        if success {
+            print("Scheduled single alarm for \(SleepCalculator.shared.formatTime(time)) with ID: \(alarmID)")
+            return alarmID
+        } else {
+            print("Failed to schedule single alarm for \(SleepCalculator.shared.formatTime(time))")
+            return nil
+        }
+    }
+    
+    private func deleteExistingAlarmKitAlarm(alarmID: UUID?, time: Date) async {
+        let existingAlarms = await MainActor.run { alarmViewModel.runningAlarms }
+        
+        // First try to find by alarm ID (most reliable)
+        if let alarmID = alarmID {
+            if let alarm = existingAlarms.first(where: { $0.id == alarmID }) {
+                await alarmViewModel.deleteAlarm(alarm)
+                print("Deleted single alarm by ID: \(alarmID)")
+                return
+            } else {
+                print("Could not find alarm with ID: \(alarmID), falling back to time-based search")
+            }
+        }
+        
+        // Fall back to time-based matching for backward compatibility
+        for alarm in existingAlarms {
+            guard let schedule = alarm.alarm.schedule else { continue }
+            
+            var matchesTime = false
+            switch schedule {
+            case .fixed(let alarmDate):
+                matchesTime = Calendar.current.isDate(alarmDate, equalTo: time, toGranularity: .minute)
+            case .relative(let relative):
+                let wakeUpComponents = Calendar.current.dateComponents([.hour, .minute], from: time)
+                guard let wakeUpHour = wakeUpComponents.hour, let wakeUpMinute = wakeUpComponents.minute else { continue }
+                matchesTime = relative.time.hour == wakeUpHour && relative.time.minute == wakeUpMinute
+            @unknown default:
+                continue
+            }
+            
+            if matchesTime {
+                await alarmViewModel.deleteAlarm(alarm)
+                print("Deleted single alarm at \(SleepCalculator.shared.formatTime(time)) by time matching")
+                break
+            }
+        }
+    }
+    
     // MARK: - Data Persistence
     private func saveAlarmData(_ alarmData: SingleAlarmData) {
         if let encoded = try? JSONEncoder().encode(alarmData) {
@@ -635,7 +762,7 @@ struct SingleAlarmView: View {
         
         // Check if alarm time hasn't passed
         if alarmData.alarmTime > Date() {
-            singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime)
+            singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
         } else {
             clearSavedAlarmData()
         }
