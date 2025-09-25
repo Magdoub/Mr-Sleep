@@ -25,12 +25,14 @@ struct MainTabView: View {
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @State private var tabBarOffset: CGFloat = 0
     @State private var showTabBarAnimation = false
+    @State private var alarmViewModel = AlarmKitViewModel()
     
     var body: some View {
         Group {
             if showOnboarding {
                 // Show only SleepNowView during onboarding (no tab bar)
                 SleepNowView(selectedTab: $selectedTab)
+                    .environment(alarmViewModel)
             } else {
                 // Show full TabView
                 TabView(selection: $selectedTab) {
@@ -55,6 +57,7 @@ struct MainTabView: View {
                         }
                         .tag(2)
                 }
+                .environment(alarmViewModel)
                 .accentColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                 .onAppear {
                     // Configure tab bar appearance for iOS 26

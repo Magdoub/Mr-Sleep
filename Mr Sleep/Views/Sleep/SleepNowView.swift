@@ -26,6 +26,7 @@
 import SwiftUI
 import AVFoundation
 import AudioToolbox
+import AlarmKit
 
 extension Notification.Name {
     static let onboardingCompleted = Notification.Name("onboardingCompleted")
@@ -33,6 +34,7 @@ extension Notification.Name {
 
 struct SleepNowView: View {
     @Binding var selectedTab: Int
+    @Environment(AlarmKitViewModel.self) private var alarmViewModel
     @State private var categorizedWakeUpTimes: [(category: String, times: [(time: Date, cycles: Int)])] = []
     @State private var showSleepGuide = false
     @State private var currentTime = Date()
@@ -213,6 +215,13 @@ struct SleepNowView: View {
                                                 isRecommended: false,
                                                 cycles: timeData.cycles,
                                                 pulseScale: 1.0,
+                                                onTap: {
+                                                    createAlarm(
+                                                        wakeUpTime: timeData.time,
+                                                        category: categoryData.category,
+                                                        cycles: timeData.cycles
+                                                    )
+                                                }
                                             )
                                             .opacity(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.0)
                                             .scaleEffect(overallIndex < wakeUpTimeVisibility.count && wakeUpTimeVisibility[overallIndex] ? 1.0 : 0.8)
@@ -546,6 +555,73 @@ struct SleepNowView: View {
     private func formatSleepDurationSimple(cycles: Int) -> String {
         let hours = Double(cycles) * 1.5
         return "\(hours.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", hours) : String(format: "%.1f", hours))h"
+    }
+    
+    // MARK: - Alarm Creation
+    
+    private func createAlarm(wakeUpTime: Date, category: String, cycles: Int) {
+        Task { @MainActor in
+            // Check if an alarm already exists for this time (within 1 minute)
+            let calendar = Calendar.current
+            let wakeUpComponents = calendar.dateComponents([.hour, .minute], from: wakeUpTime)
+            
+            // Check for existing alarms at the same time
+            let existingAlarms = alarmViewModel.runningAlarms
+            let hasExistingAlarm = existingAlarms.contains { alarm in
+                guard let schedule = alarm.alarm.schedule else { return false }
+                
+                switch schedule {
+                case .relative(let relative):
+                    return relative.time.hour == wakeUpComponents.hour && 
+                           relative.time.minute == wakeUpComponents.minute
+                case .fixed(let date):
+                    let alarmComponents = calendar.dateComponents([.hour, .minute], from: date)
+                    return alarmComponents.hour == wakeUpComponents.hour && 
+                           alarmComponents.minute == wakeUpComponents.minute
+                @unknown default:
+                    return false
+                }
+            }
+            
+            // If alarm already exists, show feedback and return
+            if hasExistingAlarm {
+                // Add brief visual feedback for duplicate
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+                return
+            }
+            
+            // Create alarm form with contextual data
+            var alarmForm = AlarmKitForm()
+            alarmForm.selectedDate = wakeUpTime
+            alarmForm.scheduleEnabled = true
+            alarmForm.label = "\(category) - \(SleepCalculator.shared.formatTime(wakeUpTime))"
+            
+            // Set metadata based on category
+            switch category {
+            case "Quick Boost":
+                alarmForm.selectedWakeUpReason = .workout
+                alarmForm.selectedSleepContext = .quickNap
+            case "Recovery":
+                alarmForm.selectedWakeUpReason = .work
+                alarmForm.selectedSleepContext = .shortSleep
+            case "Full Recharge":
+                alarmForm.selectedWakeUpReason = .general
+                alarmForm.selectedSleepContext = .normalSleep
+            default:
+                alarmForm.selectedWakeUpReason = .general
+            }
+            
+            // Create the alarm
+            await alarmViewModel.scheduleAlarm(with: alarmForm)
+            
+            // Navigate to Alarms tab with a slight delay for visual feedback
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    selectedTab = 1
+                }
+            }
+        }
     }
     
     private func getCurrentTime() -> String {
