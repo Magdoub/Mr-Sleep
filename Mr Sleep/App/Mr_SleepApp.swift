@@ -20,13 +20,16 @@ import StoreKit
 
 @main
 struct Mr_SleepApp: App {
+    @State private var alarmViewModel = AlarmKitViewModel()
+    
     init() {
         
     }
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            SingleAlarmView()
+                .environment(alarmViewModel)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     incrementLaunchCount()

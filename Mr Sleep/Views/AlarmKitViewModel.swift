@@ -39,31 +39,40 @@ import Foundation
     func scheduleAlarmWithID(_ alarmID: UUID, with userInput: AlarmKitForm) async -> Bool {
         do {
             if let schedule = userInput.schedule {
-                print("📅 Scheduling alarm with ID: \(alarmID) and schedule: \(schedule)")
-                print("⏰ Alarm time: \(userInput.selectedDate)")
-                
-                // Simple scheduled alarm with specific ID
+                // Scheduled alarm
                 try await alarmManager.addAlarm(
-                    title: "Alarm",
-                    icon: "alarm",
+                    title: userInput.label.isEmpty ? "Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? userInput.metadata.wakeUpReason.icon,
                     metadata: userInput.metadata,
                     alarmID: alarmID,
                     schedule: schedule
                 )
-                print("✅ Alarm scheduled successfully with ID: \(alarmID)")
                 return true
-            } else {
-                print("❌ No schedule created from userInput")
-                return false
+            } else if let countdown = userInput.countdownDuration {
+                // Timer/countdown
+                try await alarmManager.addTimer(
+                    title: userInput.label.isEmpty ? "Timer" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "timer",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    duration: countdown.preAlert ?? 900 // 15 minutes default
+                )
+                return true
+            } else if userInput.schedule != nil && userInput.countdownDuration != nil {
+                // Custom alarm with both schedule and countdown
+                try await alarmManager.addCustom(
+                    title: userInput.label.isEmpty ? "Custom Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "alarm.waves.left.and.right",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    schedule: userInput.schedule,
+                    countdownDuration: userInput.countdownDuration,
+                    secondaryIntent: secondaryIntent(alarmID: alarmID, userInput: userInput)
+                )
+                return true
             }
+            return false
         } catch {
-            print("💥 AlarmKit Error: \(error)")
-            print("💥 Error localizedDescription: \(error.localizedDescription)")
-            if let alarmError = error as? NSError {
-                print("💥 Error code: \(alarmError.code)")
-                print("💥 Error domain: \(alarmError.domain)")
-                print("💥 Error userInfo: \(alarmError.userInfo)")
-            }
             await MainActor.run {
                 alarmManager.error = error
             }
@@ -76,29 +85,36 @@ import Foundation
         
         do {
             if let schedule = userInput.schedule {
-                print("📅 Scheduling alarm with schedule: \(schedule)")
-                print("⏰ Alarm time: \(userInput.selectedDate)")
-                
-                // Simple scheduled alarm
+                // Scheduled alarm
                 try await alarmManager.addAlarm(
-                    title: "Alarm",
-                    icon: "alarm",
+                    title: userInput.label.isEmpty ? "Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? userInput.metadata.wakeUpReason.icon,
                     metadata: userInput.metadata,
                     alarmID: alarmID,
                     schedule: schedule
                 )
-                print("✅ Alarm scheduled successfully")
-            } else {
-                print("❌ No schedule created from userInput")
+            } else if let countdown = userInput.countdownDuration {
+                // Timer/countdown
+                try await alarmManager.addTimer(
+                    title: userInput.label.isEmpty ? "Timer" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "timer",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    duration: countdown.preAlert ?? 900 // 15 minutes default
+                )
+            } else if userInput.schedule != nil && userInput.countdownDuration != nil {
+                // Custom alarm with both schedule and countdown
+                try await alarmManager.addCustom(
+                    title: userInput.label.isEmpty ? "Custom Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "alarm.waves.left.and.right",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    schedule: userInput.schedule,
+                    countdownDuration: userInput.countdownDuration,
+                    secondaryIntent: secondaryIntent(alarmID: alarmID, userInput: userInput)
+                )
             }
         } catch {
-            print("💥 AlarmKit Error: \(error)")
-            print("💥 Error localizedDescription: \(error.localizedDescription)")
-            if let alarmError = error as? NSError {
-                print("💥 Error code: \(alarmError.code)")
-                print("💥 Error domain: \(alarmError.domain)")
-                print("💥 Error userInfo: \(alarmError.userInfo)")
-            }
             await MainActor.run {
                 alarmManager.error = error
             }
@@ -169,7 +185,27 @@ import Foundation
     
     // MARK: - Quick Sleep Timers
     
-    // Removed complex quick setup methods since we simplified the UI
+    func scheduleQuickNap() async {
+        let form = AlarmKitForm.quickNap()
+        await scheduleAlarm(with: form)
+    }
+    
+    func schedulePowerNap() async {
+        let form = AlarmKitForm.powerNap()
+        await scheduleAlarm(with: form)
+    }
+    
+    func scheduleShortSleep() async {
+        let form = AlarmKitForm.shortSleep()
+        await scheduleAlarm(with: form)
+    }
+    
+    func scheduleMorningAlarm() async {
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        let morningTime = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: tomorrow) ?? Date()
+        let form = AlarmKitForm.morningAlarm(at: morningTime)
+        await scheduleAlarm(with: form)
+    }
     
     // MARK: - Alarm Management
     

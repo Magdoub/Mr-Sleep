@@ -36,6 +36,50 @@ import Foundation
     
     // MARK: - Alarm Scheduling from Form
     
+    func scheduleAlarmWithID(_ alarmID: UUID, with userInput: AlarmKitForm) async -> Bool {
+        do {
+            if let schedule = userInput.schedule {
+                // Scheduled alarm
+                try await alarmManager.addAlarm(
+                    title: userInput.label.isEmpty ? "Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? userInput.metadata.wakeUpReason.icon,
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    schedule: schedule
+                )
+                return true
+            } else if let countdown = userInput.countdownDuration {
+                // Timer/countdown
+                try await alarmManager.addTimer(
+                    title: userInput.label.isEmpty ? "Timer" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "timer",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    duration: countdown.preAlert ?? 900 // 15 minutes default
+                )
+                return true
+            } else if userInput.schedule != nil && userInput.countdownDuration != nil {
+                // Custom alarm with both schedule and countdown
+                try await alarmManager.addCustom(
+                    title: userInput.label.isEmpty ? "Custom Alarm" : userInput.label,
+                    icon: userInput.metadata.sleepContext?.icon ?? "alarm.waves.left.and.right",
+                    metadata: userInput.metadata,
+                    alarmID: alarmID,
+                    schedule: userInput.schedule,
+                    countdownDuration: userInput.countdownDuration,
+                    secondaryIntent: secondaryIntent(alarmID: alarmID, userInput: userInput)
+                )
+                return true
+            }
+            return false
+        } catch {
+            await MainActor.run {
+                alarmManager.error = error
+            }
+            return false
+        }
+    }
+    
     func scheduleAlarm(with userInput: AlarmKitForm) async {
         let alarmID = UUID()
         
