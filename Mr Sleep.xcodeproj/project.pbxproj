@@ -11,6 +11,7 @@
 		1D4770CF2E6F7177007AF563 /* morning-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */; };
 		1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */; };
 		1D91A0692E855B4200D3450D /* SingleAlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D91A0682E855B4200D3450D /* SingleAlarmView.swift */; };
+		5091122421F540F9B1EDC73A9B22E4BE /* WelcomeBackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4288B103C9343A6AFB9A8C80367CA48 /* WelcomeBackView.swift */; };
 		1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB00CC02E52405C003DCB88 /* Mr_SleepApp.swift */; };
 		1DB00CC52E52405D003DCB88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC42E52405D003DCB88 /* Assets.xcassets */; };
 		1DB00CC82E52405D003DCB88 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DB00CC72E52405D003DCB88 /* Preview Assets.xcassets */; };
@@ -50,6 +51,7 @@
 		1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "smooth-alarm-clock.mp3"; sourceTree = "<group>"; };
 		1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "alarm-clock.mp3"; sourceTree = "<group>"; };
 		1D91A0682E855B4200D3450D /* SingleAlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleAlarmView.swift; sourceTree = "<group>"; };
+		C4288B103C9343A6AFB9A8C80367CA48 /* WelcomeBackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeBackView.swift; sourceTree = "<group>"; };
 		1DA80F902E6EDEF800662CB7 /* Mr Sleep.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mr Sleep.entitlements"; sourceTree = "<group>"; };
 		1DA80F912E6EDEF800662CB8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1DB00CBD2E52405C003DCB88 /* Mr Sleep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mr Sleep.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -188,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				1D91A0682E855B4200D3450D /* SingleAlarmView.swift */,
+				C4288B103C9343A6AFB9A8C80367CA48 /* WelcomeBackView.swift */,
 				1DB00CD32E5240B8003DCB88 /* SleepNowView.swift */,
 				1DB00CD92E5240B8003DCB88 /* SleepGuideView.swift */,
 				1DB00CDB2E5240B8003DCB88 /* WakeUpTimeButton.swift */,
@@ -301,6 +304,7 @@
 				1DB777A42E8127490037CCB2 /* AlarmKitViewModel.swift in Sources */,
 				1DB7779A2E81270A0037CCB2 /* ItsukiAlarmManager.swift in Sources */,
 				1D91A0692E855B4200D3450D /* SingleAlarmView.swift in Sources */,
+				5091122421F540F9B1EDC73A9B22E4BE /* WelcomeBackView.swift in Sources */,
 				1DB7779B2E81270A0037CCB2 /* AlarmKitIntents.swift in Sources */,
 				1DB7779C2E81270A0037CCB2 /* AlarmKitMetadata.swift in Sources */,
 				1DB7779D2E81270A0037CCB2 /* AlarmKitForm.swift in Sources */,

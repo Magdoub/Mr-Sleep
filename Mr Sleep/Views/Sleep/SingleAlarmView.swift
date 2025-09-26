@@ -28,15 +28,29 @@ struct SingleAlarmData: Codable {
     let startTime: Date
     let cycles: Int
     let alarmID: UUID?
+    let completedTime: Date? // Track when alarm was completed
     
     static let userDefaultsKey = "SingleAlarmData"
     
     // Initializer for backward compatibility
-    init(alarmTime: Date, startTime: Date, cycles: Int, alarmID: UUID? = nil) {
+    init(alarmTime: Date, startTime: Date, cycles: Int, alarmID: UUID? = nil, completedTime: Date? = nil) {
         self.alarmTime = alarmTime
         self.startTime = startTime
         self.cycles = cycles
         self.alarmID = alarmID
+        self.completedTime = completedTime
+    }
+    
+    
+    // Mark alarm as completed/fired
+    func markCompleted() -> SingleAlarmData {
+        return SingleAlarmData(
+            alarmTime: alarmTime,
+            startTime: startTime,
+            cycles: cycles,
+            alarmID: alarmID,
+            completedTime: Date()
+        )
     }
 }
 
@@ -60,6 +74,9 @@ struct SingleAlarmView: View {
     @State private var isDragging = false
     @State private var countdownDisplay = ""
     @State private var progressValue: Double = 0.0
+    
+    @State private var shouldReloadView = false
+    @State private var isComingFromBackground = false
     
     // Exact SleepNowView state variables
     @State private var isCreatingAlarm = false
@@ -86,7 +103,7 @@ struct SingleAlarmView: View {
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    let countdownTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    let countdownTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     
     var body: some View {
         GeometryReader { geometry in
@@ -102,6 +119,7 @@ struct SingleAlarmView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea(.container, edges: .all)
+                
                 
                 // Handle different view states
                 if case .active(let alarmTime, let startTime, _) = singleAlarmState {
@@ -217,6 +235,27 @@ struct SingleAlarmView: View {
                         } else {
                             // Categorized wake up times - EXACT COPY with single alarm selection
                             VStack(spacing: 20) {
+                                
+                                // Test alarm button for development
+                                Button(action: { setTestAlarm() }) {
+                                    HStack {
+                                        Image(systemName: "clock.badge.checkmark")
+                                            .font(.system(size: 16, weight: .semibold))
+                                        Text("Test Alarm (1 min)")
+                                            .font(.system(size: 14, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.8))
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.bottom, 10)
+                                .opacity(contentOpacity)
+                                
                                 ForEach(Array(categorizedWakeUpTimes.enumerated()), id: \.offset) { categoryIndex, categoryData in
                                     VStack(spacing: 12) {
                                         // Category header with icon and tagline - EXACT COPY
@@ -309,11 +348,20 @@ struct SingleAlarmView: View {
                 startBreathingEffect()
                 startZzzAnimation()
             }
+            
+            // Reset the background flag
+            isComingFromBackground = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Mark that we're coming from background
+            isComingFromBackground = true
+            
             updateTimeAndCalculations()
             triggerTimeAnimation()
             selectNextMoonIcon()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+            print("App entered background")
         }
         .onReceive(timer) { _ in
             let newTime = Date()
@@ -603,6 +651,8 @@ struct SingleAlarmView: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         singleAlarmState = .active(alarmTime: adjustedTime, startTime: Date(), alarmID: alarmID)
                     }
+                    // Update countdown immediately when alarm becomes active
+                    updateCountdown()
                 }
             }
         }
@@ -634,17 +684,18 @@ struct SingleAlarmView: View {
         let totalTime = alarmTime.timeIntervalSince(startTime)
         
         if timeRemaining <= 0 {
-            countdownDisplay = "00:00:00"
+            countdownDisplay = "00:00"
             progressValue = 1.0
             // Handle alarm trigger
             return
         }
         
-        let hours = Int(timeRemaining) / 3600
-        let minutes = (Int(timeRemaining) % 3600) / 60
-        let seconds = Int(timeRemaining) % 60
+        // Round up to nearest minute for consistency with minute-based alarm system
+        let remainingMinutes = Int(ceil(timeRemaining / 60.0))
+        let hours = remainingMinutes / 60
+        let minutes = remainingMinutes % 60
         
-        countdownDisplay = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        countdownDisplay = String(format: "%02d:%02d", hours, minutes)
         progressValue = min(1.0, max(0.0, 1.0 - (timeRemaining / totalTime)))
     }
     
@@ -760,17 +811,70 @@ struct SingleAlarmView: View {
             return
         }
         
-        // Check if alarm time hasn't passed
-        if alarmData.alarmTime > Date() {
+        // Compare at minute-level precision to match alarm system
+        let calendar = Calendar.current
+        let now = Date()
+        let nowComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
+        let alarmComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: alarmData.alarmTime)
+        
+        guard let nowMinuteDate = calendar.date(from: nowComponents),
+              let alarmMinuteDate = calendar.date(from: alarmComponents) else {
+            print("Failed to create minute-precise dates for alarm comparison")
+            return
+        }
+        
+        print("Time comparison - Now: \(SleepCalculator.shared.formatTime(nowMinuteDate)), Alarm: \(SleepCalculator.shared.formatTime(alarmMinuteDate))")
+        
+        // Check if alarm time hasn't passed (using minute precision)
+        if nowMinuteDate < alarmMinuteDate {
             singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
+            print("Loaded active alarm for: \(SleepCalculator.shared.formatTime(alarmData.alarmTime))")
+            // Update countdown immediately when loading active alarm
+            updateCountdown()
         } else {
-            clearSavedAlarmData()
+            // Alarm has passed
+            print("Loaded expired alarm for: \(SleepCalculator.shared.formatTime(alarmData.alarmTime)) - alarm time has passed")
         }
     }
     
     private func clearSavedAlarmData() {
         UserDefaults.standard.removeObject(forKey: SingleAlarmData.userDefaultsKey)
     }
+    
+    // MARK: - Test Alarm Functionality
+    
+    private func setTestAlarm() {
+        let testTime = Date().addingTimeInterval(60) // 1 minute from now
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        Task {
+            let alarmID = await scheduleAlarmKitAlarm(time: testTime, cycles: 1)
+            
+            let alarmData = SingleAlarmData(
+                alarmTime: testTime, 
+                startTime: Date(), 
+                cycles: 1, 
+                alarmID: alarmID
+            )
+            saveAlarmData(alarmData)
+            
+            await MainActor.run {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    singleAlarmState = .active(
+                        alarmTime: testTime, 
+                        startTime: Date(), 
+                        alarmID: alarmID
+                    )
+                }
+                // Update countdown immediately when test alarm becomes active
+                updateCountdown()
+            }
+        }
+        
+        print("Test alarm set for 1 minute from now: \(testTime)")
+    }
+    
     
     // MARK: - Single Alarm UI Views
     private func adjustmentControlsView(selectedTime: Date, cycles: Int, adjustmentMinutes: Int) -> some View {
