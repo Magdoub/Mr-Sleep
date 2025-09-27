@@ -1047,7 +1047,7 @@ struct SingleAlarmView: View {
             return
         }
 
-        // Check if alarm still exists in AlarmKit
+        // Check if alarm still exists in AlarmKit (with grace period for recently scheduled alarms)
         Task { @MainActor in
             let runningAlarms = alarmViewModel.runningAlarms
             let stillScheduled = alarmData.alarmID.map { id in
@@ -1055,8 +1055,21 @@ struct SingleAlarmView: View {
             } ?? false
 
             if !stillScheduled {
-                clearSavedAlarmData()
-                singleAlarmState = .none
+                // Give recently scheduled alarms a grace period (2 minutes) before assuming they're missing
+                // This prevents deleting valid alarms due to timing issues with AlarmKit's runningAlarms
+                let timeSinceScheduled = now.timeIntervalSince(alarmData.startTime)
+
+                if timeSinceScheduled < 120 && now < alarmData.alarmTime {
+                    // Recently scheduled and still in future - assume it's valid even if not found
+                    print("Alarm not found in runningAlarms but recently scheduled (\(Int(timeSinceScheduled))s ago) - keeping it")
+                    singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
+                    updateCountdown()
+                } else {
+                    // Alarm is older or time has passed - safe to clear
+                    print("Alarm not found in runningAlarms and not recently scheduled - clearing")
+                    clearSavedAlarmData()
+                    singleAlarmState = .none
+                }
             } else if now < alarmData.alarmTime {
                 // Alarm still valid, restore active state
                 singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
