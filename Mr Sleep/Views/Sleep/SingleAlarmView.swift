@@ -203,7 +203,8 @@ struct OnboardingStep {
 // MARK: - Main Single Alarm View
 struct SingleAlarmView: View {
     @Environment(AlarmKitViewModel.self) private var alarmViewModel
-    
+    @Environment(\.scenePhase) private var scenePhase
+
     // Single alarm state
     @State private var singleAlarmState: SingleAlarmState = .none
     @State private var showAdjustmentControls = false
@@ -470,13 +471,18 @@ struct SingleAlarmView: View {
             // Reset the background flag
             isComingFromBackground = false
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            // Mark that we're coming from background
-            isComingFromBackground = true
-            
-            updateTimeAndCalculations()
-            triggerTimeAnimation()
-            selectNextMoonIcon()
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                // Mark that we're coming from background
+                isComingFromBackground = true
+
+                updateTimeAndCalculations()
+                triggerTimeAnimation()
+                selectNextMoonIcon()
+
+                // Reconcile alarm state with system reality
+                reconcileAlarmState()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             print("App entered background")
@@ -796,24 +802,34 @@ struct SingleAlarmView: View {
     }
     
     private func updateCountdown() {
-        guard case .active(let alarmTime, let startTime, _) = singleAlarmState else { return }
-        
+        guard case .active(let alarmTime, let startTime, let alarmID) = singleAlarmState else { return }
+
         let now = Date()
-        let timeRemaining = alarmTime.timeIntervalSince(now)
+        let timeRemaining = floor(alarmTime.timeIntervalSince(now))  // Floor to avoid negative flicker
         let totalTime = alarmTime.timeIntervalSince(startTime)
-        
-        if timeRemaining <= 0 {
+
+        if timeRemaining <= 0 {  // Changed from just display update to state clear
             countdownDisplay = "00:00"
             progressValue = 1.0
-            // Handle alarm trigger
+
+            // Auto-clear expired alarm
+            Task {
+                await deleteExistingAlarmKitAlarm(alarmID: alarmID, time: alarmTime)
+            }
+            clearSavedAlarmData()
+
+            // Reset state
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                singleAlarmState = .none
+            }
             return
         }
-        
+
         // Round up to nearest minute for consistency with minute-based alarm system
         let remainingMinutes = Int(ceil(timeRemaining / 60.0))
         let hours = remainingMinutes / 60
         let minutes = remainingMinutes % 60
-        
+
         countdownDisplay = String(format: "%02d:%02d", hours, minutes)
         progressValue = min(1.0, max(0.0, 1.0 - (timeRemaining / totalTime)))
     }
@@ -924,6 +940,65 @@ struct SingleAlarmView: View {
         return calendar.date(from: components) ?? date
     }
     
+    // MARK: - State Reconciliation
+    private func loadSavedAlarmData() -> SingleAlarmData? {
+        guard let data = UserDefaults.standard.data(forKey: SingleAlarmData.userDefaultsKey),
+              let alarmData = try? JSONDecoder().decode(SingleAlarmData.self, from: data) else {
+            return nil
+        }
+        return alarmData
+    }
+
+    private func reconcileAlarmState() {
+        guard let alarmData = loadSavedAlarmData() else {
+            singleAlarmState = .none
+            return
+        }
+
+        let now = Date()
+
+        // Check for completion flag
+        if alarmData.completedTime != nil {
+            clearSavedAlarmData()
+            singleAlarmState = .none
+            return
+        }
+
+        // Clear if alarm time passed (with 2 minute grace period for snooze scenarios)
+        if now.timeIntervalSince(alarmData.alarmTime) > 120 {
+            Task {
+                await deleteExistingAlarmKitAlarm(alarmID: alarmData.alarmID, time: alarmData.alarmTime)
+            }
+            clearSavedAlarmData()
+            singleAlarmState = .none
+            return
+        }
+
+        // Check if alarm still exists in AlarmKit
+        Task { @MainActor in
+            let runningAlarms = alarmViewModel.runningAlarms
+            let stillScheduled = alarmData.alarmID.map { id in
+                runningAlarms.contains { $0.id == id }
+            } ?? false
+
+            if !stillScheduled {
+                clearSavedAlarmData()
+                singleAlarmState = .none
+            } else if now < alarmData.alarmTime {
+                // Alarm still valid, restore active state
+                singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
+                updateCountdown()
+            } else {
+                // Alarm time passed but still in grace period - clear it anyway
+                Task {
+                    await deleteExistingAlarmKitAlarm(alarmID: alarmData.alarmID, time: alarmData.alarmTime)
+                }
+                clearSavedAlarmData()
+                singleAlarmState = .none
+            }
+        }
+    }
+
     // MARK: - Data Persistence
     private func saveAlarmData(_ alarmData: SingleAlarmData) {
         if let encoded = try? JSONEncoder().encode(alarmData) {
@@ -932,40 +1007,43 @@ struct SingleAlarmView: View {
     }
     
     private func loadSavedAlarmState() {
-        guard let data = UserDefaults.standard.data(forKey: SingleAlarmData.userDefaultsKey),
-              let alarmData = try? JSONDecoder().decode(SingleAlarmData.self, from: data) else {
+        guard let alarmData = loadSavedAlarmData() else {
             return
         }
-        
-        // Compare at minute-level precision to match alarm system
-        let calendar = Calendar.current
+
         let now = Date()
-        let nowComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
-        let alarmComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: alarmData.alarmTime)
-        
-        guard let nowMinuteDate = calendar.date(from: nowComponents),
-              let alarmMinuteDate = calendar.date(from: alarmComponents) else {
-            print("Failed to create minute-precise dates for alarm comparison")
+
+        // Check for completion flag
+        if alarmData.completedTime != nil {
+            print("Alarm was already completed, clearing saved data")
+            clearSavedAlarmData()
+            singleAlarmState = .none
             return
         }
-        
-        print("Time comparison - Now: \(SleepCalculator.shared.formatTime(nowMinuteDate)), Alarm: \(SleepCalculator.shared.formatTime(alarmMinuteDate))")
-        
-        // Check if alarm time hasn't passed (using minute precision)
-        if nowMinuteDate < alarmMinuteDate {
+
+        // Aggressive clear if alarm is stale (> 2 minutes past)
+        if now.timeIntervalSince(alarmData.alarmTime) > 120 {
+            print("Alarm is stale (>2 minutes past), clearing: \(SleepCalculator.shared.formatTime(alarmData.alarmTime))")
+            Task {
+                await deleteExistingAlarmKitAlarm(alarmID: alarmData.alarmID, time: alarmData.alarmTime)
+            }
+            clearSavedAlarmData()
+            singleAlarmState = .none
+            return
+        }
+
+        // Only restore if alarm is in the future
+        if now < alarmData.alarmTime {
             singleAlarmState = .active(alarmTime: alarmData.alarmTime, startTime: alarmData.startTime, alarmID: alarmData.alarmID)
             print("Loaded active alarm for: \(SleepCalculator.shared.formatTime(alarmData.alarmTime))")
             // Update countdown immediately when loading active alarm
             updateCountdown()
         } else {
-            // Alarm time has passed or equals current time - clear the saved data and show normal view
-            print("Alarm time has passed or equals current time for: \(SleepCalculator.shared.formatTime(alarmData.alarmTime)) - clearing and showing normal view")
-            
-            // Also attempt to clean up any lingering AlarmKit alarm before clearing state
+            // Alarm time passed but within grace period - still clear it
+            print("Alarm time has passed for: \(SleepCalculator.shared.formatTime(alarmData.alarmTime)) - clearing")
             Task {
                 await deleteExistingAlarmKitAlarm(alarmID: alarmData.alarmID, time: alarmData.alarmTime)
             }
-            
             clearSavedAlarmData()
             singleAlarmState = .none
         }
