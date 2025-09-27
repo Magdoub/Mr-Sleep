@@ -948,7 +948,7 @@ struct SingleAlarmView: View {
         var alarmForm = AlarmKitForm()
         alarmForm.selectedDate = time
         alarmForm.scheduleEnabled = true
-        alarmForm.label = "Single Alarm - \(SleepCalculator.shared.formatTime(time))"
+        alarmForm.label = "Time to wake up"
         
         // Set metadata based on cycles
         switch cycles {

@@ -373,3 +373,4 @@ Mr Sleep/
 - Sleep calculation features
 - Initial data storage system
 - add to memory: auto approval
+- add what I told you to memory
