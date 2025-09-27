@@ -302,7 +302,34 @@ struct SingleAlarmView: View {
                         .offset(y: titleOffset)
                         
                         Spacer()
-                        
+
+                        // Test alarm button (only show when not in active state)
+                        if case .none = singleAlarmState {
+                            Button(action: scheduleTestAlarm) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "clock.badge.checkmark.fill")
+                                        .font(.system(size: 14, weight: .medium))
+                                    Text("Test Alarm (1 min)")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(.white.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .stroke(Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .opacity(contentOpacity)
+                            .accessibilityLabel("Test alarm in 1 minute")
+                            .accessibilityHint("Schedules a test alarm for one minute from now")
+                        }
+
                         // Current time display with micro animation - EXACT COPY
                         VStack(spacing: 8) {
                             Text("Current Time")
@@ -735,6 +762,52 @@ struct SingleAlarmView: View {
     }
     
     // MARK: - Single Alarm Specific Functions
+    private func scheduleTestAlarm() {
+        // Get current time
+        let now = Date()
+        let calendar = Calendar.current
+
+        // Get components and round to next minute (ignore seconds)
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
+        guard let currentMinute = components.minute else { return }
+
+        components.minute = currentMinute + 1  // Add 1 minute
+        components.second = 0                  // Set seconds to 0
+
+        // Create the alarm time
+        guard let alarmTime = calendar.date(from: components) else { return }
+
+        // Provide haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+
+        print("Scheduling test alarm for: \(SleepCalculator.shared.formatTime(alarmTime))")
+
+        // Schedule alarm directly (bypass selection UI for quick testing)
+        Task {
+            let alarmID = await scheduleAlarmKitAlarm(time: alarmTime, cycles: 1)
+
+            let alarmData = SingleAlarmData(
+                alarmTime: alarmTime,
+                startTime: Date(),
+                cycles: 1,
+                alarmID: alarmID
+            )
+            saveAlarmData(alarmData)
+
+            await MainActor.run {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    singleAlarmState = .active(
+                        alarmTime: alarmTime,
+                        startTime: Date(),
+                        alarmID: alarmID
+                    )
+                }
+                updateCountdown()
+            }
+        }
+    }
+
     private func selectSingleAlarm(time: Date, cycles: Int) {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
