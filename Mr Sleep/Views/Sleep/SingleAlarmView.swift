@@ -881,20 +881,29 @@ struct SingleAlarmView: View {
         let timeRemaining = floor(alarmTime.timeIntervalSince(now))  // Floor to avoid negative flicker
         let totalTime = alarmTime.timeIntervalSince(startTime)
 
-        if timeRemaining <= 0 {  // Changed from just display update to state clear
+        if timeRemaining <= 0 {
             countdownDisplay = "00:00"
             progressValue = 1.0
 
-            // Auto-clear expired alarm
-            Task {
-                await deleteExistingAlarmKitAlarm(alarmID: alarmID, time: alarmTime)
-            }
-            clearSavedAlarmData()
+            // DON'T immediately delete the alarm when it reaches 0!
+            // Let AlarmKit handle the alarm firing, then clean up later
+            // Only clear our UI state after a grace period to allow the alarm to ring
 
-            // Reset state
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                singleAlarmState = .none
+            let timeSinceAlarmTime = now.timeIntervalSince(alarmTime)
+
+            if timeSinceAlarmTime > 60 {  // 1 minute grace period after alarm time
+                // Alarm should have fired by now and been dismissed - safe to clean up
+                print("Alarm time passed by >1 minute, cleaning up UI state")
+                Task {
+                    await deleteExistingAlarmKitAlarm(alarmID: alarmID, time: alarmTime)
+                }
+                clearSavedAlarmData()
+
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    singleAlarmState = .none
+                }
             }
+            // If < 1 minute past alarm time, keep the countdown at 00:00 but DON'T delete the alarm
             return
         }
 
