@@ -29,7 +29,8 @@ import Foundation
     @MainActor var runningCustomAlarms: [ItsukiAlarm] {
         alarmManager.runningCustomAlarms
     }
-    
+
+
     init() {
         // ViewModel initializes but doesn't duplicate manager initialization
     }

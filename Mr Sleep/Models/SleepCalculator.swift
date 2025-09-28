@@ -110,8 +110,8 @@ class SleepCalculator {
             categorizedTimes[category]?.append((time: time, cycles: cycles))
         }
         
-        // Return in desired order with times sorted by cycles ascending within each category
-        let categoryOrder = ["Quick Boost", "Recovery", "Full Recharge"]
+        // Return in desired order based on time of day with times sorted by cycles ascending within each category
+        let categoryOrder = getDynamicCategoryOrder()
         return categoryOrder.compactMap { category in
             guard let times = categorizedTimes[category], !times.isEmpty else { return nil }
             let sortedTimes = times.sorted { $0.cycles < $1.cycles }
@@ -139,5 +139,17 @@ class SleepCalculator {
         }
         
         return calendar.date(from: newComponents) ?? date
+    }
+
+    private func getDynamicCategoryOrder() -> [String] {
+        let currentHour = Calendar.current.component(.hour, from: Date())
+
+        // If time is between 7:00 PM (19:00) and 6:00 AM, prioritize longer sleep
+        if currentHour >= 19 || currentHour < 6 {
+            return ["Full Recharge", "Recovery", "Quick Boost"]
+        } else {
+            // Daytime: prioritize shorter sleep/naps
+            return ["Quick Boost", "Recovery", "Full Recharge"]
+        }
     }
 }

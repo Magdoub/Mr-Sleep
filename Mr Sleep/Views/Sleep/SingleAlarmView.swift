@@ -632,7 +632,7 @@ struct SingleAlarmView: View {
         
         // Animate progress
         Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-            calculationProgress += 0.02
+            calculationProgress += 0.0217
             
             if calculationProgress >= 1.0 {
                 timer.invalidate()
@@ -657,10 +657,14 @@ struct SingleAlarmView: View {
     }
     
     private func showWakeUpTimes() {
+        // Add haptic feedback when loading completes
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+
         // Initialize visibility array
         let totalTimes = categorizedWakeUpTimes.flatMap { $0.times }.count
         wakeUpTimeVisibility = Array(repeating: false, count: totalTimes)
-        
+
         // Show category headers first
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             categoryHeadersVisible = true
@@ -743,7 +747,7 @@ struct SingleAlarmView: View {
     private func getCategoryTagline(_ category: String) -> String {
         switch category {
         case "Quick Boost":
-            return "Recharge fast without feeling like a zombie"
+            return "Recharge without feeling like a zombie"
         case "Recovery":
             return "Enough to reset your mind and body"
         case "Full Recharge":
