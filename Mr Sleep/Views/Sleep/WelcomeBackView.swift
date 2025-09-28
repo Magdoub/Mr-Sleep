@@ -67,35 +67,39 @@ struct WelcomeBackView: View {
                     // Main title with staggered character animation
                     HStack(spacing: 8) {
                         Text("✨")
-                            .font(.system(size: 24))
+                            .font(.title2)
                             .opacity(titleOpacity)
                             .rotationEffect(.degrees(sparkleRotation))
-                        
+
                         Text("Welcome Back")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .fontDesign(.rounded)
                             .foregroundColor(.white)
                             .opacity(titleOpacity)
                             .offset(y: titleOffset)
-                        
+
                         Text("✨")
-                            .font(.system(size: 24))
+                            .font(.title2)
                             .opacity(titleOpacity)
                             .rotationEffect(.degrees(-sparkleRotation))
                     }
                     
                     // Subtitle with slide animation
                     Text("Hope you had some great sleep")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                         .opacity(subtitleOpacity)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                         .offset(x: subtitleOffset)
-                    
+
                     // Encouraging message with separate animation
                     Text("You're ready to conquer the day! 🌟")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
                         .opacity(encouragementOpacity)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)

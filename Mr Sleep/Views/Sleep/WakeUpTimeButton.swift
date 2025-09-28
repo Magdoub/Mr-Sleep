@@ -28,7 +28,12 @@ struct WakeUpTimeButton: View {
     let pulseScale: Double
     let onTap: () -> Void
     let isCreatingAlarm: Bool
-    
+
+    // Accessibility Environment Variables
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
     @State private var isPressed = false
     @State private var breathingScale: Double = 1.0
     @State private var chevronPulse: Double = 1.0
@@ -48,11 +53,14 @@ struct WakeUpTimeButton: View {
                 // Left side - Wake Up Time
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Wake Up Time")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(differentiateWithoutColor ? .white : Color(red: 0.8, green: 0.8, blue: 0.85)) // High contrast support
                     Text(wakeUpTime)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .fontDesign(.rounded)
+                        .foregroundColor(.white) // Better contrast
                 }
                 
                 Spacer()
@@ -61,24 +69,31 @@ struct WakeUpTimeButton: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     HStack(spacing: 4) {
                         Text("Total Sleep")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(differentiateWithoutColor ? .white : Color(red: 0.8, green: 0.8, blue: 0.85)) // High contrast support
                         Image(systemName: "alarm")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(differentiateWithoutColor ? .white : Color(red: 0.8, green: 0.8, blue: 0.85)) // High contrast support
+                            .accessibilityHidden(true)
                     }
                     
                     HStack(spacing: 8) {
                         Text(sleepDuration)
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                        
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .fontDesign(.rounded)
+                            .foregroundColor(.white) // Better contrast
+
                         // Chevron to indicate clickability
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306)) // Accent gold color
-                            .scaleEffect(chevronPulse)
-                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: chevronPulse)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold for better contrast
+                            .scaleEffect(reduceMotion ? 1.0 : chevronPulse)
+                            .animation(reduceMotion ? .none : .easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: chevronPulse)
+                            .accessibilityHidden(true)
                     }
                 }
             }
@@ -90,10 +105,10 @@ struct WakeUpTimeButton: View {
         .buttonStyle(PlainButtonStyle())
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(isPressed ? 0.14 : 0.11)) // Improved contrast
+                .fill(reduceTransparency ? Color.gray.opacity(0.3) : Color.white.opacity(isPressed ? 0.14 : 0.11)) // Solid background for reduce transparency
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(isPressed ? 0.25 : 0.20), lineWidth: 1) // Better border visibility
+                        .stroke(reduceTransparency ? Color.white.opacity(0.6) : Color.white.opacity(isPressed ? 0.25 : 0.20), lineWidth: reduceTransparency ? 2 : 1) // Better border for reduce transparency
                 )
                 .shadow(
                     color: Color.black.opacity(0.25), // Enhanced shadow
@@ -102,19 +117,21 @@ struct WakeUpTimeButton: View {
                     y: isPressed ? 2 : 3 // Slightly more lift
                 )
         )
-        .scaleEffect((isPressed ? 0.95 : 1.0) * breathingScale)
+        .scaleEffect((isPressed ? 0.95 : 1.0) * (reduceMotion ? 1.0 : breathingScale))
         .opacity(isCreatingAlarm ? 0.6 : 1.0) // Visual feedback during alarm creation
-        .animation(.easeInOut(duration: 0.15), value: isPressed) // Slightly longer for smoother feel
-        .animation(.easeInOut(duration: 0.2), value: isCreatingAlarm) // Smooth opacity transition
-        .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: breathingScale)
+        .animation(reduceMotion ? .none : .easeInOut(duration: 0.15), value: isPressed) // Slightly longer for smoother feel
+        .animation(reduceMotion ? .none : .easeInOut(duration: 0.2), value: isCreatingAlarm) // Smooth opacity transition
+        .animation(reduceMotion ? .none : .easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: breathingScale)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
         }, perform: {})
         .onAppear {
-            // Start subtle animations after a brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                breathingScale = 1.015 // Very subtle breathing effect
-                chevronPulse = 1.1 // Gentle pulse on chevron
+            if !reduceMotion {
+                // Start subtle animations after a brief delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    breathingScale = 1.015 // Very subtle breathing effect
+                    chevronPulse = 1.1 // Gentle pulse on chevron
+                }
             }
         }
         .accessibilityLabel("Create alarm for \(wakeUpTime), \(sleepDuration) total sleep")

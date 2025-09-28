@@ -21,6 +21,9 @@ import SwiftUI
 
 struct SleepGuideView: View {
     @Binding var showSleepGuide: Bool
+
+    // Accessibility Environment Variables
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     
     var body: some View {
         ScrollView {
@@ -31,8 +34,9 @@ struct SleepGuideView: View {
                         showSleepGuide = false
                     }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                            .font(.headline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white) // Better contrast
                     }
                     .accessibilityLabel("Close sleep guide")
                     .accessibilityHint("Double tap to return to main screen")
@@ -41,15 +45,17 @@ struct SleepGuideView: View {
                     Spacer()
                     
                     Text("Sleep Cycle Guide")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                         .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     
                     // Invisible spacer for balance
                     Image(systemName: "xmark")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.headline)
+                        .fontWeight(.medium)
                         .opacity(0)
                 }
                 .padding(.horizontal)
@@ -114,32 +120,34 @@ struct SleepGuideView: View {
         VStack(spacing: 15) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    .font(.title2)
+                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                     .frame(width: 30)
                     .accessibilityHidden(true)
-                
+
                 Text(title)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white) // Better contrast
                     .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
             }
             
             Text(content)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.95)) // Improved contrast
                 .lineSpacing(4)
                 .multilineTextAlignment(.leading)
         }
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.08))
+                .fill(reduceTransparency ? Color.gray.opacity(0.4) : Color.white.opacity(0.08))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        .stroke(reduceTransparency ? Color.white.opacity(0.6) : Color.white.opacity(0.15), lineWidth: reduceTransparency ? 2 : 1)
                 )
         )
         .accessibilityElement(children: .combine)

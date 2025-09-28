@@ -65,6 +65,7 @@ enum SingleAlarmState: Equatable {
 
 struct CalculatingWakeUpTimesView: View {
     let progress: Double
+    let reduceMotion: Bool
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: Double = 1.0
     @State private var dotAnimation: [Double] = [0.3, 0.6, 1.0]
@@ -85,8 +86,9 @@ struct CalculatingWakeUpTimesView: View {
                     )
                     .frame(width: 60, height: 60)
                     .rotationEffect(.degrees(rotationAngle))
-                    .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: rotationAngle)
-                
+                    .animation(reduceMotion ? .none : .linear(duration: 2.0).repeatForever(autoreverses: false), value: rotationAngle)
+                    .accessibilityHidden(true)
+
                 // Progress circle
                 Circle()
                     .trim(from: 0, to: progress)
@@ -96,32 +98,36 @@ struct CalculatingWakeUpTimesView: View {
                     )
                     .frame(width: 50, height: 50)
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.3), value: progress)
-                
+                    .animation(reduceMotion ? .none : .easeInOut(duration: 0.3), value: progress)
+                    .accessibilityHidden(true)
+
                 // Center pulsing dot
                 Circle()
                     .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
                     .frame(width: 12, height: 12)
-                    .scaleEffect(pulseScale)
-                    .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseScale)
+                    .scaleEffect(reduceMotion ? 1.0 : pulseScale)
+                    .animation(reduceMotion ? .none : .easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseScale)
                     .opacity(0.8)
+                    .accessibilityHidden(true)
             }
             .scaleEffect(1.1)
             
             // Text with animated dots
             HStack(spacing: 2) {
                 Text("Calculating wake-up times")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-                
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white) // Better contrast
+
                 HStack(spacing: 2) {
                     ForEach(0..<3, id: \.self) { index in
                         Text(".")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                            .opacity(dotAnimation[index])
+                            .font(.body)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
+                            .opacity(reduceMotion ? 1.0 : dotAnimation[index])
                             .animation(
-                                .easeInOut(duration: 0.6)
+                                reduceMotion ? .none : .easeInOut(duration: 0.6)
                                 .repeatForever(autoreverses: true)
                                 .delay(Double(index) * 0.2),
                                 value: dotAnimation[index]
@@ -132,22 +138,25 @@ struct CalculatingWakeUpTimesView: View {
             
             // Progress percentage
             Text("\(Int(progress * 100))%")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                 .opacity(0.8)
                 .accessibilityHidden(true)
         }
         .frame(height: 140)
         .onAppear {
-            // Start animations
-            rotationAngle = 360
-            pulseScale = 1.3
-            
-            // Animate dots continuously
-            for i in 0..<3 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.2) {
-                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(Double(i) * 0.2)) {
-                        dotAnimation[i] = 0.3
+            if !reduceMotion {
+                // Start animations only if motion is not reduced
+                rotationAngle = 360
+                pulseScale = 1.3
+
+                // Animate dots continuously
+                for i in 0..<3 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.2) {
+                        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(Double(i) * 0.2)) {
+                            dotAnimation[i] = 0.3
+                        }
                     }
                 }
             }
@@ -156,6 +165,7 @@ struct CalculatingWakeUpTimesView: View {
 }
 
 struct FinishingUpView: View {
+    let reduceMotion: Bool
     @State private var pulseScale: Double = 1.0
     
     var body: some View {
@@ -165,29 +175,36 @@ struct FinishingUpView: View {
                 Circle()
                     .fill(Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.2))
                     .frame(width: 60, height: 60)
-                    .scaleEffect(pulseScale)
-                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
-                
+                    .scaleEffect(reduceMotion ? 1.0 : pulseScale)
+                    .animation(reduceMotion ? .none : .easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseScale)
+                    .accessibilityHidden(true)
+
                 Image(systemName: "checkmark")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
+                    .accessibilityHidden(true)
             }
             .scaleEffect(1.1) // Match the CalculatingWakeUpTimesView scale
             
             // Finishing up text
             Text("Finishing up...")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-            
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(.white) // Better contrast
+
             // Progress percentage placeholder (invisible to match layout)
             Text("100%")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                 .opacity(0) // Invisible but maintains layout spacing
         }
         .frame(height: 140)
         .onAppear {
-            pulseScale = 1.2
+            if !reduceMotion {
+                pulseScale = 1.2
+            }
         }
     }
 }
@@ -204,6 +221,11 @@ struct OnboardingStep {
 struct SingleAlarmView: View {
     @Environment(AlarmKitViewModel.self) private var alarmViewModel
     @Environment(\.scenePhase) private var scenePhase
+
+    // Accessibility Environment Variables
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     // Single alarm state
     @State private var singleAlarmState: SingleAlarmState = .none
@@ -287,13 +309,16 @@ struct SingleAlarmView: View {
                                     .accessibilityLabel("Moon icon")
                                     .accessibilityHidden(true)
                                 Text("Mr Sleep")
-                                    .font(.system(size: 36, weight: .medium, design: .rounded))
-                                    .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                                    .font(.largeTitle)
+                                    .fontWeight(.medium)
+                                    .fontDesign(.rounded)
+                                    .foregroundColor(.white) // Better contrast
                             }
                             ForEach(0..<3) { index in
                                 Text("z")
-                                    .font(.system(size: [30, 25, 20][index], weight: .light))
-                                    .foregroundColor(Color(red: [0.9, 0.85, 0.8][index], green: [0.9, 0.85, 0.8][index], blue: [0.95, 0.9, 0.85][index]))
+                                    .font([.title, .title2, .title3][index])
+                                    .fontWeight(.light)
+                                    .foregroundColor(.white.opacity([0.9, 0.8, 0.7][index])) // Simplified and better contrast
                                     .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
                                     .opacity(zzzOpacities[index])
                                     .accessibilityHidden(true)
@@ -312,11 +337,14 @@ struct SingleAlarmView: View {
                             Button(action: scheduleTestAlarm) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "clock.badge.checkmark.fill")
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .accessibilityHidden(true)
                                     Text("Test Alarm (1 min)")
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(.caption)
+                                        .fontWeight(.medium)
                                 }
-                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                                 .background(
@@ -326,24 +354,29 @@ struct SingleAlarmView: View {
                                             RoundedRectangle(cornerRadius: 20)
                                                 .stroke(Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3), lineWidth: 1)
                                         )
+                                        .accessibilityHidden(true)
                                 )
                             }
                             .buttonStyle(.plain)
                             .opacity(contentOpacity)
                             .accessibilityLabel("Test alarm in 1 minute")
-                            .accessibilityHint("Schedules a test alarm for one minute from now")
+                            .accessibilityHint("Double tap to schedule a test alarm for one minute from now")
+                            .accessibilityAddTraits(.isButton)
                         }
 
                         // Current time display with micro animation - EXACT COPY
                         VStack(spacing: 8) {
                             Text("Current Time")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9)) // Improved contrast
                                 .accessibilityHidden(true)
                             
                             Text(getCurrentTime())
-                                .font(.system(size: 24, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .fontDesign(.rounded)
+                                .foregroundColor(.white) // Better contrast
                                 .scaleEffect(timeAnimationTrigger ? 1.1 : 1.0)
                                 .opacity(timeAnimationTrigger ? 0.7 : 1.0)
                                 .offset(y: timeAnimationTrigger ? -2 : 0)
@@ -362,20 +395,23 @@ struct SingleAlarmView: View {
                         // Sleep message - EXACT COPY
                         VStack(spacing: 12) {
                             Text("Sleep Now . Wake up Like a Boss")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white) // Better contrast
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
-                            
+
                             Text("You will feel refreshed and not tired")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(red: 0.8, green: 0.8, blue: 0.85))
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9)) // Improved contrast
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
-                            
+
                             Text("Set your alarm for a wake up time")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
                                 .multilineTextAlignment(.center)
                         }
                         .accessibilityElement(children: .combine)
@@ -387,7 +423,7 @@ struct SingleAlarmView: View {
                         
                         // Wake up times or loading animation - EXACT COPY
                         if isCalculatingWakeUpTimes {
-                            CalculatingWakeUpTimesView(progress: calculationProgress)
+                            CalculatingWakeUpTimesView(progress: calculationProgress, reduceMotion: reduceMotion)
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 20)
                                 .accessibilityElement(children: .combine)
@@ -395,7 +431,7 @@ struct SingleAlarmView: View {
                                 .accessibilityValue("\(Int(calculationProgress * 100)) percent complete")
                                 .accessibilityAddTraits(.updatesFrequently)
                         } else if isFinishingUp {
-                            FinishingUpView()
+                            FinishingUpView(reduceMotion: reduceMotion)
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 20)
                                 .accessibilityElement(children: .combine)
@@ -412,20 +448,24 @@ struct SingleAlarmView: View {
                                         HStack(alignment: .center, spacing: 12) {
                                             getCategoryIconImage(for: categoryData.category)
                                                 .frame(width: 40, height: 40)
-                                            
+                                                .accessibilityHidden(true)
+
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(categoryData.category)
                                                     .font(.system(size: 16, weight: .semibold))
                                                     .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                                                
+
                                                 Text(getCategoryTagline(categoryData.category))
                                                     .font(.system(size: 13, weight: .medium))
                                                     .foregroundColor(Color(red: 0.75, green: 0.75, blue: 0.8))
                                                     .multilineTextAlignment(.leading)
                                             }
-                                            
+
                                             Spacer()
+                                                .accessibilityHidden(true)
                                         }
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel("\(categoryData.category). \(getCategoryTagline(categoryData.category))")
                                         .accessibilityAddTraits(.isHeader)
                                         .opacity(categoryHeadersVisible ? 1.0 : 0.0)
                                         .scaleEffect(categoryHeadersVisible ? 1.0 : 0.8)
@@ -473,8 +513,8 @@ struct SingleAlarmView: View {
                         Spacer()
                         }
                         .frame(maxWidth: .infinity)
-                        .scaleEffect(breathingScale)
-                        .animation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
+                        .scaleEffect(reduceMotion ? 1.0 : breathingScale)
+                        .animation(reduceMotion ? .none : .easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
                         .padding()
                     }
                 }
@@ -1314,27 +1354,42 @@ struct SingleAlarmView: View {
         return Button(action: {
             setSelectedAdjustment(minutes)
         }) {
-            Text(label)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(isSelected ? .black : .white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .frame(minWidth: 70)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ?
-                              Color(red: 0.894, green: 0.729, blue: 0.306) :
-                              Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    isSelected ? Color.clear : Color.white.opacity(0.3),
-                                    lineWidth: 1
-                                )
-                        )
-                )
+            HStack(spacing: 4) {
+                // Add checkmark icon when differentiate without color is enabled
+                if differentiateWithoutColor && isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.black)
+                }
+
+                Text(label)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isSelected ? .black : .white)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minWidth: 70)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ?
+                          Color(red: 0.894, green: 0.729, blue: 0.306) :
+                          Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isSelected ? Color.clear : Color.white.opacity(0.3),
+                                lineWidth: 1
+                            )
+                    )
+                    .accessibilityHidden(true)
+            )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(minutes == 0 ? "Set alarm for exact calculated time" : "Set alarm \(minutes) minutes later than calculated time")
+        .accessibilityHint("Double tap to select this timing adjustment")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
     }
 
     private func activeAlarmView(alarmTime: Date, startTime: Date, geometry: GeometryProxy) -> some View {
@@ -1345,22 +1400,30 @@ struct SingleAlarmView: View {
                 // Alarm time
                 VStack(spacing: 12) {
                     Text("Alarm set for")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                    
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white.opacity(0.8))
+                        .accessibilityHidden(true)
+
                     Text(SleepCalculator.shared.formatTime(alarmTime))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .fontDesign(.rounded)
                         .foregroundColor(.white)
-                        .scaleEffect(breathingScale)
-                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: breathingScale)
+                        .scaleEffect(reduceMotion ? 1.0 : breathingScale)
+                        .animation(reduceMotion ? .none : .easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: breathingScale)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Alarm set for \(SleepCalculator.shared.formatTime(alarmTime))")
+                .accessibilityAddTraits(.isHeader)
                 
                 // Progress ring
                 ZStack {
                     Circle()
                         .stroke(.white.opacity(0.2), lineWidth: 8)
                         .frame(width: 200, height: 200)
-                    
+                        .accessibilityHidden(true)
+
                     Circle()
                         .trim(from: 0.0, to: progressValue)
                         .stroke(
@@ -1373,25 +1436,35 @@ struct SingleAlarmView: View {
                         )
                         .frame(width: 200, height: 200)
                         .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 0.1), value: progressValue)
-                    
+                        .animation(reduceMotion ? .none : .linear(duration: 0.1), value: progressValue)
+                        .accessibilityHidden(true)
+
                     VStack(spacing: 4) {
                         Text("Time left")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
-                        
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.7))
+                            .accessibilityHidden(true)
+
                         Text(countdownDisplay)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .fontDesign(.rounded)
                             .foregroundColor(.white)
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Time remaining until alarm: \(countdownDisplay)")
+                .accessibilityValue("\(Int(progressValue * 100)) percent complete")
+                .accessibilityAddTraits(.updatesFrequently)
                 
                 // Cancel button
                 Button("Cancel Alarm") {
                     cancelAlarm()
                 }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white.opacity(0.5))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.white.opacity(0.6))
                 .padding(.horizontal, 20)
                 .padding(.vertical, 8)
                 .background(
@@ -1401,8 +1474,12 @@ struct SingleAlarmView: View {
                             RoundedRectangle(cornerRadius: 20)
                                 .stroke(.white.opacity(0.1), lineWidth: 1)
                         )
+                        .accessibilityHidden(true)
                 )
                 .buttonStyle(.plain)
+                .accessibilityLabel("Cancel alarm")
+                .accessibilityHint("Double tap to cancel the scheduled alarm")
+                .accessibilityAddTraits(.isButton)
             }
             
             Spacer()

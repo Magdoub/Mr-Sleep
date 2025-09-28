@@ -85,14 +85,16 @@ All build commands should use the full path to the desktop Xcode.app installatio
 - `SleepGuideView.swift` - Educational overlay about sleep hygiene
 
 ### Business Logic
-- **Sleep cycles**: 90 minutes each (3-8 cycles supported)
+- **Sleep cycles**: 90 minutes each (1-6 cycles supported)
 - **Fall asleep buffer**: 15 minutes automatically added
+- **Smart category ordering**: Time-based priority (7PM-6AM: Full Recharge first, 6AM-7PM: Quick Boost first)
 - **Recommended sleep**: 4.5-6 hours highlighted as optimal
 - **Real-time updates**: Timer publishes minute-level updates to UI
 - **AlarmKit integration**: Real alarm scheduling with iOS notifications
 - **Alarm ID tracking**: UUID-based reliable alarm creation and deletion
 - **Alarm data management**: Create, edit, delete, toggle alarms with AlarmKit
 - **Sound selection**: Multiple alarm tones with preview functionality
+- **Enhanced UX**: Selection-based controls, haptic feedback, and optimized loading animations
 
 ## Code Patterns and Conventions
 
@@ -279,18 +281,20 @@ Mr Sleep/
 ### UI/UX Features
 - **5-tab navigation**: Sleep Now, AlarmKit, Settings, Single, Additional tab
 - **Real-time clock** with minute-level updates and animations
-- **Onboarding flow** with 3-step interactive introduction
-- **Loading animations** for wake-up time calculations
+- **Streamlined onboarding flow** with 3-step interactive introduction and consolidated permission handling
+- **Optimized loading animations** for wake-up time calculations (2.3s with haptic feedback)
 - **Educational sleep guide** overlay with sleep hygiene tips
-- **Categorized wake-up times** (Quick Boost, Recovery, Full Recharge)
-- **Single alarm experience**: Dedicated tab with countdown timers and progress rings
+- **Smart categorized wake-up times** with time-based priority ordering (Quick Boost, Recovery, Full Recharge)
+- **Enhanced single alarm experience**: Dedicated tab with countdown timers, progress rings, and selection-based adjustments
 - **AlarmKit integration**: Real iOS notifications and alarm scheduling
 - **Complete alarm management**: Create, edit, delete, toggle alarms with full functionality
 - **UUID-based alarm tracking**: Reliable alarm deletion and management
-- **3D icon assets** with rotating moon icons
-- **Custom gradient backgrounds** and smooth animations
+- **Updated 3D icon assets** with alarm bell and rotating moon icons
+- **Rich gradient backgrounds** and smooth spring animations
 - **Sound preview**: Play alarm sounds when selecting them in the UI
-- **Breathing animations** and floating "zzz" effects
+- **Interactive breathing animations** and floating "zzz" effects
+- **Haptic feedback integration**: Tactile responses for interactions and completion states
+- **Selection-based controls**: OR logic for adjustment buttons with visual feedback
 
 ### Platform Specifics
 - iPhone-only application (no iPad/Mac support)
@@ -308,7 +312,24 @@ Mr Sleep/
 
 ## Version History
 
-### Version 4.0 (Current) - Stable 5-Tab AlarmKit Integration
+### Version 4.1 (Current) - Enhanced UX and Smart Priority System
+
+**🎯 Smart Priority & User Experience (September 2025):**
+- ✅ **Time-based category priority**: Dynamic ordering based on time of day (7PM-6AM: Full Recharge first, 6AM-7PM: Quick Boost first)
+- ✅ **Improved permission flow**: Consolidated dual permission popups into single elegant modal with gradient design
+- ✅ **Selection-based adjustment buttons**: OR logic for alarm adjustments (only one selectable at a time) with haptic feedback
+- ✅ **Enhanced visual design**: Replaced Moon icon with alarm-bell-3D-icon, non-clickable sleep cycle info
+- ✅ **Optimized loading experience**: Reduced animation time from 2.5s to 2.3s with haptic feedback completion
+- ✅ **Refined copy**: Updated Quick Boost tagline to "Recharge without feeling like a zombie"
+- ✅ **Updated 3D assets**: Refreshed alarm bell icon with improved visual quality
+
+**🔧 Technical Implementation:**
+- **SleepCalculator.swift**: Added `getDynamicCategoryOrder()` for intelligent time-based category prioritization
+- **SingleAlarmView.swift**: Enhanced with selection-based UI patterns, haptic feedback integration, and streamlined permission handling
+- **AlarmPermissionSheet**: Redesigned with gradient backgrounds, spring animations, and 3D icon integration
+- **Loading animations**: Optimized timing calculations and added tactile feedback for completion states
+
+### Version 4.0 - Stable 5-Tab AlarmKit Integration
 
 **🚀 AlarmKit Integration & 5-Tab Navigation (September 2025):**
 - ✅ **5-tab navigation**: Sleep Now, AlarmKit, Settings, Single, Additional tab structure
@@ -349,18 +370,21 @@ Mr Sleep/
 - 🎨 **Complete AlarmKit integration**: Full alarm management with real iOS notifications
 - 🎵 **Sound selection**: Choose between Morning, Smooth, and Classic alarm tones with preview
 - 💾 **Data persistence**: Alarms saved with AlarmKit and UUID tracking
-- 🔄 **Sleep calculations**: Read-only wake-up time displays for information
-- 📱 **Single alarm experience**: Dedicated tab with countdown and progress visualization
+- 🔄 **Smart sleep calculations**: Dynamic category ordering based on time of day for optimal recommendations
+- 📱 **Enhanced single alarm experience**: Dedicated tab with countdown, progress visualization, and haptic feedback
 - 🎯 **Reliable alarm management**: Create, edit, delete, toggle with UUID-based tracking
-- 🎭 **Onboarding experience**: 3-step interactive introduction for new users
-- 🌙 **3D animations**: Rotating moon icons and breathing effects
+- 🎭 **Streamlined onboarding**: 3-step interactive introduction with improved permission flow
+- 🌙 **Rich 3D animations**: Rotating moon icons, breathing effects, and updated alarm bell assets
 - 🔔 **Real notifications**: Alarms actually trigger iOS system notifications
+- 🎮 **Tactile feedback**: Haptic feedback for interactions and completion states
+- 🎨 **Polished UI/UX**: Selection-based controls, gradient designs, and optimized loading times
 
 **🔧 Current Technical Implementation:**
-- **SingleAlarmView**: Complete alarm experience with AlarmKit integration and UUID tracking
+- **SingleAlarmView**: Complete alarm experience with AlarmKit integration, UUID tracking, and enhanced UX patterns
 - **AlarmKitViewModel**: Enhanced with `scheduleAlarmWithID` for reliable alarm management
 - **AlarmKitView**: Full AlarmKit alarm management interface
-- **5-tab navigation**: Sleep Now, AlarmKit, Settings, Single, Additional
+- **SleepCalculator**: Intelligent time-based category prioritization system
+- **5-tab navigation**: Sleep Now, AlarmKit, Settings, Single, Additional with improved visual hierarchy
 
 ### Version 3.1 (Build 3) - Feature Complete
 - Complete alarm UI implementation
