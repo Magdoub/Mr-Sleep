@@ -238,6 +238,10 @@ struct SingleAlarmView: View {
     @State private var calculationProgress: Double = 0.0
     @State private var isFinishingUp = false
     @State private var hasCompletedInitialLoading = false
+    @State private var showAlarmPermissionSheet = false
+    @State private var pendingAlarmTime: Date?
+    @State private var pendingAlarmCycles: Int?
+    @State private var selectedAdjustment: Int = 0
     
     // Timer to update time every second for real-time display
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -262,8 +266,8 @@ struct SingleAlarmView: View {
                 // Handle different view states
                 if case .active(let alarmTime, let startTime, _) = singleAlarmState {
                     activeAlarmView(alarmTime: alarmTime, startTime: startTime, geometry: geometry)
-                } else if case .selected(let selectedTime, let cycles, let adjustmentMinutes) = singleAlarmState {
-                    fullScreenAdjustmentView(selectedTime: selectedTime, cycles: cycles, adjustmentMinutes: adjustmentMinutes, geometry: geometry)
+                } else if case .selected(let selectedTime, let cycles, _) = singleAlarmState {
+                    fullScreenAdjustmentView(selectedTime: selectedTime, cycles: cycles, geometry: geometry)
                 } else if showOnboarding {
                     OnboardingView(showOnboarding: $showOnboarding, onComplete: startPostOnboardingLoading)
                 } else if showSleepGuide {
@@ -548,6 +552,16 @@ struct SingleAlarmView: View {
                 updateCountdown()
             }
         }
+        .overlay {
+            if showAlarmPermissionSheet {
+                AlarmPermissionSheet(
+                    isPresented: $showAlarmPermissionSheet,
+                    onEnable: {
+                        requestAlarmPermission()
+                    }
+                )
+            }
+        }
     }
     
     // MARK: - Helper Methods (exact copies from SleepNowView)
@@ -762,6 +776,26 @@ struct SingleAlarmView: View {
     }
     
     // MARK: - Single Alarm Specific Functions
+
+    private func requestAlarmPermission() {
+        Task {
+            let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
+            await MainActor.run {
+                if hasPermission {
+                    // Permission granted, proceed with the pending alarm if any
+                    if let pendingTime = pendingAlarmTime, let pendingCycles = pendingAlarmCycles {
+                        scheduleConfirmedAlarm(time: pendingTime, cycles: pendingCycles)
+                        // Clear pending alarm details
+                        pendingAlarmTime = nil
+                        pendingAlarmCycles = nil
+                    }
+                }
+                // If permission is denied, the modal will handle it with "Open Settings" button
+                // No need for a second popup
+            }
+        }
+    }
+
     private func scheduleTestAlarm() {
         // Get current time
         let now = Date()
@@ -814,44 +848,63 @@ struct SingleAlarmView: View {
         
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             singleAlarmState = .selected(time: time, cycles: cycles, adjustmentMinutes: 0)
+            selectedAdjustment = 0 // Reset adjustment when selecting new time
         }
     }
-    
-    private func adjustSelectedTime(by minutes: Int) {
-        if case .selected(let time, let cycles, let currentAdjustment) = singleAlarmState {
-            let newAdjustment = currentAdjustment + minutes
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
-            
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                singleAlarmState = .selected(time: time, cycles: cycles, adjustmentMinutes: newAdjustment)
+
+    private func setSelectedAdjustment(_ minutes: Int) {
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            selectedAdjustment = minutes
+        }
+    }
+
+    private func confirmAlarm() {
+        if case .selected(let time, let cycles, _) = singleAlarmState {
+            let adjustedTime = Calendar.current.date(byAdding: .minute, value: selectedAdjustment, to: time) ?? time
+
+            // Check alarm permission first
+            Task {
+                let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
+
+                await MainActor.run {
+                    if hasPermission {
+                        // Permission already granted, proceed with alarm scheduling
+                        scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+                    } else {
+                        // Show permission request sheet (handles both notDetermined and denied)
+                        showAlarmPermissionSheet = true
+                        // Store the pending alarm details for after permission is granted
+                        pendingAlarmTime = adjustedTime
+                        pendingAlarmCycles = cycles
+                    }
+                }
             }
         }
     }
-    
-    private func confirmAlarm() {
-        if case .selected(let baseTime, let cycles, let adjustmentMinutes) = singleAlarmState {
-            let adjustedTime = Calendar.current.date(byAdding: .minute, value: adjustmentMinutes, to: baseTime) ?? baseTime
-            let successFeedback = UINotificationFeedbackGenerator()
-            successFeedback.notificationOccurred(.success)
-            
-            // Schedule the actual alarm using AlarmKit and get the ID
-            Task {
-                let alarmID = await scheduleAlarmKitAlarm(time: adjustedTime, cycles: cycles)
-                
-                // Save alarm data with the ID (truncate to minute precision)
-                let truncatedAlarmTime = truncateToMinute(adjustedTime)
-                let alarmData = SingleAlarmData(alarmTime: truncatedAlarmTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
-                saveAlarmData(alarmData)
-                
-                // Update state with the alarm ID
-                await MainActor.run {
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        singleAlarmState = .active(alarmTime: adjustedTime, startTime: Date(), alarmID: alarmID)
-                    }
-                    // Update countdown immediately when alarm becomes active
-                    updateCountdown()
+
+    private func scheduleConfirmedAlarm(time: Date, cycles: Int) {
+        let successFeedback = UINotificationFeedbackGenerator()
+        successFeedback.notificationOccurred(.success)
+
+        // Schedule the actual alarm using AlarmKit and get the ID
+        Task {
+            let alarmID = await scheduleAlarmKitAlarm(time: time, cycles: cycles)
+
+            // Save alarm data with the ID (truncate to minute precision)
+            let truncatedAlarmTime = truncateToMinute(time)
+            let alarmData = SingleAlarmData(alarmTime: truncatedAlarmTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
+            saveAlarmData(alarmData)
+
+            // Update state with the alarm ID
+            await MainActor.run {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    singleAlarmState = .active(alarmTime: time, startTime: Date(), alarmID: alarmID)
                 }
+                // Update countdown immediately when alarm becomes active
+                updateCountdown()
             }
         }
     }
@@ -1151,89 +1204,23 @@ struct SingleAlarmView: View {
     
     
     // MARK: - Single Alarm UI Views
-    private func adjustmentControlsView(selectedTime: Date, cycles: Int, adjustmentMinutes: Int) -> some View {
-        let adjustedTime = Calendar.current.date(byAdding: .minute, value: adjustmentMinutes, to: selectedTime) ?? selectedTime
-        
-        return VStack(spacing: 20) {
-            // Selected time display
-            VStack(spacing: 8) {
-                Text("Selected Wake-up Time")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
-                
-                Text(SleepCalculator.shared.formatTime(adjustedTime))
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                
-                Text("\(formatSleepDurationSimple(cycles: cycles)) • \(cycles) cycles")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-            }
-            
-            // Adjustment buttons
-            HStack(spacing: 15) {
-                adjustmentButton(label: "+5m", minutes: 5)
-                adjustmentButton(label: "+10m", minutes: 10)
-                adjustmentButton(label: "+15m", minutes: 15)
-            }
-            
-            // Confirm button
-            Button(action: confirmAlarm) {
-                Text("Set Alarm")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
-                    )
-            }
-            .buttonStyle(.plain)
-            
-            // Cancel button
-            Button("Cancel") {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                    singleAlarmState = .none
-                }
-            }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.white.opacity(0.6))
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 15)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.white.opacity(0.1))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(.white.opacity(0.2), lineWidth: 1)
-                )
-        )
-        .padding(.horizontal, 20)
-    }
     
-    private func fullScreenAdjustmentView(selectedTime: Date, cycles: Int, adjustmentMinutes: Int, geometry: GeometryProxy) -> some View {
-        let adjustedTime = Calendar.current.date(byAdding: .minute, value: adjustmentMinutes, to: selectedTime) ?? selectedTime
-        
+    private func fullScreenAdjustmentView(selectedTime: Date, cycles: Int, geometry: GeometryProxy) -> some View {
+        let adjustedTime = Calendar.current.date(byAdding: .minute, value: selectedAdjustment, to: selectedTime) ?? selectedTime
+
         return VStack(spacing: 0) {
             Spacer()
             
             VStack(spacing: 40) {
-                // App Title with animated moon - smaller version
-                HStack(spacing: 10) {
-                    Image(currentMoonIcon)
-                        .resizable()
-                        .frame(width: 60, height: 60)
-                        .accessibilityHidden(true)
-                        .scaleEffect(breathingScale)
-                        .animation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
-                    
-                    Text("Mr Sleep")
-                        .font(.system(size: 24, weight: .medium, design: .rounded))
-                        .foregroundColor(Color(red: 0.95, green: 0.95, blue: 0.98))
-                }
-                .padding(.top, 20)
+                // Alarm bell icon
+                Image("alarm-bell-3D-icon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 80, height: 80)
+                    .accessibilityHidden(true)
+                    .scaleEffect(breathingScale)
+                    .animation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: breathingScale)
+                    .padding(.top, 20)
                 
                 // Selected time display - large and prominent
                 VStack(spacing: 16) {
@@ -1247,30 +1234,25 @@ struct SingleAlarmView: View {
                         .scaleEffect(breathingScale)
                         .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: breathingScale)
                     
-                    Text("\(formatSleepDurationSimple(cycles: cycles)) • \(cycles) sleep cycles")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(.white.opacity(0.1))
-                        )
+                    Text("\(formatSleepDurationSimple(cycles: cycles)) • \(cycles) sleep \(cycles == 1 ? "cycle" : "cycles")")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
                 }
-                
-                // Adjustment buttons - bigger and more prominent
-                VStack(spacing: 20) {
-                    Text("Fine-tune your wake time")
+
+                // Time adjustment buttons - selection based
+                VStack(spacing: 16) {
+                    Text("Adjust wake time")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
-                    
-                    HStack(spacing: 20) {
-                        fullScreenAdjustmentButton(label: "+5 min", minutes: 5)
-                        fullScreenAdjustmentButton(label: "+10 min", minutes: 10)
-                        fullScreenAdjustmentButton(label: "+15 min", minutes: 15)
+
+                    HStack(spacing: 12) {
+                        adjustmentSelectionButton(minutes: 0, label: "On time")
+                        adjustmentSelectionButton(minutes: 5, label: "+5 min")
+                        adjustmentSelectionButton(minutes: 10, label: "+10 min")
+                        adjustmentSelectionButton(minutes: 15, label: "+15 min")
                     }
                 }
-                
+
                 // Confirm button - large and prominent
                 Button(action: confirmAlarm) {
                     HStack {
@@ -1321,51 +1303,36 @@ struct SingleAlarmView: View {
             removal: .move(edge: .bottom).combined(with: .opacity)
         ))
     }
-    
-    private func fullScreenAdjustmentButton(label: String, minutes: Int) -> some View {
-        Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            adjustSelectedTime(by: minutes)
+
+    private func adjustmentSelectionButton(minutes: Int, label: String) -> some View {
+        let isSelected = selectedAdjustment == minutes
+
+        return Button(action: {
+            setSelectedAdjustment(minutes)
         }) {
             Text(label)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.white.opacity(0.15))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.white.opacity(0.3), lineWidth: 1)
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private func adjustmentButton(label: String, minutes: Int) -> some View {
-        Button(action: {
-            adjustSelectedTime(by: minutes)
-        }) {
-            Text(label)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(isSelected ? .black : .white)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                .frame(minWidth: 70)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(.white.opacity(0.15))
+                        .fill(isSelected ?
+                              Color(red: 0.894, green: 0.729, blue: 0.306) :
+                              Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(.white.opacity(0.3), lineWidth: 1)
+                                .stroke(
+                                    isSelected ? Color.clear : Color.white.opacity(0.3),
+                                    lineWidth: 1
+                                )
                         )
                 )
         }
         .buttonStyle(.plain)
     }
-    
+
     private func activeAlarmView(alarmTime: Date, startTime: Date, geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             Spacer()
@@ -1730,6 +1697,267 @@ struct OnboardingView: View {
 }
 
 // SleepGuideView is defined in the original SleepGuideView.swift file
+
+// MARK: - Alarm Permission Sheets
+
+struct AlarmPermissionSheet: View {
+    @Binding var isPresented: Bool
+    let onEnable: () -> Void
+    @Environment(AlarmKitViewModel.self) private var alarmViewModel
+
+    @State private var iconScale: Double = 0.7
+    @State private var iconRotation: Double = -10
+    @State private var cardScale: Double = 0.8
+    @State private var cardOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 30
+    @State private var contentOpacity: Double = 0
+    @State private var benefitsOpacity: Double = 0
+    @State private var backgroundOpacity: Double = 0
+    @State private var iconPulse: Double = 1.0
+
+    @State private var permissionStatus: String = "unknown"
+
+    var body: some View {
+        ZStack {
+            // Animated gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.black.opacity(0.8),
+                    Color(red: 0.1, green: 0.05, blue: 0.2).opacity(0.9),
+                    Color(red: 0.05, green: 0.1, blue: 0.3).opacity(0.8)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            .opacity(backgroundOpacity)
+            .onTapGesture {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    dismissModal()
+                }
+            }
+
+            VStack(spacing: 28) {
+                // Large animated icon with pulse effect
+                Image("permission-3D-icon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 110, height: 110)
+                    .scaleEffect(iconScale * iconPulse)
+                    .rotationEffect(.degrees(iconRotation))
+                    .opacity(contentOpacity)
+
+                VStack(spacing: 18) {
+                    Text(permissionStatus == "denied" ? "Alarm Permission Required" : "Enable Sleep Alarms")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+
+                    Text(permissionStatus == "denied" ?
+                         "Please enable alarm permissions in Settings to wake up at optimal times" :
+                         "Wake up at the perfect time in your sleep cycle")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.horizontal, 8)
+                }
+                .opacity(contentOpacity)
+                .offset(y: contentOffset)
+
+                // Simplified benefits
+                VStack(spacing: 14) {
+                    PermissionBenefitRow(
+                        icon: "alarm.waves.left.and.right",
+                        text: "Smart wake-up alarms"
+                    )
+
+                    PermissionBenefitRow(
+                        icon: "moon.zzz.fill",
+                        text: "Feel refreshed, not groggy"
+                    )
+                }
+                .opacity(benefitsOpacity)
+
+                VStack(spacing: 16) {
+                    // Primary action button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            if permissionStatus == "denied" {
+                                // Open Settings
+                                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(settingsUrl)
+                                }
+                            } else {
+                                onEnable()
+                            }
+                            dismissModal()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: permissionStatus == "denied" ? "gear" : "alarm.waves.left.and.right.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(permissionStatus == "denied" ? "Open Settings" : "Enable Alarms")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.95, green: 0.82, blue: 0.4),
+                                    Color(red: 0.894, green: 0.729, blue: 0.306),
+                                    Color(red: 0.8, green: 0.6, blue: 0.2)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(26)
+                        .shadow(color: Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3), radius: 8, x: 0, y: 4)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Cancel button
+                    Button("Maybe Later") {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            dismissModal()
+                        }
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .font(.system(size: 16, weight: .medium))
+                }
+                .opacity(contentOpacity)
+                .offset(y: contentOffset * 0.5)
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 36)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.12, green: 0.12, blue: 0.35).opacity(0.95),
+                                Color(red: 0.08, green: 0.08, blue: 0.25).opacity(0.98),
+                                Color(red: 0.05, green: 0.05, blue: 0.2).opacity(1.0)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(0.2),
+                                        Color.white.opacity(0.05)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.4), radius: 30, x: 0, y: 15)
+                    .shadow(color: Color(red: 0.1, green: 0.05, blue: 0.2).opacity(0.5), radius: 60, x: 0, y: 30)
+            )
+            .scaleEffect(cardScale)
+            .opacity(cardOpacity)
+            .padding(.horizontal, 32)
+        }
+        .onAppear {
+            checkPermissionStatus()
+            startEntranceAnimation()
+        }
+    }
+
+    private func checkPermissionStatus() {
+        Task {
+            let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
+            await MainActor.run {
+                permissionStatus = hasPermission ? "authorized" : "denied"
+            }
+        }
+    }
+
+    private func startEntranceAnimation() {
+        // Start with background
+        withAnimation(.easeOut(duration: 0.4)) {
+            backgroundOpacity = 1.0
+        }
+
+        // Card entrance with spring
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.8).delay(0.1)) {
+            cardScale = 1.0
+            cardOpacity = 1.0
+        }
+
+        // Icon animation with rotation and scale
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
+            iconScale = 1.0
+            iconRotation = 0
+        }
+
+        // Content animation
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3)) {
+            contentOffset = 0
+            contentOpacity = 1.0
+        }
+
+        // Benefits fade in
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.5)) {
+            benefitsOpacity = 1.0
+        }
+
+        // Start continuous pulse
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            startIconPulse()
+        }
+    }
+
+    private func startIconPulse() {
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            iconPulse = 1.05
+        }
+    }
+
+    private func dismissModal() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            cardScale = 0.9
+            cardOpacity = 0
+            backgroundOpacity = 0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isPresented = false
+        }
+    }
+}
+
+struct PermissionBenefitRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                .frame(width: 24, height: 24)
+
+            Text(text)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.9))
+                .multilineTextAlignment(.leading)
+
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+    }
+}
+
 
 // MARK: - Notification Extensions
 extension Notification.Name {
