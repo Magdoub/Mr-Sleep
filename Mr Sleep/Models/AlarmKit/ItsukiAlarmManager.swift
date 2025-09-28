@@ -11,7 +11,7 @@ class ItsukiAlarmManager {
     @MainActor var runningAlarms: [ItsukiAlarm] = []
     @MainActor var recentAlarms: [ItsukiAlarm] = []
     
-    @ObservationIgnored private let alarmManager = AlarmManager.shared
+    @ObservationIgnored private lazy var alarmManager = AlarmManager.shared
     @ObservationIgnored private let userDefaults = UserDefaults.standard
     
     // Keys for UserDefaults persistence
@@ -37,12 +37,19 @@ class ItsukiAlarmManager {
     @MainActor var hasUpcomingAlarms: Bool {
         !runningAlarms.isEmpty
     }
+
+    var authorizationState: AlarmManager.AuthorizationState {
+        // Always return .notDetermined until we explicitly check authorization
+        // This prevents triggering authorization popup during property access
+        return .notDetermined
+    }
+
+    private var _alarmManagerInitialized: Bool = false
     
     private init() {
         initializeLocalAlarms()
-        initializeRemoteAlarms()
-        observeAlarms()
-        observeAuthorizationUpdates()
+        // Don't initialize remote alarms or start observations here to avoid authorization popup
+        // These will be initialized later when authorization is granted
     }
     
     // MARK: - Initialization
@@ -70,12 +77,35 @@ class ItsukiAlarmManager {
     }
     
     private func initializeRemoteAlarms() {
+        // Only fetch remote alarms if authorization is already granted
+        // This prevents authorization popup during app initialization
+        guard alarmManager.authorizationState == .authorized else {
+            print("Skipping remote alarm initialization - authorization not granted")
+            return
+        }
+
         do {
             let remoteAlarms = try alarmManager.alarms
             combineLocalRemoteAlarms(localRunningAlarms: runningAlarms, remoteAlarms: remoteAlarms)
         } catch {
             print("Failed to fetch initial remote alarms: \(error)")
         }
+    }
+
+    func startObservingAlarmsIfAuthorized() {
+        // Mark that alarmManager is now safe to access
+        _alarmManagerInitialized = true
+
+        // Only start observing if authorization is granted
+        guard alarmManager.authorizationState == .authorized else {
+            print("Skipping alarm observations - authorization not granted")
+            return
+        }
+
+        print("Starting alarm observations - authorization granted")
+        initializeRemoteAlarms()
+        observeAlarms()
+        observeAuthorizationUpdates()
     }
     
     private func combineLocalRemoteAlarms(localRunningAlarms: [ItsukiAlarm], remoteAlarms: [Alarm]) {
@@ -150,7 +180,12 @@ class ItsukiAlarmManager {
         Task {
             for await _ in alarmManager.authorizationUpdates {
                 // Handle authorization changes if needed
-                await checkAuthorization()
+                // Note: Don't auto-request authorization here to avoid popup during onboarding
+
+                // If authorization was just granted, initialize remote alarms
+                if alarmManager.authorizationState == .authorized {
+                    initializeRemoteAlarms()
+                }
             }
         }
     }
@@ -173,22 +208,44 @@ class ItsukiAlarmManager {
     // MARK: - Authorization
     
     func checkAuthorization() async -> Bool {
+        // Mark that alarmManager is now safe to access
+        _alarmManagerInitialized = true
+
         switch alarmManager.authorizationState {
         case .notDetermined:
             do {
                 let state = try await alarmManager.requestAuthorization()
-                return state == .authorized
+                let isAuthorized = state == .authorized
+                if isAuthorized {
+                    // Start observing alarms now that authorization is granted
+                    startObservingAlarmsIfAuthorized()
+                }
+                return isAuthorized
             } catch {
                 await MainActor.run {
                     self.error = error
                 }
                 return false
             }
-        case .denied: 
+        case .denied:
             return false
-        case .authorized: 
+        case .authorized:
             return true
-        @unknown default: 
+        @unknown default:
+            return false
+        }
+    }
+
+    func checkAuthorizationWithoutRequest() -> Bool {
+        // Mark that alarmManager is now safe to access
+        _alarmManagerInitialized = true
+
+        switch alarmManager.authorizationState {
+        case .notDetermined, .denied:
+            return false
+        case .authorized:
+            return true
+        @unknown default:
             return false
         }
     }
