@@ -333,6 +333,8 @@ struct SingleAlarmView: View {
                         Spacer()
 
                         // Test alarm button (only show when not in active state)
+                        // COMMENTED OUT - Only used for testing, not needed in production
+                        /*
                         if case .none = singleAlarmState {
                             Button(action: scheduleTestAlarm) {
                                 HStack(spacing: 8) {
@@ -363,6 +365,7 @@ struct SingleAlarmView: View {
                             .accessibilityHint("Double tap to schedule a test alarm for one minute from now")
                             .accessibilityAddTraits(.isButton)
                         }
+                        */
 
                         // Current time display with micro animation - EXACT COPY
                         VStack(spacing: 8) {
@@ -1519,7 +1522,7 @@ struct OnboardingView: View {
         ),
         OnboardingStep(
             icon: "clock-3D-icon",
-            title: "Set & Sleep",
+            title: "Set Alarm & Sleep",
             subtitle: "Your path to ZERO brain fog",
             description: "Choose a wake-up time, set your alarm, and try to fall asleep in the next 15 minutes.",
             buttonText: "Let's sleep better!"
@@ -1881,18 +1884,17 @@ struct AlarmPermissionSheet: View {
                             Text(permissionStatus == "denied" ? "Open Settings" : "Enable Alarms")
                                 .font(.system(size: 17, weight: .semibold))
                         }
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color(red: 0.95, green: 0.82, blue: 0.4),
                                     Color(red: 0.894, green: 0.729, blue: 0.306),
-                                    Color(red: 0.8, green: 0.6, blue: 0.2)
+                                    Color(red: 0.94, green: 0.629, blue: 0.206)
                                 ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
                         )
                         .cornerRadius(26)
