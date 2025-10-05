@@ -58,7 +58,14 @@ struct SingleAlarmData: Codable {
 enum SingleAlarmState: Equatable {
     case none
     case selected(time: Date, cycles: Int, adjustmentMinutes: Int)
+    case settingUpAlarm(time: Date, cycles: Int) // New loading state
     case active(alarmTime: Date, startTime: Date, alarmID: UUID?)
+}
+
+// MARK: - Alarm Setup Loading Phases
+enum AlarmSetupPhase {
+    case loading
+    case success
 }
 
 // MARK: - Supporting Views (Moved from SleepNowView)
@@ -167,7 +174,7 @@ struct CalculatingWakeUpTimesView: View {
 struct FinishingUpView: View {
     let reduceMotion: Bool
     @State private var pulseScale: Double = 1.0
-    
+
     var body: some View {
         VStack(spacing: 20) {
             // Simple pulsing checkmark or completion icon - match CalculatingWakeUpTimesView positioning
@@ -186,7 +193,7 @@ struct FinishingUpView: View {
                     .accessibilityHidden(true)
             }
             .scaleEffect(1.1) // Match the CalculatingWakeUpTimesView scale
-            
+
             // Finishing up text
             Text("Finishing up...")
                 .font(.body)
@@ -205,6 +212,170 @@ struct FinishingUpView: View {
             if !reduceMotion {
                 pulseScale = 1.2
             }
+        }
+    }
+}
+
+struct AlarmSetupLoadingView: View {
+    let phase: AlarmSetupPhase
+    let reduceMotion: Bool
+
+    @State private var iconPulse: Double = 1.0
+    @State private var iconRotation: Double = 0
+    @State private var ringRotation: Double = 0
+    @State private var dotAnimation: [Double] = [0.3, 0.6, 1.0]
+    @State private var checkmarkScale: Double = 0.5
+    @State private var checkmarkOpacity: Double = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 30) {
+                // Icon with phase-specific animation
+                ZStack {
+                    if phase == .loading {
+                        // Rotating ring during loading
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.894, green: 0.729, blue: 0.306),
+                                        Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 3
+                            )
+                            .frame(width: 100, height: 100)
+                            .rotationEffect(.degrees(ringRotation))
+                            .animation(reduceMotion ? .none : .linear(duration: 2.0).repeatForever(autoreverses: false), value: ringRotation)
+                    }
+
+                    // Alarm bell icon
+                    Image("alarm-bell-3D-icon")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 80, height: 80)
+                        .scaleEffect(iconPulse)
+                        .rotationEffect(.degrees(iconRotation))
+
+                    // Success checkmark overlay
+                    if phase == .success {
+                        Circle()
+                            .fill(Color(red: 0.2, green: 0.8, blue: 0.4))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                            )
+                            .offset(x: 28, y: -28)
+                            .scaleEffect(checkmarkScale)
+                            .opacity(checkmarkOpacity)
+                    }
+                }
+                .frame(height: 100)
+
+                // Text with phase-specific message
+                VStack(spacing: 12) {
+                    if phase == .loading {
+                        HStack(spacing: 2) {
+                            Text("Setting up your alarm")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+
+                            HStack(spacing: 2) {
+                                ForEach(0..<3, id: \.self) { index in
+                                    Text(".")
+                                        .font(.title3)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
+                                        .opacity(reduceMotion ? 1.0 : dotAnimation[index])
+                                        .animation(
+                                            reduceMotion ? .none : .easeInOut(duration: 0.6)
+                                            .repeatForever(autoreverses: true)
+                                            .delay(Double(index) * 0.2),
+                                            value: dotAnimation[index]
+                                        )
+                                }
+                            }
+                        }
+
+                        Text("Please wait a moment")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.7))
+                    } else {
+                        Text("Alarm set!")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(red: 0.2, green: 0.8, blue: 0.4))
+
+                        Text("Get ready to wake up refreshed")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            if phase == .loading {
+                startLoadingAnimation()
+            } else {
+                startSuccessAnimation()
+            }
+        }
+    }
+
+    private func startLoadingAnimation() {
+        if !reduceMotion {
+            // Pulse animation
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                iconPulse = 1.1
+            }
+
+            // Ring rotation
+            ringRotation = 360
+
+            // Animate dots
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.2) {
+                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(Double(i) * 0.2)) {
+                        dotAnimation[i] = 0.3
+                    }
+                }
+            }
+        }
+    }
+
+    private func startSuccessAnimation() {
+        // Haptic feedback
+        let successFeedback = UINotificationFeedbackGenerator()
+        successFeedback.notificationOccurred(.success)
+
+        if !reduceMotion {
+            // Pop in animation for checkmark
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                checkmarkScale = 1.0
+                checkmarkOpacity = 1.0
+            }
+
+            // Gentle pulse
+            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                iconPulse = 1.05
+            }
+        } else {
+            checkmarkScale = 1.0
+            checkmarkOpacity = 1.0
         }
     }
 }
@@ -239,7 +410,8 @@ struct SingleAlarmView: View {
     @State private var isDragging = false
     @State private var countdownDisplay = ""
     @State private var progressValue: Double = 0.0
-    
+    @State private var alarmSetupPhase: AlarmSetupPhase = .loading
+
     @State private var shouldReloadView = false
     @State private var isComingFromBackground = false
     
@@ -291,7 +463,11 @@ struct SingleAlarmView: View {
                 
                 
                 // Handle different view states
-                if case .active(let alarmTime, let startTime, _) = singleAlarmState {
+                if case .settingUpAlarm = singleAlarmState {
+                    // Show loading state during alarm setup
+                    AlarmSetupLoadingView(phase: alarmSetupPhase, reduceMotion: reduceMotion)
+                        .transition(.opacity)
+                } else if case .active(let alarmTime, let startTime, _) = singleAlarmState {
                     activeAlarmView(alarmTime: alarmTime, startTime: startTime, geometry: geometry)
                 } else if case .selected(let selectedTime, let cycles, _) = singleAlarmState {
                     fullScreenAdjustmentView(selectedTime: selectedTime, cycles: cycles, geometry: geometry)
@@ -941,6 +1117,12 @@ struct SingleAlarmView: View {
 
         let adjustedTime = Calendar.current.date(byAdding: .minute, value: selectedAdjustment, to: time) ?? time
 
+        // Show loading state immediately
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            alarmSetupPhase = .loading
+            singleAlarmState = .settingUpAlarm(time: adjustedTime, cycles: cycles)
+        }
+
         // Check if AlarmKitViewModel already exists (returning user)
         if let alarmViewModel = alarmViewModel {
             // ViewModel exists, check permission
@@ -948,38 +1130,57 @@ struct SingleAlarmView: View {
 
             if hasPermission {
                 // Permission already granted, proceed with alarm scheduling
-                scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+                // Add a brief delay to show loading animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+                }
             } else {
                 // Permission was previously denied, show "Open Settings" sheet
+                // Hide loading state and show permission sheet
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    singleAlarmState = .selected(time: time, cycles: cycles, adjustmentMinutes: selectedAdjustment)
+                }
                 showAlarmPermissionSheet = true
                 pendingAlarmTime = adjustedTime
                 pendingAlarmCycles = cycles
             }
         } else {
-            // First time - need to initialize AlarmKitViewModel
-            // This will trigger system authorization popup automatically
-            print("🟡 First alarm - initializing AlarmKitViewModel (will trigger system auth popup)")
+            // First time - request authorization BEFORE creating ViewModel
+            // This prevents state pollution where ViewModel init changes auth state
+            print("🟡 First alarm - requesting authorization directly from AlarmManager")
 
-            // Store pending alarm before creating ViewModel
-            pendingAlarmTime = adjustedTime
-            pendingAlarmCycles = cycles
+            // Use async authorization check that waits for user response
+            Task {
+                // Request authorization BEFORE creating ViewModel
+                // Access AlarmManager singleton directly to avoid state pollution
+                let alarmManager = ItsukiAlarmManager.shared
 
-            // Create ViewModel - this triggers system popup
-            viewModelContainer.initializeIfNeeded()
+                print("🟡 Requesting authorization (will wait for user to tap Allow/Don't Allow)...")
+                let isAuthorized = await alarmManager.checkAuthorization()
 
-            // Wait a tiny bit for AlarmKit to initialize, then check result
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if let alarmViewModel = self.alarmViewModel {
-                    let hasPermission = alarmViewModel.alarmManager.checkAuthorizationWithoutRequest()
-
-                    if hasPermission {
-                        // User granted permission, schedule the alarm
-                        print("✅ Permission granted, scheduling alarm")
+                await MainActor.run {
+                    if isAuthorized {
+                        // User granted permission - NOW create ViewModel and schedule alarm
+                        print("✅ Permission granted by user, creating ViewModel and scheduling alarm")
+                        self.viewModelContainer.initializeIfNeeded()
                         self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
                     } else {
-                        // User denied permission, show custom sheet for next time
-                        print("❌ Permission denied, will show settings sheet next time")
-                        // Don't show sheet now - system popup just appeared
+                        // User denied permission - show settings sheet (consistent with returning user flow)
+                        print("❌ Permission denied by user, showing settings sheet")
+
+                        // Store pending alarm for if user grants permission via Settings
+                        self.pendingAlarmTime = adjustedTime
+                        self.pendingAlarmCycles = cycles
+
+                        // Return to main view and show permission sheet
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            self.singleAlarmState = .none
+                        }
+
+                        // Show permission sheet after brief delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            self.showAlarmPermissionSheet = true
+                        }
                     }
                 }
             }
@@ -987,9 +1188,6 @@ struct SingleAlarmView: View {
     }
 
     private func scheduleConfirmedAlarm(time: Date, cycles: Int) {
-        let successFeedback = UINotificationFeedbackGenerator()
-        successFeedback.notificationOccurred(.success)
-
         // Schedule the actual alarm using AlarmKit and get the ID
         Task {
             let alarmID = await scheduleAlarmKitAlarm(time: time, cycles: cycles)
@@ -999,7 +1197,17 @@ struct SingleAlarmView: View {
             let alarmData = SingleAlarmData(alarmTime: truncatedAlarmTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
             saveAlarmData(alarmData)
 
-            // Update state with the alarm ID
+            // Show success phase
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    alarmSetupPhase = .success
+                }
+            }
+
+            // Wait to show success animation, then transition to active view
+            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+
+            // Update state with the alarm ID and transition to active view
             await MainActor.run {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     singleAlarmState = .active(alarmTime: time, startTime: Date(), alarmID: alarmID)

@@ -312,7 +312,26 @@ Mr Sleep/
 
 ## Version History
 
-### Version 4.1 (Current) - Enhanced UX and Smart Priority System
+### Version 4.2 (Current) - Smooth Alarm Setup & Permission Flow
+
+**✨ Alarm Setup Loading State & Authorization Fix (October 2025):**
+- ✅ **Smooth alarm setup loading**: Beautiful loading animation during alarm creation with "Setting up your alarm..." message
+- ✅ **Success animation**: "Alarm set!" confirmation with haptic feedback and green checkmark before transitioning to active alarm
+- ✅ **Fixed authorization flow**: Proper async permission handling that waits for user response to system popup
+- ✅ **Consistent permission denial UX**: Shows settings sheet on first-time denial (matches returning user experience)
+- ✅ **Loading phases**: Two-phase loading (loading → success) with smooth animations and transitions
+- ✅ **No more UI glitches**: Loading state stays visible during permission request, prevents jarring "flash to main page"
+- ✅ **State pollution fix**: Authorization request happens BEFORE ViewModel initialization to prevent premature state changes
+
+**🔧 Technical Implementation:**
+- **AlarmSetupLoadingView**: New loading component with rotating ring, pulsing alarm bell icon, animated dots, and success checkmark
+- **AlarmSetupPhase enum**: Tracks loading phases (`.loading` and `.success`) for proper animation sequencing
+- **SingleAlarmState.settingUpAlarm**: New state case for loading during alarm setup
+- **Authorization order fix**: `checkAuthorization()` called BEFORE `viewModelContainer.initializeIfNeeded()` to prevent state pollution
+- **Consistent denial handling**: Both first-time and returning users see permission sheet when permission denied
+- **Accessibility support**: All animations respect `reduceMotion` accessibility setting
+
+### Version 4.1 - Enhanced UX and Smart Priority System
 
 **🎯 Smart Priority & User Experience (September 2025):**
 - ✅ **Time-based category priority**: Dynamic ordering based on time of day (7PM-6AM: Full Recharge first, 6AM-7PM: Quick Boost first)
