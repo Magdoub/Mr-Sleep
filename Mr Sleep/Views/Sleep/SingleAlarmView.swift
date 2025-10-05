@@ -220,12 +220,20 @@ struct AlarmSetupLoadingView: View {
     let phase: AlarmSetupPhase
     let reduceMotion: Bool
 
-    @State private var iconPulse: Double = 1.0
-    @State private var iconRotation: Double = 0
+    @State private var bellSwingAngle: Double = 0
+    @State private var bellScalePulse: Double = 1.0
+    @State private var bellBounceScale: Double = 1.0
     @State private var ringRotation: Double = 0
+    @State private var ringPulseScale: Double = 1.0
     @State private var dotAnimation: [Double] = [0.3, 0.6, 1.0]
     @State private var checkmarkScale: Double = 0.5
     @State private var checkmarkOpacity: Double = 0
+    @State private var checkmarkRotation: Double = 5
+    @State private var burstOpacity: Double = 0
+    @State private var burstScale: Double = 0.5
+    @State private var rayRotation: Double = 0
+    @State private var sparkleOpacity: [Double] = Array(repeating: 0, count: 8)
+    @State private var sparkleOffsets: [CGFloat] = Array(repeating: 0, count: 8)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -235,7 +243,7 @@ struct AlarmSetupLoadingView: View {
                 // Icon with phase-specific animation
                 ZStack {
                     if phase == .loading {
-                        // Rotating ring during loading
+                        // Rotating ring during loading with pulse
                         Circle()
                             .stroke(
                                 LinearGradient(
@@ -249,34 +257,86 @@ struct AlarmSetupLoadingView: View {
                                 lineWidth: 3
                             )
                             .frame(width: 100, height: 100)
+                            .scaleEffect(ringPulseScale)
                             .rotationEffect(.degrees(ringRotation))
-                            .animation(reduceMotion ? .none : .linear(duration: 2.0).repeatForever(autoreverses: false), value: ringRotation)
+                            .animation(reduceMotion ? .none : .timingCurve(0.4, 0.0, 0.2, 1.0, duration: 2.0).repeatForever(autoreverses: false), value: ringRotation)
+
+                        // Subtle sparkles around ring with drift
+                        ForEach(0..<8, id: \.self) { index in
+                            Circle()
+                                .fill(Color(red: 1.0, green: 0.85, blue: 0.4))
+                                .frame(width: 4, height: 4)
+                                .offset(
+                                    x: cos(Double(index) * .pi / 4) * 55,
+                                    y: sin(Double(index) * .pi / 4) * 55 + sparkleOffsets[index]
+                                )
+                                .opacity(sparkleOpacity[index])
+                        }
                     }
 
-                    // Alarm bell icon
+                    // Success burst effect
+                    if phase == .success {
+                        // Radial golden rays with rotation
+                        ForEach(0..<12, id: \.self) { index in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.894, green: 0.729, blue: 0.306),
+                                            Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 40, height: 3)
+                                .offset(x: 20)
+                                .rotationEffect(.degrees(Double(index) * 30 + rayRotation))
+                                .scaleEffect(burstScale)
+                                .opacity(burstOpacity)
+                        }
+
+                        // Golden glow
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    colors: [
+                                        Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3),
+                                        Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0)
+                                    ],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 60
+                                )
+                            )
+                            .frame(width: 120, height: 120)
+                            .opacity(burstOpacity)
+                    }
+
+                    // Alarm bell icon with combined scale
                     Image("alarm-bell-3D-icon")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 80, height: 80)
-                        .scaleEffect(iconPulse)
-                        .rotationEffect(.degrees(iconRotation))
+                        .scaleEffect(bellBounceScale * bellScalePulse)
+                        .rotationEffect(.degrees(bellSwingAngle))
 
-                    // Success checkmark overlay
+                    // Success checkmark (centered and larger)
                     if phase == .success {
                         Circle()
                             .fill(Color(red: 0.2, green: 0.8, blue: 0.4))
-                            .frame(width: 32, height: 32)
+                            .frame(width: 50, height: 50)
                             .overlay(
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(.white)
                             )
-                            .offset(x: 28, y: -28)
                             .scaleEffect(checkmarkScale)
+                            .rotationEffect(.degrees(checkmarkRotation))
                             .opacity(checkmarkOpacity)
                     }
                 }
-                .frame(height: 100)
+                .frame(height: 140)
 
                 // Text with phase-specific message
                 VStack(spacing: 12) {
@@ -338,13 +398,37 @@ struct AlarmSetupLoadingView: View {
 
     private func startLoadingAnimation() {
         if !reduceMotion {
-            // Pulse animation
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                iconPulse = 1.1
+            // Slower, gentler bell swing with scale pulse
+            withAnimation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 1.2).repeatForever(autoreverses: true)) {
+                bellSwingAngle = 8
             }
 
-            // Ring rotation
+            // Bell scale pulse synchronized with swing
+            withAnimation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 1.2).repeatForever(autoreverses: true)) {
+                bellScalePulse = 1.03
+            }
+
+            // Ring rotation with cubic easing
             ringRotation = 360
+
+            // Ring pulse
+            withAnimation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 2.0).repeatForever(autoreverses: true)) {
+                ringPulseScale = 1.02
+            }
+
+            // Sparkles - staggered fade in with drift
+            for i in 0..<8 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.05) {
+                    withAnimation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 1.2).repeatForever(autoreverses: true)) {
+                        sparkleOpacity[i] = 0.8
+                    }
+
+                    // Gentle vertical drift
+                    withAnimation(.timingCurve(0.4, 0.0, 0.2, 1.0, duration: 1.5 + Double(i) * 0.1).repeatForever(autoreverses: true)) {
+                        sparkleOffsets[i] = CGFloat.random(in: -3...3)
+                    }
+                }
+            }
 
             // Animate dots
             for i in 0..<3 {
@@ -358,24 +442,84 @@ struct AlarmSetupLoadingView: View {
     }
 
     private func startSuccessAnimation() {
-        // Haptic feedback
-        let successFeedback = UINotificationFeedbackGenerator()
-        successFeedback.notificationOccurred(.success)
+        // Haptic feedback - medium at start
+        let mediumFeedback = UIImpactFeedbackGenerator(style: .medium)
+        mediumFeedback.impactOccurred()
 
         if !reduceMotion {
-            // Pop in animation for checkmark
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
-                checkmarkScale = 1.0
-                checkmarkOpacity = 1.0
+            // Stage 1: Anticipation - slight pull back (0-0.1s)
+            bellSwingAngle = 0
+            bellScalePulse = 1.0
+            withAnimation(.timingCurve(0.4, 0.0, 0.6, 1.0, duration: 0.1)) {
+                bellSwingAngle = -3
+                ringPulseScale = 0.98 // Ring contracts slightly
             }
 
-            // Gentle pulse
-            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-                iconPulse = 1.05
+            // Stage 2: Ding - sharp swing (0.1-0.3s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.4)) {
+                    bellSwingAngle = 20
+                }
+
+                // Triple bounce scale
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.45)) {
+                    bellBounceScale = 1.25
+                }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.55).delay(0.15)) {
+                    bellBounceScale = 1.15
+                }
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.65).delay(0.3)) {
+                    bellBounceScale = 1.0
+                }
+
+                // Burst with overshoot and rotation
+                withAnimation(.timingCurve(0.0, 0.0, 0.2, 1.0, duration: 0.6)) {
+                    burstOpacity = 1.0
+                    burstScale = 1.3
+                    ringPulseScale = 1.0
+                }
+                withAnimation(.linear(duration: 1.0)) {
+                    rayRotation = 15
+                }
+                withAnimation(.easeIn(duration: 0.4).delay(0.6)) {
+                    burstOpacity = 0
+                }
+            }
+
+            // Stage 3: Checkmark with bounce and draw (0.3s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // Success haptic when checkmark appears
+                let successFeedback = UINotificationFeedbackGenerator()
+                successFeedback.notificationOccurred(.success)
+
+                // Bounce scale sequence
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.68)) {
+                    checkmarkScale = 1.3
+                }
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7).delay(0.15)) {
+                    checkmarkScale = 0.95
+                }
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.25)) {
+                    checkmarkScale = 1.0
+                }
+
+                // Rotation and opacity
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    checkmarkRotation = 0
+                    checkmarkOpacity = 1.0
+                }
+            }
+
+            // Stage 4: Settle - bell returns to center (0.5s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    bellSwingAngle = 0
+                }
             }
         } else {
             checkmarkScale = 1.0
             checkmarkOpacity = 1.0
+            checkmarkRotation = 0
         }
     }
 }
@@ -739,6 +883,13 @@ struct SingleAlarmView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                // DON'T reconcile if we're in the middle of setting up an alarm
+                // This prevents the success animation from being interrupted when returning from permission popup
+                if case .settingUpAlarm = singleAlarmState {
+                    print("⏭️ Skipping reconciliation - alarm setup in progress")
+                    return
+                }
+
                 // Mark that we're coming from background
                 isComingFromBackground = true
 
@@ -1130,8 +1281,8 @@ struct SingleAlarmView: View {
 
             if hasPermission {
                 // Permission already granted, proceed with alarm scheduling
-                // Add a brief delay to show loading animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // Add delay to show loading animation (1.5s for consistent feel)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
                 }
             } else {
@@ -1163,7 +1314,11 @@ struct SingleAlarmView: View {
                         // User granted permission - NOW create ViewModel and schedule alarm
                         print("✅ Permission granted by user, creating ViewModel and scheduling alarm")
                         self.viewModelContainer.initializeIfNeeded()
-                        self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+
+                        // Add delay for first-time users to let loading animation breathe (1.5s for consistent feel)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+                        }
                     } else {
                         // User denied permission - show settings sheet (consistent with returning user flow)
                         print("❌ Permission denied by user, showing settings sheet")
@@ -1192,12 +1347,7 @@ struct SingleAlarmView: View {
         Task {
             let alarmID = await scheduleAlarmKitAlarm(time: time, cycles: cycles)
 
-            // Save alarm data with the ID (truncate to minute precision)
-            let truncatedAlarmTime = truncateToMinute(time)
-            let alarmData = SingleAlarmData(alarmTime: truncatedAlarmTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
-            saveAlarmData(alarmData)
-
-            // Show success phase
+            // Show success phase (but don't save data yet to prevent race condition)
             await MainActor.run {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     alarmSetupPhase = .success
@@ -1205,10 +1355,16 @@ struct SingleAlarmView: View {
             }
 
             // Wait to show success animation, then transition to active view
-            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+            try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds (increased from 0.8s)
 
-            // Update state with the alarm ID and transition to active view
+            // NOW save alarm data AFTER success animation completes
+            // This prevents loadSavedAlarmState() from triggering during success phase
             await MainActor.run {
+                let truncatedAlarmTime = truncateToMinute(time)
+                let alarmData = SingleAlarmData(alarmTime: truncatedAlarmTime, startTime: Date(), cycles: cycles, alarmID: alarmID)
+                saveAlarmData(alarmData)
+
+                // Update state with the alarm ID and transition to active view
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     singleAlarmState = .active(alarmTime: time, startTime: Date(), alarmID: alarmID)
                 }

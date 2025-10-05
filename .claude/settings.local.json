@@ -177,7 +177,10 @@
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -version)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 11 Pro Max,OS=16.0\" build)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 11 Pro Max\" build)",
-      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" add .)"
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" add .)",
+      "Bash(export DEVELOPER_DIR=~/Desktop/Xcode.app/Contents/Developer)",
+      "Bash(export:*)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" status)"
     ],
     "deny": [],
     "ask": [],
