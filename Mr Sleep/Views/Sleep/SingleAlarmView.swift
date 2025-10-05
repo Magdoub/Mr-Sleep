@@ -219,8 +219,13 @@ struct OnboardingStep {
 
 // MARK: - Main Single Alarm View
 struct SingleAlarmView: View {
-    @Environment(AlarmKitViewModel.self) private var alarmViewModel
+    @EnvironmentObject private var viewModelContainer: LazyAlarmKitContainer
     @Environment(\.scenePhase) private var scenePhase
+
+    // Computed property for easy access
+    private var alarmViewModel: AlarmKitViewModel? {
+        viewModelContainer.viewModel
+    }
 
     // Accessibility Environment Variables
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -524,11 +529,22 @@ struct SingleAlarmView: View {
             }
         }
         .onAppear {
+            // Initialize AlarmKitViewModel if onboarding is complete or user is returning
+            if !showOnboarding {
+                print("🟢 Initializing AlarmKitViewModel (onboarding complete or returning user)")
+                viewModelContainer.initializeIfNeeded()
+            }
+
             // Pre-calculate wake up times for instant display
             calculateWakeUpTimes()
             currentTime = Date()
-            loadSavedAlarmState()
-            
+
+            // Only load saved alarm state if NOT showing onboarding
+            // This prevents accessing runningAlarms (which triggers authorization) during first launch
+            if !showOnboarding {
+                loadSavedAlarmState()
+            }
+
             // Only start animations and select moon if onboarding is not active AND initial loading hasn't been completed
             if !showOnboarding && !hasCompletedInitialLoading {
                 selectNextMoonIcon()
@@ -541,7 +557,7 @@ struct SingleAlarmView: View {
                 startBreathingEffect()
                 startZzzAnimation()
             }
-            
+
             // Reset the background flag
             isComingFromBackground = false
         }
@@ -745,17 +761,24 @@ struct SingleAlarmView: View {
     private func startPostOnboardingLoading() {
         // Called when onboarding completes - same as SleepNowView
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-        
+
+        // DON'T create AlarmKitViewModel here - wait until user clicks "Set Alarm"
+        // This prevents authorization popup immediately after onboarding
+
         withAnimation(.easeOut(duration: 0.5)) {
             showOnboarding = false
         }
-        
+
         // Start animations after onboarding
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             selectNextMoonIcon()
             startEntranceAnimation()
             startBreathingEffect()
             startZzzAnimation()
+
+            // Now that onboarding is complete, load any saved alarm state
+            // This was skipped during .onAppear to avoid triggering authorization
+            loadSavedAlarmState()
         }
     }
     
@@ -825,6 +848,11 @@ struct SingleAlarmView: View {
     // MARK: - Single Alarm Specific Functions
 
     private func requestAlarmPermission() {
+        guard let alarmViewModel = alarmViewModel else {
+            print("⚠️ AlarmKitViewModel not initialized")
+            return
+        }
+
         Task {
             let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
             await MainActor.run {
@@ -909,23 +937,49 @@ struct SingleAlarmView: View {
     }
 
     private func confirmAlarm() {
-        if case .selected(let time, let cycles, _) = singleAlarmState {
-            let adjustedTime = Calendar.current.date(byAdding: .minute, value: selectedAdjustment, to: time) ?? time
+        guard case .selected(let time, let cycles, _) = singleAlarmState else { return }
 
-            // Check alarm permission first
-            Task {
-                let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
+        let adjustedTime = Calendar.current.date(byAdding: .minute, value: selectedAdjustment, to: time) ?? time
 
-                await MainActor.run {
+        // Check if AlarmKitViewModel already exists (returning user)
+        if let alarmViewModel = alarmViewModel {
+            // ViewModel exists, check permission
+            let hasPermission = alarmViewModel.alarmManager.checkAuthorizationWithoutRequest()
+
+            if hasPermission {
+                // Permission already granted, proceed with alarm scheduling
+                scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+            } else {
+                // Permission was previously denied, show "Open Settings" sheet
+                showAlarmPermissionSheet = true
+                pendingAlarmTime = adjustedTime
+                pendingAlarmCycles = cycles
+            }
+        } else {
+            // First time - need to initialize AlarmKitViewModel
+            // This will trigger system authorization popup automatically
+            print("🟡 First alarm - initializing AlarmKitViewModel (will trigger system auth popup)")
+
+            // Store pending alarm before creating ViewModel
+            pendingAlarmTime = adjustedTime
+            pendingAlarmCycles = cycles
+
+            // Create ViewModel - this triggers system popup
+            viewModelContainer.initializeIfNeeded()
+
+            // Wait a tiny bit for AlarmKit to initialize, then check result
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if let alarmViewModel = self.alarmViewModel {
+                    let hasPermission = alarmViewModel.alarmManager.checkAuthorizationWithoutRequest()
+
                     if hasPermission {
-                        // Permission already granted, proceed with alarm scheduling
-                        scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
+                        // User granted permission, schedule the alarm
+                        print("✅ Permission granted, scheduling alarm")
+                        self.scheduleConfirmedAlarm(time: adjustedTime, cycles: cycles)
                     } else {
-                        // Show permission request sheet (handles both notDetermined and denied)
-                        showAlarmPermissionSheet = true
-                        // Store the pending alarm details for after permission is granted
-                        pendingAlarmTime = adjustedTime
-                        pendingAlarmCycles = cycles
+                        // User denied permission, show custom sheet for next time
+                        print("❌ Permission denied, will show settings sheet next time")
+                        // Don't show sheet now - system popup just appeared
                     }
                 }
             }
@@ -1019,7 +1073,7 @@ struct SingleAlarmView: View {
     // MARK: - AlarmKit Integration
     private func scheduleAlarmKitAlarm(time: Date, cycles: Int) async -> UUID? {
         // Check for duplicate alarms at the same time
-        let existingAlarms = await MainActor.run { alarmViewModel.runningAlarms }
+        let existingAlarms = await MainActor.run { alarmViewModel?.runningAlarms ?? [] }
         let hasExistingAlarm = existingAlarms.contains { alarm in
             guard let schedule = alarm.alarm.schedule else { return false }
             
@@ -1066,8 +1120,8 @@ struct SingleAlarmView: View {
         }
         
         // Schedule the alarm with specific ID
-        let success = await alarmViewModel.scheduleAlarmWithID(alarmID, with: alarmForm)
-        
+        let success = await alarmViewModel?.scheduleAlarmWithID(alarmID, with: alarmForm) ?? false
+
         if success {
             print("Scheduled single alarm for \(SleepCalculator.shared.formatTime(time)) with ID: \(alarmID)")
             return alarmID
@@ -1078,12 +1132,12 @@ struct SingleAlarmView: View {
     }
     
     private func deleteExistingAlarmKitAlarm(alarmID: UUID?, time: Date) async {
-        let existingAlarms = await MainActor.run { alarmViewModel.runningAlarms }
+        let existingAlarms = await MainActor.run { alarmViewModel?.runningAlarms ?? [] }
         
         // First try to find by alarm ID (most reliable)
         if let alarmID = alarmID {
             if let alarm = existingAlarms.first(where: { $0.id == alarmID }) {
-                await alarmViewModel.deleteAlarm(alarm)
+                await alarmViewModel?.deleteAlarm(alarm)
                 print("Deleted single alarm by ID: \(alarmID)")
                 return
             } else {
@@ -1108,7 +1162,7 @@ struct SingleAlarmView: View {
             }
             
             if matchesTime {
-                await alarmViewModel.deleteAlarm(alarm)
+                await alarmViewModel?.deleteAlarm(alarm)
                 print("Deleted single alarm at \(SleepCalculator.shared.formatTime(time)) by time matching")
                 break
             }
@@ -1158,7 +1212,7 @@ struct SingleAlarmView: View {
 
         // Check if alarm still exists in AlarmKit (with grace period for recently scheduled alarms)
         Task { @MainActor in
-            let runningAlarms = alarmViewModel.runningAlarms
+            let runningAlarms = alarmViewModel?.runningAlarms ?? []
             let stillScheduled = alarmData.alarmID.map { id in
                 runningAlarms.contains { $0.id == id }
             } ?? false
@@ -1787,7 +1841,7 @@ struct OnboardingView: View {
 struct AlarmPermissionSheet: View {
     @Binding var isPresented: Bool
     let onEnable: () -> Void
-    @Environment(AlarmKitViewModel.self) private var alarmViewModel
+    @EnvironmentObject private var viewModelContainer: LazyAlarmKitContainer
 
     @State private var iconScale: Double = 0.7
     @State private var iconRotation: Double = -10
@@ -1957,12 +2011,9 @@ struct AlarmPermissionSheet: View {
     }
 
     private func checkPermissionStatus() {
-        Task {
-            let hasPermission = await alarmViewModel.alarmManager.checkAuthorization()
-            await MainActor.run {
-                permissionStatus = hasPermission ? "authorized" : "denied"
-            }
-        }
+        // Check permission WITHOUT triggering authorization request
+        let hasPermission = viewModelContainer.viewModel?.alarmManager.checkAuthorizationWithoutRequest() ?? false
+        permissionStatus = hasPermission ? "authorized" : "denied"
     }
 
     private func startEntranceAnimation() {

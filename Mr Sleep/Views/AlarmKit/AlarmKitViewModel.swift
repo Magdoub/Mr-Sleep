@@ -5,27 +5,27 @@ import Foundation
 
 @Observable class AlarmKitViewModel {
     @MainActor var alarmManager = ItsukiAlarmManager.shared
-    
+
     @MainActor var hasUpcomingAlarms: Bool {
         alarmManager.hasUpcomingAlarms
     }
-    
+
     @MainActor var runningAlarms: [ItsukiAlarm] {
         alarmManager.runningAlarms
     }
-    
+
     @MainActor var recentAlarms: [ItsukiAlarm] {
         alarmManager.recentAlarms
     }
-    
+
     @MainActor var runningTraditionalAlarms: [ItsukiAlarm] {
         alarmManager.runningTraditionalAlarms
     }
-    
+
     @MainActor var runningTimers: [ItsukiAlarm] {
         alarmManager.runningTimers
     }
-    
+
     @MainActor var runningCustomAlarms: [ItsukiAlarm] {
         alarmManager.runningCustomAlarms
     }

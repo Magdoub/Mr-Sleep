@@ -47,9 +47,11 @@ class ItsukiAlarmManager {
     private var _alarmManagerInitialized: Bool = false
     
     private init() {
+        print("🔵 ItsukiAlarmManager.init() called")
         initializeLocalAlarms()
         // Don't initialize remote alarms or start observations here to avoid authorization popup
         // These will be initialized later when authorization is granted
+        print("🔵 ItsukiAlarmManager.init() completed")
     }
     
     // MARK: - Initialization
@@ -237,10 +239,15 @@ class ItsukiAlarmManager {
     }
 
     func checkAuthorizationWithoutRequest() -> Bool {
+        print("🟢 checkAuthorizationWithoutRequest() called")
         // Mark that alarmManager is now safe to access
         _alarmManagerInitialized = true
 
-        switch alarmManager.authorizationState {
+        print("🟢 About to access alarmManager.authorizationState")
+        let state = alarmManager.authorizationState
+        print("🟢 authorizationState = \(state)")
+
+        switch state {
         case .notDetermined, .denied:
             return false
         case .authorized:

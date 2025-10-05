@@ -174,7 +174,10 @@
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"generic/platform=iOS\" -configuration Release archive -archivePath ~/Desktop/MrSleep_test.xcarchive DEVELOPMENT_TEAM=RA3XCM4Q3M)",
       "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"generic/platform=iOS\" -configuration Release archive -archivePath ~/Desktop/MrSleep_final.xcarchive DEVELOPMENT_TEAM=RA3XCM4Q3M)",
       "Bash(tee:*)",
-      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -version)"
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -version)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 11 Pro Max,OS=16.0\" build)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project \"Mr Sleep.xcodeproj\" -scheme \"Mr Sleep\" -destination \"platform=iOS Simulator,name=iPhone 11 Pro Max\" build)",
+      "Bash(~/Desktop/Xcode.app/Contents/Developer/usr/bin/git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" add .)"
     ],
     "deny": [],
     "ask": [],

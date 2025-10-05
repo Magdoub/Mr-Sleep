@@ -270,7 +270,22 @@ class ItsukiAlarmManager {
             return false
         }
     }
-    
+
+    func checkAuthorizationWithoutRequest() -> Bool {
+        guard let alarmManager = alarmManager else {
+            return false
+        }
+
+        switch alarmManager.authorizationState {
+        case .notDetermined, .denied:
+            return false
+        case .authorized:
+            return true
+        @unknown default:
+            return false
+        }
+    }
+
     // MARK: - Alarm Operations
     
     func addAlarm(

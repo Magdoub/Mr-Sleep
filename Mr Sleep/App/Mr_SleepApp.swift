@@ -20,16 +20,17 @@ import StoreKit
 
 @main
 struct Mr_SleepApp: App {
-    @State private var alarmViewModel = AlarmKitViewModel()
-    
+    // Use lazy property wrapper to delay AlarmKitViewModel creation
+    @State private var viewModelContainer = LazyAlarmKitContainer()
+
     init() {
-        
+        print("🔴 Mr_SleepApp.init() called - LazyContainer created but NO AlarmKitViewModel yet")
     }
-    
+
     var body: some Scene {
         WindowGroup {
             SingleAlarmView()
-                .environment(alarmViewModel)
+                .environmentObject(viewModelContainer)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     incrementLaunchCount()
@@ -51,5 +52,22 @@ struct Mr_SleepApp: App {
                 }
             }
         }
+    }
+}
+
+// MARK: - Lazy AlarmKit Container
+// Delays AlarmKitViewModel creation until explicitly requested (after onboarding)
+class LazyAlarmKitContainer: ObservableObject {
+    @Published private var _viewModel: AlarmKitViewModel? = nil
+
+    func initializeIfNeeded() {
+        if _viewModel == nil {
+            print("🟡 Creating AlarmKitViewModel (lazy)")
+            _viewModel = AlarmKitViewModel()
+        }
+    }
+
+    var viewModel: AlarmKitViewModel? {
+        _viewModel
     }
 }
