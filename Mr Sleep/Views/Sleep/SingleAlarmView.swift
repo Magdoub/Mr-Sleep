@@ -223,17 +223,20 @@ struct AlarmSetupLoadingView: View {
     @State private var bellSwingAngle: Double = 0
     @State private var bellScalePulse: Double = 1.0
     @State private var bellBounceScale: Double = 1.0
+    @State private var bellExitScale: Double = 1.0
+    @State private var bellExitOpacity: Double = 1.0
     @State private var ringRotation: Double = 0
     @State private var ringPulseScale: Double = 1.0
     @State private var dotAnimation: [Double] = [0.3, 0.6, 1.0]
-    @State private var checkmarkScale: Double = 0.5
-    @State private var checkmarkOpacity: Double = 0
-    @State private var checkmarkRotation: Double = 5
     @State private var burstOpacity: Double = 0
     @State private var burstScale: Double = 0.5
     @State private var rayRotation: Double = 0
     @State private var sparkleOpacity: [Double] = Array(repeating: 0, count: 8)
     @State private var sparkleOffsets: [CGFloat] = Array(repeating: 0, count: 8)
+    @State private var thumbsUpScale: Double = 0.5
+    @State private var thumbsUpOpacity: Double = 0
+    @State private var thumbsUpRotation: Double = 5
+    @State private var thumbsUpOffset: CGFloat = 20
 
     var body: some View {
         VStack(spacing: 0) {
@@ -274,66 +277,56 @@ struct AlarmSetupLoadingView: View {
                         }
                     }
 
-                    // Success burst effect
+                    // Success glow effect (no rays)
                     if phase == .success {
-                        // Radial golden rays with rotation
-                        ForEach(0..<12, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 0.894, green: 0.729, blue: 0.306),
-                                            Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0)
-                                        ],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: 40, height: 3)
-                                .offset(x: 20)
-                                .rotationEffect(.degrees(Double(index) * 30 + rayRotation))
-                                .scaleEffect(burstScale)
-                                .opacity(burstOpacity)
-                        }
-
-                        // Golden glow
+                        // Subtle golden glow
                         Circle()
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3),
+                                        Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.15),
                                         Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0)
                                     ],
                                     center: .center,
                                     startRadius: 0,
-                                    endRadius: 60
+                                    endRadius: 50
                                 )
                             )
-                            .frame(width: 120, height: 120)
-                            .opacity(burstOpacity)
+                            .frame(width: 100, height: 100)
+                            .opacity(burstOpacity * 0.7)
                     }
 
-                    // Alarm bell icon with combined scale
-                    Image("alarm-bell-3D-icon")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 80, height: 80)
-                        .scaleEffect(bellBounceScale * bellScalePulse)
-                        .rotationEffect(.degrees(bellSwingAngle))
+                    // Alarm bell icon (loading phase)
+                    if phase == .loading {
+                        Image("alarm-bell-3D-icon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .scaleEffect(bellBounceScale * bellScalePulse)
+                            .rotationEffect(.degrees(bellSwingAngle))
+                    }
 
-                    // Success checkmark (centered and larger)
+                    // Bell exit during transition to success
                     if phase == .success {
-                        Circle()
-                            .fill(Color(red: 0.2, green: 0.8, blue: 0.4))
-                            .frame(width: 50, height: 50)
-                            .overlay(
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.white)
-                            )
-                            .scaleEffect(checkmarkScale)
-                            .rotationEffect(.degrees(checkmarkRotation))
-                            .opacity(checkmarkOpacity)
+                        Image("alarm-bell-3D-icon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .scaleEffect(bellBounceScale * bellScalePulse * bellExitScale)
+                            .rotationEffect(.degrees(bellSwingAngle))
+                            .opacity(bellExitOpacity)
+                    }
+
+                    // Thumbs-up icon (success phase)
+                    if phase == .success {
+                        Image("thumbs-up-3D-icon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .scaleEffect(thumbsUpScale)
+                            .rotationEffect(.degrees(thumbsUpRotation))
+                            .opacity(thumbsUpOpacity)
+                            .offset(y: thumbsUpOffset)
                     }
                 }
                 .frame(height: 140)
@@ -394,6 +387,11 @@ struct AlarmSetupLoadingView: View {
                 startSuccessAnimation()
             }
         }
+        .onChange(of: phase) { oldPhase, newPhase in
+            if newPhase == .success {
+                startSuccessAnimation()
+            }
+        }
     }
 
     private func startLoadingAnimation() {
@@ -447,79 +445,65 @@ struct AlarmSetupLoadingView: View {
         mediumFeedback.impactOccurred()
 
         if !reduceMotion {
-            // Stage 1: Anticipation - slight pull back (0-0.1s)
+            // Stage 1: Bell exit animation (0-0.2s)
             bellSwingAngle = 0
             bellScalePulse = 1.0
-            withAnimation(.timingCurve(0.4, 0.0, 0.6, 1.0, duration: 0.1)) {
-                bellSwingAngle = -3
-                ringPulseScale = 0.98 // Ring contracts slightly
+            withAnimation(.timingCurve(0.4, 0.0, 0.6, 1.0, duration: 0.2)) {
+                bellExitScale = 0.5
+                bellExitOpacity = 0
+                bellSwingAngle = -10 // Slight rotation during exit
             }
 
-            // Stage 2: Ding - sharp swing (0.1-0.3s)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.4)) {
-                    bellSwingAngle = 20
-                }
-
-                // Triple bounce scale
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.45)) {
-                    bellBounceScale = 1.25
-                }
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.55).delay(0.15)) {
-                    bellBounceScale = 1.15
-                }
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.65).delay(0.3)) {
-                    bellBounceScale = 1.0
-                }
-
-                // Burst with overshoot and rotation
-                withAnimation(.timingCurve(0.0, 0.0, 0.2, 1.0, duration: 0.6)) {
-                    burstOpacity = 1.0
-                    burstScale = 1.3
-                    ringPulseScale = 1.0
-                }
-                withAnimation(.linear(duration: 1.0)) {
-                    rayRotation = 15
-                }
-                withAnimation(.easeIn(duration: 0.4).delay(0.6)) {
-                    burstOpacity = 0
-                }
+            // Start burst effects early
+            withAnimation(.timingCurve(0.0, 0.0, 0.2, 1.0, duration: 0.6)) {
+                burstOpacity = 1.0
+                burstScale = 1.3
+            }
+            withAnimation(.linear(duration: 1.2)) {
+                rayRotation = 20
             }
 
-            // Stage 3: Checkmark with bounce and draw (0.3s)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // Success haptic when checkmark appears
+            // Stage 2: Thumbs-up entrance animation (0.2-0.5s)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Success haptic when thumbs-up appears
                 let successFeedback = UINotificationFeedbackGenerator()
                 successFeedback.notificationOccurred(.success)
 
-                // Bounce scale sequence
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.68)) {
-                    checkmarkScale = 1.3
-                }
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.7).delay(0.15)) {
-                    checkmarkScale = 0.95
-                }
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.25)) {
-                    checkmarkScale = 1.0
-                }
-
-                // Rotation and opacity
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    checkmarkRotation = 0
-                    checkmarkOpacity = 1.0
+                // Entrance with scale, rotation, and upward slide
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                    thumbsUpScale = 1.3
+                    thumbsUpOpacity = 1.0
+                    thumbsUpRotation = 0
+                    thumbsUpOffset = 0
                 }
             }
 
-            // Stage 4: Settle - bell returns to center (0.5s)
+            // Stage 3: Thumbs-up settle with bounce (0.5-0.8s)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                    bellSwingAngle = 0
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) {
+                    thumbsUpScale = 0.95
+                }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    thumbsUpScale = 1.0
+                }
+            }
+
+            // Fade out burst
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                withAnimation(.easeIn(duration: 0.3)) {
+                    burstOpacity = 0
                 }
             }
         } else {
-            checkmarkScale = 1.0
-            checkmarkOpacity = 1.0
-            checkmarkRotation = 0
+            // Reduced motion: instant transition
+            bellExitOpacity = 0
+            thumbsUpScale = 1.0
+            thumbsUpOpacity = 1.0
+            thumbsUpRotation = 0
+            thumbsUpOffset = 0
         }
     }
 }
