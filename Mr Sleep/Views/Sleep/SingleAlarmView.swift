@@ -1837,7 +1837,15 @@ struct SingleAlarmView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Alarm set for \(SleepCalculator.shared.formatTime(alarmTime))")
                 .accessibilityAddTraits(.isHeader)
-                
+
+                // Reassurance message
+                Text("✓ Alarm is set. You can safely close the app.")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .accessibilityLabel("Alarm is set. You can safely close the app.")
+
                 // Progress ring
                 ZStack {
                     Circle()
