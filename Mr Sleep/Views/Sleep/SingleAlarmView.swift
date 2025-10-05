@@ -2256,7 +2256,7 @@ struct AlarmPermissionSheet: View {
                         .multilineTextAlignment(.center)
 
                     Text(permissionStatus == "denied" ?
-                         "Please enable alarm permissions in Settings to wake up at optimal times" :
+                         "Please enable Alarms in Settings to set wake-up times" :
                          "Wake up at the perfect time in your sleep cycle")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.85))
@@ -2266,20 +2266,6 @@ struct AlarmPermissionSheet: View {
                 }
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
-
-                // Simplified benefits
-                VStack(spacing: 14) {
-                    PermissionBenefitRow(
-                        icon: "alarm.waves.left.and.right",
-                        text: "Smart wake-up alarms"
-                    )
-
-                    PermissionBenefitRow(
-                        icon: "moon.zzz.fill",
-                        text: "Feel refreshed, not groggy"
-                    )
-                }
-                .opacity(benefitsOpacity)
 
                 VStack(spacing: 16) {
                     // Primary action button
