@@ -312,7 +312,36 @@ Mr Sleep/
 
 ## Version History
 
-### Version 4.2 (Current) - Smooth Alarm Setup & Permission Flow
+### Version 5.1 (Current) - App Store Release
+
+**📦 App Store Submission (October 2025):**
+- ✅ **Version bump**: Updated to 5.1 (build 6) for App Store submission
+- ✅ **Fixed validation errors**: Resolved closed train issue and build number conflicts
+- ✅ **Marketing version**: 5.1
+- ✅ **Build number**: 6
+
+### Version 5.0 - Enhanced Alarm Setup Animations
+
+**✨ Polished Alarm Setup UX (October 2025):**
+- ✅ **Multi-stage bell animations**: Swinging bell during loading (8° gentle swing), anticipation pull-back (-3°), sharp ding (20°), triple bounce settle
+- ✅ **Rich micro-interactions**: Ring pulse (1.02x), staggered sparkles with vertical drift, rotating golden burst rays
+- ✅ **Smooth easing curves**: Material Design timing curves for natural motion (cubic bezier transitions)
+- ✅ **Enhanced success celebration**: Radial golden rays, bouncing checkmark with rotation (1.3x → 0.95x → 1.0x), glow effects
+- ✅ **Progressive haptics**: Medium impact at success start, success haptic with checkmark, layered tactile feedback
+- ✅ **Consistent timing**: 1.5s loading phase for all users, 1.5s success phase, 3s total animation experience
+- ✅ **Fixed glitch**: Scene phase guard prevents reconciliation during alarm setup, ensuring smooth transitions
+- ✅ **Delayed persistence**: Alarm data saved AFTER success animation completes to prevent race conditions
+
+**🔧 Technical Implementation:**
+- **Enhanced state variables**: `bellScalePulse`, `ringPulseScale`, `sparkleOffsets`, `rayRotation`, `checkmarkRotation`
+- **Multi-stage success animation**: 4 stages (anticipation → ding → checkmark → settle) with precise timing
+- **Material Design easing**: `.timingCurve(0.4, 0.0, 0.2, 1.0)` for standard motion, decelerate curves for exits
+- **Scene phase protection**: Guards against `reconcileAlarmState()` when `singleAlarmState == .settingUpAlarm`
+- **Async-aware timing**: Separate delays for returning users (1.5s) and first-time users (1.5s after permission)
+- **Triple bounce**: Bell scale sequence (1.25x → 1.15x → 1.0x) with damping for natural feel
+- **Sparkle choreography**: 8 sparkles fade in sequentially (50ms stagger), each with independent drift animation
+
+### Version 4.2 - Smooth Alarm Setup & Permission Flow
 
 **✨ Alarm Setup Loading State & Authorization Fix (October 2025):**
 - ✅ **Smooth alarm setup loading**: Beautiful loading animation during alarm creation with "Setting up your alarm..." message
@@ -324,7 +353,7 @@ Mr Sleep/
 - ✅ **State pollution fix**: Authorization request happens BEFORE ViewModel initialization to prevent premature state changes
 
 **🔧 Technical Implementation:**
-- **AlarmSetupLoadingView**: New loading component with rotating ring, pulsing alarm bell icon, animated dots, and success checkmark
+- **AlarmSetupLoadingView**: New loading component with rotating ring, alarm bell icon, animated dots, and success checkmark
 - **AlarmSetupPhase enum**: Tracks loading phases (`.loading` and `.success`) for proper animation sequencing
 - **SingleAlarmState.settingUpAlarm**: New state case for loading during alarm setup
 - **Authorization order fix**: `checkAuthorization()` called BEFORE `viewModelContainer.initializeIfNeeded()` to prevent state pollution
