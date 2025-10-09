@@ -365,7 +365,7 @@ struct AlarmSetupLoadingView: View {
                         Text("Alarm set!")
                             .font(.title3)
                             .fontWeight(.bold)
-                            .foregroundColor(Color(red: 0.2, green: 0.8, blue: 0.4))
+                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
 
                         Text("Get ready to wake up refreshed")
                             .font(.body)
