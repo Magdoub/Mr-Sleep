@@ -4,7 +4,7 @@ Sleep cycle calculator and AlarmKit companion built for iOS 26 so you can fall a
 
 [Download on the App Store](https://apps.apple.com/us/app/mr-sleep-sleep-calculator/id6751219678)
 
-<img width="1320" height="2868" alt="Simulator Screenshot - iPhone 17 Pro Max - 2025-10-01 at 22 59 16" src="https://github.com/user-attachments/assets/5f448b37-8d69-461b-8347-dddea624834f" />
+<img width="200" alt="Simulator Screenshot - iPhone 17 Pro Max - 2025-10-01 at 22 59 16" src="https://github.com/user-attachments/assets/5f448b37-8d69-461b-8347-dddea624834f" />
 
 ## Highlights
 - Calculates optimal wake-up targets using 90-minute cycles plus a 15-minute fall-asleep buffer
