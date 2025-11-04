@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based on sleep cycle science. The app uses 90-minute sleep cycles and accounts for 15 minutes to fall asleep.
 
+## 🎨 Design Principles
+
+**IMPORTANT**: All UI/UX work MUST follow the design principles documented in:
+**`/Users/magdoub/Desktop/Mr_Sleep_App_Design_Principles.md`**
+
+### Design Workflow
+1. **READ FIRST**: Always consult the design principles file before implementing any new UI features
+2. **CONSISTENCY**: Follow the established visual design patterns (colors, typography, iconography, animations)
+3. **UPDATE**: When discovering new design patterns or making design decisions, add them to the design principles file
+4. **PRIORITY**: Design principles in the external file override any conflicting guidance elsewhere
+
+### Key Design Pillars (from design principles file)
+- **Visual**: Deep navy gradient background, golden yellow accents, rounded 3D icons
+- **Typography**: SF Pro Rounded, clear hierarchy, oversized time values
+- **UX**: Motivational copy, single-goal screens, ritual experience, smooth animations
+- **Interaction**: Haptic feedback, ease-in-out curves, micro-interactions
+
+**Always reference the design principles file for complete details on colors, spacing, component design, motion principles, and user mental models.**
+
 ## ⚠️ AUTO-APPROVAL MODE ENABLED
 
 **CURRENT WORKFLOW**: Claude can make changes automatically without prior approval.
@@ -42,19 +61,25 @@ Mr Sleep is a pure SwiftUI iOS app that calculates optimal wake-up times based o
 
 ## Build and Development Commands
 
+**IMPORTANT**: Always build on **iPhone 11 Pro Max iOS 26 simulator** unless explicitly specified otherwise.
+
 ```bash
 # Open project in Xcode
 open "Mr Sleep.xcodeproj"
 
-# Build for physical device (iPhone 3)
+# Build for iPhone 11 Pro Max iOS 26 simulator (DEFAULT)
+~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "platform=iOS Simulator,name=iPhone 11 Pro Max" build
+
+# Build for physical device (iPhone 3) - alternative
 ~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "Mr Sleep.xcodeproj" -scheme "Mr Sleep" -destination "name=iPhone (3)" build
 ```
 
 ## Xcode Configuration
 
 **IMPORTANT**: Always use the desktop Xcode installation:
-- **Xcode Path**: `~/Desktop/Xcode.app` 
+- **Xcode Path**: `~/Desktop/Xcode.app`
 - **xcodebuild Path**: `~/Desktop/Xcode.app/Contents/Developer/usr/bin/xcodebuild`
+- **Default Build Target**: iPhone 11 Pro Max iOS 26 simulator
 
 All build commands should use the full path to the desktop Xcode.app installation to ensure compatibility and avoid conflicts with multiple Xcode versions.
 

@@ -29,7 +29,7 @@ struct Mr_SleepApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SingleAlarmView()
+            SleepContainerView()
                 .environmentObject(viewModelContainer)
                 .preferredColorScheme(.dark)
                 .onAppear {

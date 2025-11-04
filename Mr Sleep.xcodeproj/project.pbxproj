@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		1D32C2012E86BC58004855D7 /* AlarmKitViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D32C2002E86BC58004855D7 /* AlarmKitViewModel.swift */; };
+		1D44D2462EB70E9600CD3412 /* SleepMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D44D2452EB70E9600CD3412 /* SleepMode.swift */; };
+		1D44D2492EB70EAD00CD3412 /* SleepContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D44D2472EB70EAD00CD3412 /* SleepContainerView.swift */; };
+		1D44D24A2EB70EAD00CD3412 /* WakeUpAtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D44D2482EB70EAD00CD3412 /* WakeUpAtView.swift */; };
 		1D4770CE2E6F7177007AF563 /* smooth-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */; };
 		1D4770CF2E6F7177007AF563 /* morning-alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */; };
 		1D66484A2E6EE21E00FE86CA /* alarm-clock.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */; };
@@ -42,6 +45,9 @@
 
 /* Begin PBXFileReference section */
 		1D32C2002E86BC58004855D7 /* AlarmKitViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmKitViewModel.swift; sourceTree = "<group>"; };
+		1D44D2452EB70E9600CD3412 /* SleepMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepMode.swift; sourceTree = "<group>"; };
+		1D44D2472EB70EAD00CD3412 /* SleepContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepContainerView.swift; sourceTree = "<group>"; };
+		1D44D2482EB70EAD00CD3412 /* WakeUpAtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeUpAtView.swift; sourceTree = "<group>"; };
 		1D4770CC2E6F7177007AF563 /* morning-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "morning-alarm-clock.mp3"; sourceTree = "<group>"; };
 		1D4770CD2E6F7177007AF563 /* smooth-alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "smooth-alarm-clock.mp3"; sourceTree = "<group>"; };
 		1D6648492E6EE21E00FE86CA /* alarm-clock.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "alarm-clock.mp3"; sourceTree = "<group>"; };
@@ -131,6 +137,8 @@
 		1DB00CE22E71A701003DCB88 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				1D44D2472EB70EAD00CD3412 /* SleepContainerView.swift */,
+				1D44D2482EB70EAD00CD3412 /* WakeUpAtView.swift */,
 				1D32C2002E86BC58004855D7 /* AlarmKitViewModel.swift */,
 				1DB00CE62E71A705003DCB88 /* Sleep */,
 			);
@@ -140,6 +148,7 @@
 		1DB00CE32E71A702003DCB88 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				1D44D2452EB70E9600CD3412 /* SleepMode.swift */,
 				1DB777952E81270A0037CCB2 /* AlarmKitForm.swift */,
 				1DB777962E81270A0037CCB2 /* AlarmKitIntents.swift */,
 				1DB777972E81270A0037CCB2 /* AlarmKitMetadata.swift */,
@@ -267,7 +276,10 @@
 			files = (
 				1DB00CCF2E5240B8003DCB88 /* SleepCalculator.swift in Sources */,
 				1DB00CC12E52405C003DCB88 /* Mr_SleepApp.swift in Sources */,
+				1D44D2462EB70E9600CD3412 /* SleepMode.swift in Sources */,
 				1DB00CD82E5240B8003DCB88 /* SleepGuideView.swift in Sources */,
+				1D44D2492EB70EAD00CD3412 /* SleepContainerView.swift in Sources */,
+				1D44D24A2EB70EAD00CD3412 /* WakeUpAtView.swift in Sources */,
 				1DB00CDA2E5240B8003DCB88 /* WakeUpTimeButton.swift in Sources */,
 				1DB7779A2E81270A0037CCB2 /* ItsukiAlarmManager.swift in Sources */,
 				1D91A0692E855B4200D3450D /* SingleAlarmView.swift in Sources */,
