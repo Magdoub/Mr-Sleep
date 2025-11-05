@@ -100,12 +100,15 @@ All build commands should use the full path to the desktop Xcode.app installatio
 ### Key Components
 - `Mr_SleepApp.swift` - App entry point with dark mode configuration
 - `MainTabView.swift` - 5-tab navigation container managing app navigation
+- `SleepContainerView.swift` - Mode toggle wrapper for Sleep Now / Wake Up At modes
 - `SleepNowView.swift` - Main sleep calculation UI with onboarding and supporting views
 - `SingleAlarmView.swift` - Dedicated single alarm experience with AlarmKit integration
+- `WakeUpAtView.swift` - Wake Up At mode UI with time picker (Phase 1: mockup with dummy data)
 - `AlarmKitView.swift` - AlarmKit alarm management with full CRUD operations
 - `AlarmKitViewModel.swift` - AlarmKit integration layer and alarm scheduling
 - `SettingsView.swift` - User preferences and app configuration
 - `SleepCalculator.swift` - Business logic singleton for sleep calculations
+- `SleepMode.swift` - Enum for Sleep Now / Wake Up At mode switching
 - `WakeUpTimeButton.swift` - Reusable button component for time display
 - `SleepGuideView.swift` - Educational overlay about sleep hygiene
 
@@ -262,12 +265,15 @@ Mr Sleep/
 │   └── MainTabView.swift - 5-tab navigation container
 │
 ├── Views/
+│   ├── SleepContainerView.swift - Mode toggle wrapper (Sleep Now / Wake Up At)
 │   ├── Sleep/
+│   │   ├── SleepContainerView.swift - Main container with top segmented toggle
 │   │   ├── SleepNowView.swift - Primary sleep calculation UI with embedded views:
 │   │   │   ├── OnboardingView - First-time user onboarding
 │   │   │   ├── CalculatingWakeUpTimesView - Loading animation
 │   │   │   └── FinishingUpView - Completion animation
 │   │   ├── SingleAlarmView.swift - Single alarm experience with AlarmKit integration
+│   │   ├── WakeUpAtView.swift - Wake Up At mode with time picker (Phase 1 mockup)
 │   │   ├── SleepGuideView.swift - Sleep education overlay
 │   │   └── WakeUpTimeButton.swift - Reusable time selection component
 │   ├── AlarmKit/
@@ -280,6 +286,7 @@ Mr Sleep/
 │
 ├── Models/
 │   ├── SleepCalculator.swift - Core business logic
+│   ├── SleepMode.swift - Enum for mode switching (Sleep Now / Wake Up At)
 │   ├── AlarmKit/
 │   │   ├── AlarmKitForm.swift - Alarm form data model
 │   │   ├── AlarmKitMetadata.swift - Alarm metadata definitions
@@ -299,11 +306,19 @@ Mr Sleep/
 ├── Supporting Files/
 │   └── Mr Sleep.entitlements
 │
+├── PRD/
+│   ├── WakeUpAt_Feature_Master_PRD.md - Master PRD for Wake Up At feature
+│   └── WakeUpAt_Phase1_UI_Implementation.md - Phase 1 implementation spec
+│
 └── Preview Content/
     └── Preview Assets.xcassets/ - SwiftUI preview assets
 ```
 
 ### UI/UX Features
+- **Dual mode interface**: Toggle between "Sleep Now" and "Wake Up At" modes with top segmented control
+- **Sleep Now mode**: Calculate optimal wake-up times based on falling asleep now
+- **Wake Up At mode**: Calculate optimal bedtimes based on desired wake-up time (Phase 1: UI mockup with dummy data)
+- **Mode persistence**: UserDefaults saves selected mode across app launches
 - **5-tab navigation**: Sleep Now, AlarmKit, Settings, Single, Additional tab
 - **Real-time clock** with minute-level updates and animations
 - **Streamlined onboarding flow** with 3-step interactive introduction and consolidated permission handling
@@ -337,7 +352,33 @@ Mr Sleep/
 
 ## Version History
 
-### Version 5.1 (Current) - App Store Release
+### Version 5.2 (Current) - Wake Up At Feature Phase 1
+
+**🆕 Wake Up At Mode - UI Mockup (November 2025):**
+- ✅ **Dual mode interface**: Added top segmented toggle for "Sleep Now" / "Wake Up At" modes
+- ✅ **SleepMode enum**: New model for mode switching with UserDefaults persistence
+- ✅ **SleepContainerView**: Container with custom top toggle component (320x48pt rounded pill)
+- ✅ **WakeUpAtView**: Phase 1 UI mockup with time picker and dummy bedtime suggestions
+- ✅ **Mode persistence**: Selected mode saved across app launches via UserDefaults
+- ✅ **Smooth transitions**: Crossfade animation between modes with spring animations
+- ✅ **Haptic feedback**: Light impact on mode switch
+- ✅ **Golden highlight**: Selected button uses golden accent color (#E4BA4E)
+- ✅ **PRD documentation**: Created Master PRD and Phase 1 implementation spec
+
+**🔧 Technical Implementation:**
+- **SleepMode.swift**: Enum with `.sleepNow` and `.wakeUpAt` cases, UserDefaults helpers
+- **SleepContainerView.swift**: ZStack with gradient background, VStack with toggle and content
+- **ModeToggle component**: HStack with 2 ModeButton instances, 320x48pt frame
+- **ModeButton component**: Custom button with conditional golden background
+- **WakeUpAtView.swift**: Time picker with mock bedtime calculations (Phase 1)
+- **Updated build target**: iPhone 11 Pro Max iOS 26 simulator as default
+
+**📋 Next Steps (Future Phases):**
+- Phase 2: Implement actual bedtime calculation logic
+- Phase 3: AlarmKit integration for Wake Up At mode
+- Phase 4: Additional features (recurring alarms, snooze options)
+
+### Version 5.1 - App Store Release
 
 **📦 App Store Submission (October 2025):**
 - ✅ **Version bump**: Updated to 5.1 (build 6) for App Store submission
