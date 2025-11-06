@@ -37,6 +37,12 @@ struct MockBedtime: Identifiable {
     let duration: Double // in hours
 }
 
+// MARK: - Wake Up View State
+enum WakeUpViewState {
+    case input    // Shows time picker and calculate button
+    case results  // Shows bedtime cards and back button
+}
+
 // MARK: - Wake Up At View
 struct WakeUpAtView: View {
     // MARK: - State Properties
@@ -47,12 +53,13 @@ struct WakeUpAtView: View {
     // Mock data (Phase 1: hardcoded)
     @State private var mockBedtimes: [MockBedtime] = []
 
+    // View state (input vs results)
+    @State private var viewState: WakeUpViewState = .input
+
     // Animation states
-    @State private var currentTime = Date()
-    @State private var timeAnimationTrigger = false
     @State private var contentOpacity: Double = 0.0
-    @State private var titleOffset: CGFloat = 20
-    @State private var timeOffset: CGFloat = 15
+    @State private var titleOffset: CGFloat = -50  // Logo slides from top
+    @State private var subtitleOffset: CGFloat = 30  // Subtitle slides from bottom
     @State private var categoryHeadersVisible: Bool = false
 
     // Moon animation
@@ -66,9 +73,6 @@ struct WakeUpAtView: View {
 
     // Accessibility
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-
-    // Timer for current time updates
-    @State private var timeUpdateTimer: Timer?
 
     // MARK: - Body
 
@@ -91,150 +95,179 @@ struct WakeUpAtView: View {
                 VStack(spacing: 25) {
                     Spacer(minLength: 20)
 
-                    // App Title with animated moon and floating zzz - SAME AS SLEEP NOW
-                    HStack(spacing: 15) {
-                        HStack(spacing: 12) {
-                            Image(currentMoonIcon)
-                                .resizable()
-                                .frame(width: 90, height: 90)
-                                .scaleEffect(reduceMotion ? 1.0 : moonBreathingScale)
-                                .rotationEffect(.degrees(reduceMotion ? 0 : moonRotation))
-                                .accessibilityLabel("Moon icon")
-                                .accessibilityHidden(true)
+                    // App Title with animated moon and floating zzz
+                    VStack(spacing: 12) {
+                        HStack(spacing: 15) {
+                            HStack(spacing: 12) {
+                                Image(currentMoonIcon)
+                                    .resizable()
+                                    .frame(width: 90, height: 90)
+                                    .scaleEffect(reduceMotion ? 1.0 : moonBreathingScale)
+                                    .rotationEffect(.degrees(reduceMotion ? 0 : moonRotation))
+                                    .accessibilityLabel("Moon icon")
+                                    .accessibilityHidden(true)
 
-                            Text("Mr Sleep")
-                                .font(.largeTitle)
-                                .fontWeight(.medium)
-                                .fontDesign(.rounded)
-                                .foregroundColor(.white)
+                                Text("Mr Sleep")
+                                    .font(.largeTitle)
+                                    .fontWeight(.medium)
+                                    .fontDesign(.rounded)
+                                    .foregroundColor(.white)
+                            }
+
+                            ForEach(0..<3) { index in
+                                Text("z")
+                                    .font([.title, .title2, .title3][index])
+                                    .fontWeight(.light)
+                                    .foregroundColor(.white.opacity([0.9, 0.8, 0.7][index]))
+                                    .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
+                                    .opacity(zzzOpacities[index])
+                                    .accessibilityHidden(true)
+                            }
                         }
+                        .offset(y: titleOffset)  // Logo slides from top
 
-                        ForEach(0..<3) { index in
-                            Text("z")
-                                .font([.title, .title2, .title3][index])
-                                .fontWeight(.light)
-                                .foregroundColor(.white.opacity([0.9, 0.8, 0.7][index]))
-                                .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
-                                .opacity(zzzOpacities[index])
-                                .accessibilityHidden(true)
+                        // Subtitle - ONLY show in input state
+                        if viewState == .input {
+                            Text("What time do you want to wake up at")
+                                .font(.title2)
+                                .fontWeight(.medium)
+                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .offset(y: subtitleOffset)  // Subtitle slides from bottom
                         }
                     }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Mr Sleep app title")
+                    .accessibilityLabel("Mr Sleep app title. What time do you want to wake up at")
                     .accessibilityAddTraits(.isHeader)
                     .opacity(contentOpacity)
-                    .offset(y: titleOffset)
 
                     Spacer()
 
-                    // Current time display - SAME AS SLEEP NOW
-                    VStack(spacing: 8) {
-                        Text("Current Time")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-                            .accessibilityHidden(true)
+                    // INPUT STATE: Subtitle, Time Picker, and Calculate Button
+                    if viewState == .input {
+                        VStack(spacing: 25) {
+                            // Subtitle (already shown in header, keeping for input state)
 
-                        Text(getCurrentTime())
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
-                            .foregroundColor(.white)
-                            .scaleEffect(timeAnimationTrigger ? 1.1 : 1.0)
-                            .opacity(timeAnimationTrigger ? 0.7 : 1.0)
-                            .offset(y: timeAnimationTrigger ? -2 : 0)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: timeAnimationTrigger)
-                            .accessibilityHidden(true)
-                            .frame(minWidth: 120)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Current time is \(getCurrentTime())")
-                    .accessibilityAddTraits([.updatesFrequently, .playsSound])
-                    .accessibilityValue(getCurrentTime())
-                    .opacity(contentOpacity)
-                    .offset(y: timeOffset)
+                            // Time Picker Section
+                            timePickerSection
+                                .padding(.top, 10)
 
-                    // Wake-up message
-                    VStack(spacing: 12) {
-                        Text("Wake Up At . Sleep Smart")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .accessibilityAddTraits(.isHeader)
-
-                        Text("Plan your bedtime for optimal sleep cycles")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        Text("Choose when you want to wake up")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
-                            .multilineTextAlignment(.center)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Wake Up At . Sleep Smart. Plan your bedtime for optimal sleep cycles. Choose when you want to wake up.")
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityHint("Scroll down to set your wake-up time")
-                    .opacity(contentOpacity)
-
-                    // Time Picker Section
-                    timePickerSection
+                            // Calculate Bedtime Button
+                            calculateBedtimeButton
+                                .padding(.top, 20)
+                        }
                         .opacity(contentOpacity)
-                        .padding(.top, 10)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
 
-                    // Mock Bedtime Cards
-                    bedtimeCardsSection
+                    // RESULTS STATE: Bedtime Cards with Back Button
+                    if viewState == .results {
+                        VStack(spacing: 20) {
+                            // Back button
+                            HStack {
+                                Button(action: {
+                                    // Haptic feedback
+                                    let impact = UIImpactFeedbackGenerator(style: .light)
+                                    impact.impactOccurred()
+
+                                    // Slide back to input state
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        viewState = .input
+                                    }
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "chevron.left")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        Text("Back")
+                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                    }
+                                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                                }
+                                .accessibilityLabel("Back to time picker")
+                                .padding(.horizontal, 20)
+
+                                Spacer()
+                            }
+
+                            // Results header text
+                            VStack(spacing: 8) {
+                                Text("If you want to wake up at \(formatWakeUpTime())")
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                                    .multilineTextAlignment(.center)
+
+                                Text("Go to bed at any of these times")
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 10)
+
+                            // Bedtime Cards
+                            bedtimeCardsSection
+                                .padding(.top, 20)
+                                .padding(.bottom, 40)
+                        }
                         .opacity(contentOpacity)
-                        .padding(.bottom, 40)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
                 }
             }
         }
         .onAppear {
             startAnimations()
             generateMockData()
-            startTimeUpdates()
-        }
-        .onDisappear {
-            stopTimeUpdates()
         }
     }
 
     // MARK: - Time Picker Section
 
     private var timePickerSection: some View {
-        VStack(alignment: .center, spacing: 15) {
-            // Section header
-            Text("🌅 Set Your Wake-Up Time")
-                .font(.system(size: 22, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+        DatePicker(
+            "",
+            selection: $selectedWakeUpTime,
+            displayedComponents: [.hourAndMinute]
+        )
+        .datePickerStyle(.wheel)
+        .labelsHidden()
+        .tint(Color(red: 0.894, green: 0.729, blue: 0.306))
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .accessibilityLabel("Wake-up time picker")
+        .accessibilityHint("Scroll to select your desired wake-up time")
+    }
 
-            // Time picker
-            DatePicker(
-                "",
-                selection: $selectedWakeUpTime,
-                displayedComponents: [.hourAndMinute]
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .tint(Color(red: 0.894, green: 0.729, blue: 0.306))
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(red: 0.1, green: 0.15, blue: 0.3).opacity(0.6))
-            )
-            .padding(.horizontal, 20)
-            .accessibilityLabel("Wake-up time picker")
-            .accessibilityHint("Scroll to select your desired wake-up time")
+    // MARK: - Calculate Bedtime Button
+
+    private var calculateBedtimeButton: some View {
+        Button(action: {
+            // Haptic feedback
+            let impact = UIImpactFeedbackGenerator(style: .medium)
+            impact.impactOccurred()
+
+            // Slide to results state showing bedtime cards
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                viewState = .results
+            }
+        }) {
+            Text("Calculate Bedtime")
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(red: 0.1, green: 0.15, blue: 0.3))
+                .frame(maxWidth: .infinity)
+                .frame(height: 60)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
+                )
+                .shadow(color: Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3), radius: 10, x: 0, y: 5)
         }
+        .padding(.horizontal, 20)
+        .accessibilityLabel("Calculate Bedtime")
+        .accessibilityHint("Tap to see suggested bedtimes based on your selected wake-up time")
     }
 
     // MARK: - Bedtime Cards Section
@@ -282,10 +315,10 @@ struct WakeUpAtView: View {
 
     // MARK: - Helper Functions
 
-    private func getCurrentTime() -> String {
+    private func formatWakeUpTime() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        return formatter.string(from: currentTime)
+        return formatter.string(from: selectedWakeUpTime)
     }
 
     private func generateMockData() {
@@ -403,11 +436,15 @@ struct WakeUpAtView: View {
     // MARK: - Animations
 
     private func startAnimations() {
-        // Initial fade-in
+        // Initial fade-in and logo slide from top
         withAnimation(.easeOut(duration: 0.8)) {
             contentOpacity = 1.0
             titleOffset = 0
-            timeOffset = 0
+        }
+
+        // Subtitle slide from bottom (delayed)
+        withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+            subtitleOffset = 0
         }
 
         // Delayed category header reveal
@@ -445,24 +482,6 @@ struct WakeUpAtView: View {
                 }
             }
         }
-    }
-
-    private func startTimeUpdates() {
-        // Update current time every minute
-        timeUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
-            currentTime = Date()
-
-            // Trigger micro animation
-            timeAnimationTrigger = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                timeAnimationTrigger = false
-            }
-        }
-    }
-
-    private func stopTimeUpdates() {
-        timeUpdateTimer?.invalidate()
-        timeUpdateTimer = nil
     }
 }
 
