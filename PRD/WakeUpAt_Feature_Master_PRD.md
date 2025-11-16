@@ -153,34 +153,104 @@ This feature MUST follow all design principles from:
 #### 2. Wake-Up Time Picker (NEW)
 ```
 ┌─────────────────────────────────────────┐
-│         Set Your Wake-Up Time           │ ← Section Header (gold)
+│   What time do you want to wake up at   │ ← Subtitle (white)
 │                                         │
 │  ┌─────────────────────────────────┐   │
 │  │     [  7  ] : [ 00 ]  AM        │   │ ← Time Picker Wheel
 │  │                                 │   │
+│  └─────────────────────────────────┘   │
+│                                         │
+│  ┌─────────────────────────────────┐   │
+│  │     Calculate Bedtime           │   │ ← Golden Button
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
 
 **Specifications:**
 - **Position:** Below toggle and current time display
-- **Section Header:**
-  - Text: "Set Your Wake-Up Time"
-  - Font: SF Pro Rounded, size 20pt, semibold
-  - Color: Golden yellow (#E4BA4E)
-  - Icon: "🌅" emoji before text
+- **Subtitle:**
+  - Text: "What time do you want to wake up at"
+  - Font: SF Pro Rounded, size 28pt, medium
+  - Color: White with slight opacity
+  - Centered alignment
+  - Slides in from bottom on appear
 - **Picker:**
   - Native iOS DatePicker in `.wheel` mode
   - Display components: `.hourAndMinute`
   - Accent color: Golden yellow
-  - Background: Semi-transparent dark card
-  - Corner radius: 20pt
-  - Padding: 20pt
+  - No background card (transparent)
+  - Padding: 20pt horizontal
 - **Default Value:** Current time + 8 hours (typical sleep duration)
+- **Calculate Button:**
+  - Text: "Calculate Bedtime"
+  - Font: SF Pro Rounded, size 20pt, semibold
+  - Background: Golden yellow (#E4BA4E)
+  - Text color: Dark blue
+  - Height: 60pt
+  - Corner radius: 20pt
+  - Shadow: Golden glow
+  - Haptic: Medium impact on tap
+  - Action: Transitions to results state
+
+**Two-State Flow:**
+- **Input State:** Shows subtitle, time picker, and calculate button
+- **Results State:** Shows bedtime cards and back button (replaces input elements)
+- **Transition:** Slide animation (input slides left, results slide right)
 
 ---
 
-#### 3. Bedtime Cards (ADAPTED FROM SLEEP NOW)
+#### 3. Calculate Button (NEW)
+```
+┌─────────────────────────────────────────┐
+│  ┌──────────────────────────────────┐  │
+│  │     Calculate Bedtime            │  │ ← Golden Button
+│  └──────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+```
+
+**Specifications:**
+- **Width:** Full width minus 40pt padding (20pt each side)
+- **Height:** 60pt
+- **Background:** Golden yellow `Color(red: 0.894, green: 0.729, blue: 0.306)`
+- **Text Color:** Dark blue `Color(red: 0.1, green: 0.15, blue: 0.3)`
+- **Font:** SF Pro Rounded, 20pt, semibold
+- **Corner Radius:** 20pt
+- **Shadow:** Golden glow `opacity: 0.3, radius: 10, y: 5`
+- **Haptic:** Medium impact on tap
+- **Animation:** Spring animation (response: 0.6, dampingFraction: 0.8)
+- **Action:** Triggers transition from input state to results state
+
+---
+
+#### 4. Results Header (NEW)
+```
+┌─────────────────────────────────────────┐
+│  ← Back                                  │ ← Back Button (golden)
+│                                         │
+│  If you want to wake up at 7:00 AM     │ ← Header Text
+│  Go to bed at any of these times       │
+└─────────────────────────────────────────┘
+```
+
+**Specifications:**
+- **Back Button:**
+  - Icon: chevron.left + "Back" text
+  - Color: Golden yellow
+  - Font: SF Pro Rounded, 17pt, semibold
+  - Position: Top left
+  - Haptic: Light impact on tap
+  - Action: Returns to input state
+- **Header Text:**
+  - Line 1: "If you want to wake up at [time]"
+  - Line 2: "Go to bed at any of these times"
+  - Font: SF Pro Rounded, 22pt, medium
+  - Color: White with slight opacity
+  - Centered alignment
+  - Multi-line with center text alignment
+
+---
+
+#### 5. Bedtime Cards (ADAPTED FROM SLEEP NOW)
 ```
 ┌─────────────────────────────────────────┐
 │  🔋 Full Recharge                       │ ← Category Header (gold)
@@ -208,7 +278,7 @@ This feature MUST follow all design principles from:
 
 ---
 
-#### 4. Current Time Display (EXISTING - REUSE)
+#### 6. Current Time Display (EXISTING - REUSE)
 ```
 Current time  10:30 PM
 ```
@@ -216,7 +286,7 @@ Current time  10:30 PM
 
 ---
 
-#### 5. Moon Icon & Animations (EXISTING - REUSE)
+#### 7. Moon Icon & Animations (EXISTING - REUSE)
 ```
      🌙
     zzz  zzz
@@ -481,20 +551,19 @@ enum SleepMode: String, Codable {
 
 #### UI Integration
 - [ ] Remove mock data from WakeUpAtView
-- [ ] Wire up time picker `onChange` to trigger calculation
+- [ ] Wire up Calculate button to trigger calculation
 - [ ] Display calculated bedtimes instead of static data
-- [ ] Add loading state while calculating
 - [ ] Update duration labels with real values
-- [ ] Test dynamic updates when picker changes
+- [ ] Preserve two-state flow (input → results with back button)
+- [ ] Test calculation accuracy with different wake-up times
 
 ---
 
 ### Phase 3: Polish & Advanced Features (TODO - After Phase 2)
 
-#### Loading States
-- [ ] Show CalculatingWakeUpTimesView when time picker changes
-- [ ] Add 800ms delay to prevent flickering on quick changes
-- [ ] Implement smooth fade transition to results
+#### Calculation Optimization
+- [ ] Add debounce if user changes time picker after viewing results
+- [ ] Cache calculations for common wake-up times
 - [ ] Add haptic feedback when calculation completes
 
 #### Error Handling

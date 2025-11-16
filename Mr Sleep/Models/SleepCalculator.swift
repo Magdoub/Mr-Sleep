@@ -97,19 +97,19 @@ class SleepCalculator {
     func getCategorizedWakeUpTimes() -> [(category: String, times: [(time: Date, cycles: Int)])] {
         let allTimes = calculateWakeUpTimes()
         let sleepCycles = [4, 5, 3, 2, 1, 6]
-        
+
         var categorizedTimes: [String: [(time: Date, cycles: Int)]] = [:]
-        
+
         for (index, time) in allTimes.enumerated() {
             let cycles = sleepCycles[index]
             let category = getCategoryForCycles(cycles)
-            
+
             if categorizedTimes[category] == nil {
                 categorizedTimes[category] = []
             }
             categorizedTimes[category]?.append((time: time, cycles: cycles))
         }
-        
+
         // Return in desired order based on time of day with times sorted by cycles ascending within each category
         let categoryOrder = getDynamicCategoryOrder()
         return categoryOrder.compactMap { category in
@@ -117,6 +117,41 @@ class SleepCalculator {
             let sortedTimes = times.sorted { $0.cycles < $1.cycles }
             return (category: category, times: sortedTimes)
         }
+    }
+
+    // MARK: - Reverse Calculation (Wake Up At Mode)
+
+    /// Calculate bedtimes for a given wake-up time
+    /// Returns bedtimes for 1-6 sleep cycles, working backwards from the wake-up time
+    func calculateBedtimes(for wakeUpTime: Date) -> [(bedtime: Date, cycles: Int, duration: Double)] {
+        var bedtimes: [(bedtime: Date, cycles: Int, duration: Double)] = []
+        let calendar = Calendar.current
+
+        // Calculate bedtimes for 1-6 cycles
+        for cycles in 1...6 {
+            // Each cycle is 90 minutes
+            let cycleMinutes = cycles * sleepCycleDuration
+
+            // Add 15 minutes fall asleep buffer
+            let totalMinutes = cycleMinutes + fallAsleepTime
+
+            // Calculate bedtime by subtracting from wake-up time
+            guard let bedtime = calendar.date(
+                byAdding: .minute,
+                value: -totalMinutes,
+                to: wakeUpTime
+            ) else { continue }
+
+            // Round to nearest 5 minutes for cleaner display
+            let roundedBedtime = roundToNearestFiveMinutes(bedtime)
+
+            // Calculate total duration in hours
+            let duration = Double(cycles) * 1.5
+
+            bedtimes.append((bedtime: roundedBedtime, cycles: cycles, duration: duration))
+        }
+
+        return bedtimes
     }
     
     private func roundToNearestFiveMinutes(_ date: Date) -> Date {

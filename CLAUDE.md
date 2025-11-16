@@ -512,3 +512,4 @@ Mr Sleep/
 - Initial data storage system
 - add to memory: auto approval
 - add what I told you to memory
+- update memory

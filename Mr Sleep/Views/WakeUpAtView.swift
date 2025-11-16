@@ -220,7 +220,7 @@ struct WakeUpAtView: View {
         }
         .onAppear {
             startAnimations()
-            generateMockData()
+            // Phase 2: Calculations now triggered by Calculate button, not on appear
         }
     }
 
@@ -248,6 +248,9 @@ struct WakeUpAtView: View {
             // Haptic feedback
             let impact = UIImpactFeedbackGenerator(style: .medium)
             impact.impactOccurred()
+
+            // Phase 2: Calculate real bedtimes
+            calculateRealBedtimes()
 
             // Slide to results state showing bedtime cards
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
@@ -321,41 +324,20 @@ struct WakeUpAtView: View {
         return formatter.string(from: selectedWakeUpTime)
     }
 
-    private func generateMockData() {
-        let calendar = Calendar.current
-        var baseComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+    // MARK: - Phase 2: Real Bedtime Calculation
 
-        // Phase 1: Hardcoded bedtime options (no calculation logic)
-        let mockTimes: [(hour: Int, minute: Int, cycles: Int)] = [
-            (23, 30, 5),  // 11:30 PM - 5 cycles (7.5h)
-            (22, 0, 6),   // 10:00 PM - 6 cycles (9h)
-            (0, 45, 4),   // 12:45 AM - 4 cycles (6h)
-            (1, 15, 3),   // 1:15 AM - 3 cycles (4.5h)
-            (3, 0, 2),    // 3:00 AM - 2 cycles (3h)
-            (5, 15, 1)    // 5:15 AM - 1 cycle (1.5h)
-        ]
+    /// Calculate real bedtimes using SleepCalculator
+    private func calculateRealBedtimes() {
+        // Use SleepCalculator to get bedtimes for the selected wake-up time
+        let calculated = SleepCalculator.shared.calculateBedtimes(for: selectedWakeUpTime)
 
-        mockBedtimes = mockTimes.map { data in
-            // Handle midnight crossing
-            if data.hour < 12 && data.hour != 0 {
-                // AM times (after midnight) should be next day
-                baseComponents.day! += 1
-            }
-
-            baseComponents.hour = data.hour
-            baseComponents.minute = data.minute
-
-            let bedtime = calendar.date(from: baseComponents)!
-            let duration = Double(data.cycles) * 1.5
-
-            // Reset for next iteration
-            baseComponents = calendar.dateComponents([.year, .month, .day], from: Date())
-
-            return MockBedtime(
-                bedtime: bedtime,
+        // Convert to MockBedtime objects (keeping same data structure)
+        mockBedtimes = calculated.map { data in
+            MockBedtime(
+                bedtime: data.bedtime,
                 wakeUpTime: selectedWakeUpTime,
                 cycles: data.cycles,
-                duration: duration
+                duration: data.duration
             )
         }
     }
