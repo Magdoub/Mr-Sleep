@@ -62,14 +62,21 @@ struct WakeUpAtView: View {
     @State private var subtitleOffset: CGFloat = 30  // Subtitle slides from bottom
     @State private var categoryHeadersVisible: Bool = false
 
-    // Moon animation
-    @State private var currentMoonIcon = "moon-3D-icon"
-    @State private var moonRotation: Double = 0
+    // Moon animation - v5.2: alternating between bed and cloud icons
+    @State private var currentMoonIcon = "moon-sleeping-bed-3D-icon"
+    @State private var moonRotation: Double = 0  // Not used (kept for compatibility)
     @State private var moonBreathingScale: Double = 1.0
+
+    // Icon alternation
+    private let moonIcons = ["moon-sleeping-bed-3D-icon", "moon-sleeping-cloud-3D-icon"]
+    @AppStorage("wakeUpAtLastIconIndex") private var lastIconIndex: Int = 0
 
     // zzz animations
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [0.9, 0.8, 0.7]
+
+    // Breathing animation for content (like Sleep Now)
+    @State private var contentBreathingScale: Double = 1.0
 
     // Accessibility
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -96,62 +103,103 @@ struct WakeUpAtView: View {
                     Spacer(minLength: 20)
 
                     // App Title with animated moon and floating zzz
-                    VStack(spacing: 12) {
-                        HStack(spacing: 15) {
-                            HStack(spacing: 12) {
-                                Image(currentMoonIcon)
-                                    .resizable()
-                                    .frame(width: 90, height: 90)
-                                    .scaleEffect(reduceMotion ? 1.0 : moonBreathingScale)
-                                    .rotationEffect(.degrees(reduceMotion ? 0 : moonRotation))
-                                    .accessibilityLabel("Moon icon")
-                                    .accessibilityHidden(true)
+                    HStack(spacing: 15) {
+                        HStack(spacing: 12) {
+                            Image(currentMoonIcon)
+                                .resizable()
+                                .frame(width: 90, height: 90)
+                                .scaleEffect(reduceMotion ? 1.0 : moonBreathingScale)
+                                .animation(reduceMotion ? .none : .easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: moonBreathingScale)
+                                .accessibilityLabel("Bedtime moon icon")
+                                .accessibilityHidden(true)
 
-                                Text("Mr Sleep")
-                                    .font(.largeTitle)
-                                    .fontWeight(.medium)
-                                    .fontDesign(.rounded)
-                                    .foregroundColor(.white)
-                            }
-
-                            ForEach(0..<3) { index in
-                                Text("z")
-                                    .font([.title, .title2, .title3][index])
-                                    .fontWeight(.light)
-                                    .foregroundColor(.white.opacity([0.9, 0.8, 0.7][index]))
-                                    .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
-                                    .opacity(zzzOpacities[index])
-                                    .accessibilityHidden(true)
-                            }
+                            Text("Mr Sleep")
+                                .font(.largeTitle)
+                                .fontWeight(.medium)
+                                .fontDesign(.rounded)
+                                .foregroundColor(.white)
                         }
-                        .offset(y: titleOffset)  // Logo slides from top
 
-                        // Subtitle - ONLY show in input state
-                        if viewState == .input {
-                            Text("What time do you want to wake up at")
+                        ForEach(0..<3) { index in
+                            Text("z")
+                                .font([.title, .title2, .title3][index])
+                                .fontWeight(.light)
+                                .foregroundColor(.white.opacity([0.9, 0.8, 0.7][index]))
+                                .offset(x: [-5, -8, -10][index], y: [-5, -8, -12][index] + zzzFloatingOffsets[index])
+                                .opacity(zzzOpacities[index])
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .offset(y: titleOffset)  // Logo slides from top
+                    .opacity(contentOpacity)
+
+                    Spacer()
+
+                    // Messaging - ONLY show in input state (matches Sleep Now format)
+                    if viewState == .input {
+                        VStack(spacing: 8) {
+                            Text("When do you want to wake up?")
                                 .font(.title2)
+                                .fontWeight(.bold)
+                                .fontDesign(.rounded)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .accessibilityAddTraits(.isHeader)
+
+                            Text("Pick your wake up time")
+                                .font(.body)
                                 .fontWeight(.medium)
                                 .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
                                 .multilineTextAlignment(.center)
-                                .lineLimit(2)
-                                .offset(y: subtitleOffset)  // Subtitle slides from bottom
                         }
+                        .padding(.horizontal, 20)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("When do you want to wake up? Pick your wake up time")
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityHint("Scroll down to see time picker")
+                        .scaleEffect(reduceMotion ? 1.0 : contentBreathingScale)  // Breathing animation
+                        .animation(reduceMotion ? .none : .easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: contentBreathingScale)
+                        .offset(y: subtitleOffset)  // Subtitle slides from bottom
+                        .opacity(contentOpacity)
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Mr Sleep app title. What time do you want to wake up at")
-                    .accessibilityAddTraits(.isHeader)
-                    .opacity(contentOpacity)
+
+                    // Back button - ONLY show in results state (positioned at top)
+                    if viewState == .results {
+                        HStack {
+                            Button(action: {
+                                // Haptic feedback
+                                let impact = UIImpactFeedbackGenerator(style: .light)
+                                impact.impactOccurred()
+
+                                // Slide back to input state
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    viewState = .input
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 18, weight: .semibold))
+                                    Text("Back")
+                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                }
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
+                            }
+                            .accessibilityLabel("Back to time picker")
+                            .padding(.horizontal, 20)
+
+                            Spacer()
+                        }
+                        .opacity(contentOpacity)
+                        .transition(.opacity)
+                    }
 
                     Spacer()
 
                     // INPUT STATE: Subtitle, Time Picker, and Calculate Button
                     if viewState == .input {
-                        VStack(spacing: 25) {
-                            // Subtitle (already shown in header, keeping for input state)
-
-                            // Time Picker Section
+                        VStack(spacing: 10) {
+                            // Time Picker Section - closer to text above
                             timePickerSection
-                                .padding(.top, 10)
 
                             // Calculate Bedtime Button
                             calculateBedtimeButton
@@ -161,35 +209,9 @@ struct WakeUpAtView: View {
                         .transition(.move(edge: .leading).combined(with: .opacity))
                     }
 
-                    // RESULTS STATE: Bedtime Cards with Back Button
+                    // RESULTS STATE: Results header and Bedtime Cards
                     if viewState == .results {
                         VStack(spacing: 20) {
-                            // Back button
-                            HStack {
-                                Button(action: {
-                                    // Haptic feedback
-                                    let impact = UIImpactFeedbackGenerator(style: .light)
-                                    impact.impactOccurred()
-
-                                    // Slide back to input state
-                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                        viewState = .input
-                                    }
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "chevron.left")
-                                            .font(.system(size: 18, weight: .semibold))
-                                        Text("Back")
-                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                    }
-                                    .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
-                                }
-                                .accessibilityLabel("Back to time picker")
-                                .padding(.horizontal, 20)
-
-                                Spacer()
-                            }
-
                             // Results header text
                             VStack(spacing: 8) {
                                 Text("If you want to wake up at \(formatWakeUpTime())")
@@ -205,7 +227,8 @@ struct WakeUpAtView: View {
                                     .multilineTextAlignment(.center)
                             }
                             .padding(.horizontal, 20)
-                            .padding(.top, 10)
+                            .scaleEffect(reduceMotion ? 1.0 : contentBreathingScale)  // Breathing animation
+                            .animation(reduceMotion ? .none : .easeInOut(duration: 4.0).repeatForever(autoreverses: true), value: contentBreathingScale)
 
                             // Bedtime Cards
                             bedtimeCardsSection
@@ -219,6 +242,7 @@ struct WakeUpAtView: View {
             }
         }
         .onAppear {
+            selectNextMoonIcon()
             startAnimations()
             // Phase 2: Calculations now triggered by Calculate button, not on appear
         }
@@ -415,6 +439,15 @@ struct WakeUpAtView: View {
         }
     }
 
+    // MARK: - Icon Selection
+
+    private func selectNextMoonIcon() {
+        // Alternate to the next icon (0 -> 1 -> 0 -> 1...)
+        let nextIndex = (lastIconIndex + 1) % moonIcons.count
+        currentMoonIcon = moonIcons[nextIndex]
+        lastIconIndex = nextIndex
+    }
+
     // MARK: - Animations
 
     private func startAnimations() {
@@ -436,32 +469,49 @@ struct WakeUpAtView: View {
             }
         }
 
-        // Moon breathing animation
+        // Start moon breathing animation (matches SingleAlarmView pattern)
         if !reduceMotion {
-            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
-                moonBreathingScale = 1.05
-            }
-
-            withAnimation(.linear(duration: 60.0).repeatForever(autoreverses: false)) {
-                moonRotation = 360
-            }
+            startMoonBreathingEffect()
         }
 
-        // zzz floating animations
+        // Start content breathing animation (like Sleep Now)
+        if !reduceMotion {
+            startContentBreathingEffect()
+        }
+
+        // zzz floating animations (matches Sleep Now timing)
         if !reduceMotion {
             for i in 0..<3 {
                 let delay = Double(i) * 0.3
-                let duration = 2.0 + Double(i) * 0.5
+                let duration = 2.0 + Double(i) * 0.2  // Slower variation like Sleep Now
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true)) {
-                        zzzFloatingOffsets[i] = -15
+                        zzzFloatingOffsets[i] = [-3, -5, -7][i]  // Match Sleep Now distances
                     }
 
                     withAnimation(.easeInOut(duration: duration * 0.8).repeatForever(autoreverses: true)) {
-                        zzzOpacities[i] = [0.3, 0.2, 0.1][i]
+                        zzzOpacities[i] = [0.6, 0.4, 0.3][i]  // Match Sleep Now opacity
                     }
                 }
+            }
+        }
+    }
+
+    /// Moon breathing animation - matches SingleAlarmView implementation
+    private func startMoonBreathingEffect() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                moonBreathingScale = 1.05  // 5% scale for noticeable breathing
+            }
+        }
+    }
+
+    /// Content breathing animation - subtle scale for text elements
+    private func startContentBreathingEffect() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                contentBreathingScale = 1.015  // Subtle 1.5% breathing
             }
         }
     }

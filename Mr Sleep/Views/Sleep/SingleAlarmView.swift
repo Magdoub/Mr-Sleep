@@ -518,6 +518,9 @@ struct OnboardingStep {
 
 // MARK: - Main Single Alarm View
 struct SingleAlarmView: View {
+    // Binding to parent view's onboarding state (to sync toggle visibility)
+    @Binding var isOnboardingActive: Bool
+
     @EnvironmentObject private var viewModelContainer: LazyAlarmKitContainer
     @Environment(\.scenePhase) private var scenePhase
 
@@ -554,6 +557,7 @@ struct SingleAlarmView: View {
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @State private var contentOpacity: Double = 0
     @State private var titleOffset: CGFloat = -50
+    @State private var messagingOffset: CGFloat = 30  // Messaging slides from bottom (like Wake Up At)
     @State private var timeOffset: CGFloat = 30
     @State private var zzzFloatingOffsets: [CGFloat] = [0, 0, 0]
     @State private var zzzOpacities: [Double] = [1.0, 0.8, 0.6]
@@ -600,7 +604,7 @@ struct SingleAlarmView: View {
                 } else if case .selected(let selectedTime, let cycles, _) = singleAlarmState {
                     fullScreenAdjustmentView(selectedTime: selectedTime, cycles: cycles, geometry: geometry)
                 } else if showOnboarding {
-                    OnboardingView(showOnboarding: $showOnboarding, onComplete: startPostOnboardingLoading)
+                    OnboardingView(showOnboarding: $showOnboarding, isOnboardingActive: $isOnboardingActive, onComplete: startPostOnboardingLoading)
                 } else if showSleepGuide {
                     SleepGuideView(showSleepGuide: $showSleepGuide)
                 } else {
@@ -676,60 +680,34 @@ struct SingleAlarmView: View {
                         }
                         */
 
-                        // Current time display with micro animation - EXACT COPY
+                        // Simplified messaging - v5.2 UX update
                         VStack(spacing: 8) {
-                            Text("Current Time")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9)) // Improved contrast
-                                .accessibilityHidden(true)
-                            
-                            Text(getCurrentTime())
+                            Text("Sleeping right now?")
                                 .font(.title2)
-                                .fontWeight(.semibold)
+                                .fontWeight(.bold)
                                 .fontDesign(.rounded)
-                                .foregroundColor(.white) // Better contrast
-                                .scaleEffect(timeAnimationTrigger ? 1.1 : 1.0)
-                                .opacity(timeAnimationTrigger ? 0.7 : 1.0)
-                                .offset(y: timeAnimationTrigger ? -2 : 0)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: timeAnimationTrigger)
-                                .accessibilityHidden(true)
-                                .frame(minWidth: 120)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Current time is \(getCurrentTime())")
-                        .accessibilityAddTraits([.updatesFrequently, .playsSound])
-                        .accessibilityValue(getCurrentTime())
-                        .opacity(contentOpacity)
-                        .offset(y: timeOffset)
-                        
-                        // Sleep message - EXACT COPY
-                        VStack(spacing: 12) {
-                            Text("Sleep Now . Wake up Like a Boss")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white) // Better contrast
+                                .foregroundColor(.white)
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
 
-                            Text("You will feel refreshed and not tired")
+                            Text("Here are your wake up times")
                                 .font(.body)
                                 .fontWeight(.medium)
-                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9)) // Improved contrast
+                                .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal)
 
-                            Text("Set your alarm for a wake up time")
+                            Text("click to set your alarm")
                                 .font(.caption)
                                 .fontWeight(.medium)
-                                .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4)) // Brighter gold
+                                .foregroundColor(Color(red: 0.894, green: 0.729, blue: 0.306))
                                 .multilineTextAlignment(.center)
                         }
+                        .padding(.horizontal, 20)
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Sleep Now . Wake up like boss. You will feel refreshed and not tired. Set your alarm for a wake up time that suits you.")
+                        .accessibilityLabel("Sleeping right now? Here are your wake up times. click to set your alarm.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
+                        .offset(y: messagingOffset)  // Slide from bottom animation
                         .opacity(contentOpacity)
                         
                         
@@ -833,6 +811,9 @@ struct SingleAlarmView: View {
             }
         }
         .onAppear {
+            // Sync onboarding state with parent
+            isOnboardingActive = showOnboarding
+
             // Initialize AlarmKitViewModel if onboarding is complete or user is returning
             if !showOnboarding {
                 print("🟢 Initializing AlarmKitViewModel (onboarding complete or returning user)")
@@ -979,17 +960,22 @@ struct SingleAlarmView: View {
     private func startEntranceAnimation() {
         // Immediate setup for smooth entrance
         hasCompletedInitialLoading = true
-        
+
         // Start the entrance animation sequence
         withAnimation(.easeOut(duration: 0.8)) {
             contentOpacity = 1.0
             titleOffset = 0
         }
-        
+
+        // Messaging slides from bottom (same as Wake Up At)
+        withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+            messagingOffset = 0
+        }
+
         withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
             timeOffset = 0
         }
-        
+
         // Start calculating animation after entrance
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             startCalculatingAnimation()
@@ -999,11 +985,11 @@ struct SingleAlarmView: View {
     private func startCalculatingAnimation() {
         isCalculatingWakeUpTimes = true
         calculationProgress = 0.0
-        
-        // Animate progress
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-            calculationProgress += 0.0217
-            
+
+        // Animate progress over 1.5 seconds (normal speed restored)
+        Timer.scheduledTimer(withTimeInterval: 0.033, repeats: true) { timer in
+            calculationProgress += 0.022 // 1.5s total duration (1.0 / (1.5 / 0.033) ≈ 0.022)
+
             if calculationProgress >= 1.0 {
                 timer.invalidate()
                 showFinishingUpAnimation()
@@ -1078,6 +1064,7 @@ struct SingleAlarmView: View {
 
         withAnimation(.easeOut(duration: 0.5)) {
             showOnboarding = false
+            isOnboardingActive = false
         }
 
         // Start animations after onboarding
@@ -1904,6 +1891,7 @@ struct SingleAlarmView: View {
 
 struct OnboardingView: View {
     @Binding var showOnboarding: Bool
+    @Binding var isOnboardingActive: Bool
     let onComplete: () -> Void
     @State private var currentStep = 0
     @State private var contentOffset: CGFloat = 0
@@ -2042,6 +2030,7 @@ struct OnboardingView: View {
                                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
                                 withAnimation(.easeOut(duration: 0.3)) {
                                     showOnboarding = false
+                                    isOnboardingActive = false
                                 }
                             }
                         }) {
@@ -2441,5 +2430,14 @@ extension Notification.Name {
 }
 
 #Preview {
-    SingleAlarmView()
+    struct PreviewWrapper: View {
+        @State private var isOnboardingActive = false
+
+        var body: some View {
+            SingleAlarmView(isOnboardingActive: $isOnboardingActive)
+                .environmentObject(LazyAlarmKitContainer())
+        }
+    }
+
+    return PreviewWrapper()
 }

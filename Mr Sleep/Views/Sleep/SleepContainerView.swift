@@ -23,9 +23,19 @@ import SwiftUI
 
 struct SleepContainerView: View {
     @EnvironmentObject var viewModelContainer: LazyAlarmKitContainer
+    @Environment(\.scenePhase) private var scenePhase
 
     // Mode selection state
     @State private var selectedMode: SleepMode = .sleepNow
+    @State private var hasLoadedInitialMode = false
+
+    // Onboarding state - hide toggle during onboarding (synced with child view)
+    @State private var isOnboardingActive: Bool = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+    // Computed property for toggle visibility
+    private var shouldShowToggle: Bool {
+        !isOnboardingActive
+    }
 
     // Animation
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -45,16 +55,19 @@ struct SleepContainerView: View {
             .ignoresSafeArea(.all)
 
             VStack(spacing: 0) {
-                // Toggle at top (below safe area)
-                ModeToggle(selectedMode: $selectedMode)
-                    .padding(.top, 10)
-                    .padding(.bottom, 5)
-                    .zIndex(10) // Keep toggle above scrolling content
+                // Toggle at top (below safe area) - HIDDEN DURING ONBOARDING
+                if shouldShowToggle {
+                    ModeToggle(selectedMode: $selectedMode)
+                        .padding(.top, 10)
+                        .padding(.bottom, 5)
+                        .zIndex(10) // Keep toggle above scrolling content
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 // Content (switches based on mode)
                 ZStack {
                     if selectedMode == .sleepNow {
-                        SingleAlarmView()
+                        SingleAlarmView(isOnboardingActive: $isOnboardingActive)
                             .environmentObject(viewModelContainer)
                             .transition(.opacity)
                     } else {
@@ -65,7 +78,15 @@ struct SleepContainerView: View {
             }
         }
         .onAppear {
-            loadSelectedMode()
+            // Always default to Sleep Now on fresh launch
+            selectedMode = .sleepNow
+            hasLoadedInitialMode = true
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // When returning from background, load saved mode
+            if newPhase == .active && hasLoadedInitialMode {
+                selectedMode = SleepMode.loadFromUserDefaults()
+            }
         }
         .onChange(of: selectedMode) { oldMode, newMode in
             saveSelectedMode(newMode)
@@ -73,10 +94,6 @@ struct SleepContainerView: View {
     }
 
     // MARK: - Mode Persistence
-
-    private func loadSelectedMode() {
-        selectedMode = SleepMode.loadFromUserDefaults()
-    }
 
     private func saveSelectedMode(_ mode: SleepMode) {
         mode.saveToUserDefaults()
