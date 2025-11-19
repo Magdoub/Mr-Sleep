@@ -1764,7 +1764,7 @@ struct SingleAlarmView: View {
     private func activeAlarmView(alarmTime: Date, startTime: Date, geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             VStack(spacing: 40) {
                 // Alarm time
                 VStack(spacing: 12) {
@@ -1785,6 +1785,7 @@ struct SingleAlarmView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Alarm set for \(SleepCalculator.shared.formatTime(alarmTime))")
                 .accessibilityAddTraits(.isHeader)
+                .frame(maxWidth: .infinity)
 
                 // Reassurance message
                 Text("✓ Alarm is set. You can safely close the app.")
@@ -1858,9 +1859,11 @@ struct SingleAlarmView: View {
                 .accessibilityHint("Double tap to cancel the scheduled alarm")
                 .accessibilityAddTraits(.isButton)
             }
-            
+            .frame(maxWidth: .infinity)
+
             Spacer()
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
