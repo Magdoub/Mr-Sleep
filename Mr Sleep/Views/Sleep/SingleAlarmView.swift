@@ -1680,28 +1680,16 @@ struct SingleAlarmView: View {
 
                 // Confirm button - large and prominent
                 Button(action: confirmAlarm) {
-                    HStack {
-                        Image(systemName: "alarm.waves.left.and.right.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                        Text("Set Alarm")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.894, green: 0.729, blue: 0.306),
-                                        Color(red: 0.94, green: 0.629, blue: 0.206)
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                    )
+                    Text("Set Alarm")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color(red: 0.1, green: 0.15, blue: 0.3))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
+                        )
+                        .shadow(color: Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.3), radius: 10, x: 0, y: 5)
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 20)
