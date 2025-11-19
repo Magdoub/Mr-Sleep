@@ -84,21 +84,8 @@ struct WakeUpAtView: View {
     // MARK: - Body
 
     var body: some View {
-        ZStack {
-            // Background gradient - SAME AS SLEEP NOW
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.1, green: 0.25, blue: 0.5),
-                    Color(red: 0.06, green: 0.15, blue: 0.35),
-                    Color(red: 0.03, green: 0.08, blue: 0.2)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea(.all)
-
-            // Main content
-            ScrollView(.vertical, showsIndicators: false) {
+        // Background gradient removed - inherits from SleepContainerView
+        ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 25) {
                     Spacer(minLength: 20)
 
@@ -240,7 +227,6 @@ struct WakeUpAtView: View {
                     }
                 }
             }
-        }
         .onAppear {
             selectNextMoonIcon()
             startAnimations()

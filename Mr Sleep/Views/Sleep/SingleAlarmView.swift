@@ -581,19 +581,8 @@ struct SingleAlarmView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background gradient - Exact same as SleepNowView
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.1, green: 0.25, blue: 0.5), // Darker blue
-                        Color(red: 0.06, green: 0.15, blue: 0.35), // Much darker blue
-                        Color(red: 0.03, green: 0.08, blue: 0.2) // Very dark blue
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.container, edges: .all)
-                
-                
+                // Background gradient removed - inherits from SleepContainerView
+
                 // Handle different view states
                 if case .settingUpAlarm = singleAlarmState {
                     // Show loading state during alarm setup

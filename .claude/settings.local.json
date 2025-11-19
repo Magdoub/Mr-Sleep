@@ -212,7 +212,8 @@
       "Bash(git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" add \"Mr Sleep/Views/WakeUpAtView.swift\")",
       "Bash(git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" commit -m \"Add slide-in animations to Wake Up At view matching Sleep Now UX\")",
       "Bash(git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" add -A)",
-      "Bash(git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" commit -m \"Remove duplicate WakeUpAtView file and update settings\")"
+      "Bash(git -C \"/Users/magdoub/Documents/iOS projects/Mr Sleep\" commit -m \"Remove duplicate WakeUpAtView file and update settings\")",
+      "Read(//Users/magdoub/**)"
     ],
     "deny": [],
     "ask": [],

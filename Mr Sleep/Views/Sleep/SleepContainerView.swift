@@ -105,92 +105,134 @@ struct SleepContainerView: View {
 struct ModeToggle: View {
     @Binding var selectedMode: SleepMode
 
+    // Microinteraction states
+    @State private var selectedScale: CGFloat = 1.0
+    @State private var glowOpacity: Double = 0.0
+    @State private var glowScale: CGFloat = 1.0
+
+    // Golden accent color
+    private let goldenColor = Color(red: 0.894, green: 0.729, blue: 0.306)
+
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Sleep Now button
-            ModeButton(
-                title: "Sleep Now",
-                isSelected: selectedMode == .sleepNow,
-                action: {
-                    if selectedMode != .sleepNow {
-                        if reduceMotion {
-                            selectedMode = .sleepNow
-                        } else {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                selectedMode = .sleepNow
-                            }
-                        }
-                        // Haptic feedback
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    }
-                }
-            )
+        ZStack {
+            // Glow layer (slides with pill)
+            RoundedRectangle(cornerRadius: 22)
+                .fill(goldenColor)
+                .frame(width: 154, height: 42)
+                .offset(x: selectedMode == .sleepNow ? -78 : 78)
+                .scaleEffect(glowScale)
+                .opacity(glowOpacity)
+                .blur(radius: 10)
 
-            // Wake Up At button
-            ModeButton(
-                title: "Wake Up At",
-                isSelected: selectedMode == .wakeUpAt,
-                action: {
-                    if selectedMode != .wakeUpAt {
-                        if reduceMotion {
-                            selectedMode = .wakeUpAt
-                        } else {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                selectedMode = .wakeUpAt
-                            }
-                        }
-                        // Haptic feedback
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // SINGLE sliding pill - moves based on selection
+            RoundedRectangle(cornerRadius: 22)
+                .fill(goldenColor)
+                .frame(width: 154, height: 42)
+                .offset(x: selectedMode == .sleepNow ? -78 : 78)
+                .shadow(color: goldenColor.opacity(0.3), radius: 6, x: 0, y: 2)
+                .scaleEffect(selectedScale)
+
+            // Text labels (static, on top of sliding pill)
+            HStack(spacing: 0) {
+                // Sleep Now button
+                Button {
+                    if selectedMode != .sleepNow {
+                        selectMode(.sleepNow)
                     }
+                } label: {
+                    Text("Sleep Now")
+                        .font(.system(size: 17, weight: selectedMode == .sleepNow ? .semibold : .regular, design: .rounded))
+                        .foregroundColor(selectedMode == .sleepNow ? .white : Color(red: 0.6, green: 0.6, blue: 0.65))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            )
+                .buttonStyle(.plain)
+                .accessibilityLabel("Sleep Now")
+                .accessibilityAddTraits(selectedMode == .sleepNow ? [.isButton, .isSelected] : .isButton)
+
+                // Wake Up At button
+                Button {
+                    if selectedMode != .wakeUpAt {
+                        selectMode(.wakeUpAt)
+                    }
+                } label: {
+                    Text("Wake Up At")
+                        .font(.system(size: 17, weight: selectedMode == .wakeUpAt ? .semibold : .regular, design: .rounded))
+                        .foregroundColor(selectedMode == .wakeUpAt ? .white : Color(red: 0.6, green: 0.6, blue: 0.65))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Wake Up At")
+                .accessibilityAddTraits(selectedMode == .wakeUpAt ? [.isButton, .isSelected] : .isButton)
+            }
         }
         .frame(width: 320, height: 48)
         .background(
+            // Frosted glass background - blends with main gradient
             RoundedRectangle(cornerRadius: 24)
-                .fill(Color(red: 0.08, green: 0.12, blue: 0.25).opacity(0.8))
+                .fill(.ultraThinMaterial)
+                .opacity(0.3)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+        // Drag gesture for swipe-to-toggle
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // Swipe right → Wake Up At
+                    if value.translation.width > 30 && selectedMode == .sleepNow {
+                        selectMode(.wakeUpAt)
+                    }
+                    // Swipe left → Sleep Now
+                    else if value.translation.width < -30 && selectedMode == .wakeUpAt {
+                        selectMode(.sleepNow)
+                    }
+                }
+        )
+        // Animate pill sliding
+        .animation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.7), value: selectedMode)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Sleep mode toggle")
-        .accessibilityHint("Switch between Sleep Now and Wake Up At modes")
+        .accessibilityHint("Switch between Sleep Now and Wake Up At modes. Swipe or tap to change.")
     }
-}
 
-// MARK: - Mode Button Component
+    private func selectMode(_ mode: SleepMode) {
+        // Haptic feedback - soft for premium feel
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
 
-struct ModeButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 17, weight: isSelected ? .semibold : .regular, design: .rounded))
-                .foregroundColor(isSelected ? .white : Color(red: 0.7, green: 0.7, blue: 0.7))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(
-                    ZStack {
-                        if isSelected {
-                            RoundedRectangle(cornerRadius: 22)
-                                .fill(Color(red: 0.894, green: 0.729, blue: 0.306))
-                                .padding(2)
-                                .shadow(color: Color(red: 0.894, green: 0.729, blue: 0.306).opacity(0.4), radius: 8, x: 0, y: 2)
-                        }
-                    }
-                )
+        if reduceMotion {
+            selectedMode = mode
+            return
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint(isSelected ? "Currently selected" : "Double tap to select \(title) mode")
+
+        // Trigger glow pulse
+        glowOpacity = 0.5
+        glowScale = 1.2
+
+        // Animate the pill sliding
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            selectedMode = mode
+        }
+
+        // Scale bounce microinteraction
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+            selectedScale = 1.06
+        }
+
+        // Settle animations
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                selectedScale = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.25)) {
+                glowOpacity = 0.0
+                glowScale = 1.0
+            }
+        }
     }
 }
 
