@@ -679,7 +679,7 @@ struct SingleAlarmView: View {
                                 .multilineTextAlignment(.center)
                                 .accessibilityAddTraits(.isHeader)
 
-                            Text("Here are your wake up times")
+                            Text("Here are your best wake up times")
                                 .font(.body)
                                 .fontWeight(.medium)
                                 .foregroundColor(Color(red: 0.85, green: 0.85, blue: 0.9))
@@ -693,7 +693,7 @@ struct SingleAlarmView: View {
                         }
                         .padding(.horizontal, 20)
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Sleeping right now? Here are your wake up times. click to set your alarm.")
+                        .accessibilityLabel("Sleeping right now? Here are your best wake up times. click to set your alarm.")
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityHint("Scroll down to see wake-up time options")
                         .offset(y: messagingOffset)  // Slide from bottom animation
